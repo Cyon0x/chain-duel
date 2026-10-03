@@ -370,6 +370,10 @@ The app is Vercel-ready (`next build`, App Router, `pg` for Postgres).
 4. Google/X sign-in additionally need `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` and
    `X_CLIENT_ID`/`X_CLIENT_SECRET`, with
    `https://<your-domain>/api/auth/oauth/<provider>/callback` registered as a redirect URI.
+5. Set `CRON_SECRET` so the daily Vercel Cron (`vercel.json` → `/api/cron/maintenance`) can
+   authenticate. It refunds expired private duels, expires stale queue entries and settles
+   abandoned matches. Without it the sweep can still be run manually with
+   `?token=$SESSION_SECRET`; a read-time sweep also runs on the relevant write paths.
 
 ---
 

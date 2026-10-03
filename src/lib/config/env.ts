@@ -16,6 +16,7 @@ const rawSchema = z.object({
 
   SESSION_SECRET: z.string().optional(),
   WALLET_ENCRYPTION_KEY: z.string().optional(),
+  CRON_SECRET: z.string().optional(),
 
   STELLAR_NETWORK: z.enum(["testnet", "futurenet", "mainnet", "local"]).optional(),
   STELLAR_RPC_URL: z.string().optional(),
