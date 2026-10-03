@@ -5,7 +5,7 @@ import { PreferencesProvider, SessionProvider } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
 import { getSessionUser } from "@/lib/auth/session";
 import { isDurablePersistence } from "@/lib/db";
-import { isProduction } from "@/lib/config/env";
+import { demoModeEnabled, integrationStatus, isProduction } from "@/lib/config/env";
 import { publicStellarConfig } from "@/lib/config/stellar";
 import { isThemeId } from "@/lib/config/themes";
 
@@ -26,6 +26,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getSessionUser();
   const network = publicStellarConfig();
+  const integrations = integrationStatus();
   const theme = isThemeId(session?.profile?.theme) ? session.profile.theme : "neon";
   // A deployment without a durable database cannot keep accounts or duels
   // between requests. Say so plainly instead of failing in confusing ways.
@@ -48,7 +49,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             }}
           >
             <GameCursor />
-            <SiteHeader networkLabel={network.label} isTestnet={network.isTestnet} />
+            <SiteHeader
+              networkLabel={network.label}
+              isTestnet={network.isTestnet}
+              providers={{
+                google: integrations.google,
+                x: integrations.x,
+                demoMode: demoModeEnabled(),
+              }}
+            />
             {storageWarning ? (
               <div className="mx-auto w-full max-w-7xl px-4 pt-4 sm:px-6">
                 <p

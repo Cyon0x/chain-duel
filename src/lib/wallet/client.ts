@@ -39,9 +39,63 @@ export interface ConnectedWallet {
   networkPassphrase: string | null;
 }
 
-export async function connectWallet(): Promise<ConnectedWallet> {
+/** Wallets Chain Duel initialises in the kit, in the order we present them. */
+export const SUPPORTED_WALLETS = [
+  { id: "freighter", name: "Freighter", hint: "Browser extension" },
+  { id: "xbull", name: "xBull", hint: "Extension or web" },
+  { id: "albedo", name: "Albedo", hint: "Web wallet" },
+  { id: "lobstr", name: "LOBSTR", hint: "Web or mobile" },
+  { id: "rabet", name: "Rabet", hint: "Browser extension" },
+] as const;
+
+export interface WalletOption {
+  id: string;
+  name: string;
+  hint: string;
+  available: boolean;
+  url: string | null;
+}
+
+/**
+ * Reports which supported wallets this browser can actually reach. A wallet
+ * that is not detectable is shown with an install link rather than a button
+ * that would silently fail.
+ */
+export async function listWallets(): Promise<WalletOption[]> {
   initWalletKit();
-  const { address } = await StellarWalletsKit.authModal();
+  let detected = new Map<string, { available: boolean; url: string | null }>();
+  try {
+    const supported = await StellarWalletsKit.refreshSupportedWallets();
+    detected = new Map(
+      supported.map((wallet) => [wallet.id, { available: wallet.isAvailable, url: wallet.url ?? null }]),
+    );
+  } catch {
+    // If detection fails we still offer the wallets; the connection attempt
+    // surfaces the wallet's own error rather than us inventing one.
+  }
+  return SUPPORTED_WALLETS.map((wallet) => {
+    const found = detected.get(wallet.id);
+    return {
+      id: wallet.id,
+      name: wallet.name,
+      hint: wallet.hint,
+      available: found ? found.available : detected.size === 0,
+      url: found?.url ?? null,
+    };
+  });
+}
+
+export async function connectWallet(walletId?: string): Promise<ConnectedWallet> {
+  initWalletKit();
+  let address: string | undefined;
+  if (walletId) {
+    // The player picked a specific provider, so open that wallet directly
+    // instead of making them pick again inside the kit's own modal.
+    StellarWalletsKit.setWallet(walletId);
+    ({ address } = await StellarWalletsKit.fetchAddress());
+  } else {
+    ({ address } = await StellarWalletsKit.authModal());
+  }
   if (!address) throw new Error("No wallet address was returned.");
   let networkPassphrase: string | null = null;
   try {

@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { Avatar, Badge, Button } from "./ui";
 import { usePreferences, useSession } from "./providers";
-import { DisconnectButton, WalletConnect } from "./wallet-connect";
+import { DisconnectButton } from "./wallet-connect";
+import { SignInDialog } from "./auth/sign-in-dialog";
+import type { AuthProviders } from "./auth/types";
 import { THEME_DEFINITIONS, THEMES } from "@/lib/config/themes";
 
 const NAV = [
@@ -18,7 +20,15 @@ const NAV = [
   { href: "/transactions", label: "Transactions" },
 ];
 
-export function SiteHeader({ networkLabel, isTestnet }: { networkLabel: string; isTestnet: boolean }) {
+export function SiteHeader({
+  networkLabel,
+  isTestnet,
+  providers,
+}: {
+  networkLabel: string;
+  isTestnet: boolean;
+  providers: AuthProviders;
+}) {
   const pathname = usePathname();
   const session = useSession();
   const { theme, setTheme, soundEnabled, toggleSound, play } = usePreferences();
@@ -129,16 +139,9 @@ export function SiteHeader({ networkLabel, isTestnet }: { networkLabel: string; 
           </div>
 
           {session.authenticated ? (
-            <Link
-              href="/dashboard"
-              className="focus-ring flex items-center gap-2.5 rounded-2xl border border-line-strong bg-surface px-2.5 py-1.5"
-            >
-              <Avatar name={session.username ?? "Player"} size={26} />
-              <span className="hidden text-[13px] font-medium sm:block">{session.username}</span>
-              <span className="numeric hidden text-[11px] text-accent sm:block">{session.rating}</span>
-            </Link>
+            <AccountMenu />
           ) : (
-            <WalletConnect size="sm" label="Sign in" />
+            <SignInDialog providers={providers} label="Sign in" />
           )}
 
           <Button
@@ -204,5 +207,94 @@ export function SiteHeader({ networkLabel, isTestnet }: { networkLabel: string; 
         </div>
       ) : null}
     </header>
+  );
+}
+
+/**
+ * Signed-in account menu: identity, wallet custody and the routes a player
+ * actually needs, without turning the header into a dashboard.
+ */
+function AccountMenu() {
+  const session = useSession();
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const items = [
+    { href: "/dashboard", label: "Dashboard" },
+    { href: "/profile", label: "Profile" },
+    { href: "/transactions", label: "Transactions" },
+    { href: "/settings", label: "Settings" },
+  ];
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className="focus-ring flex items-center gap-2.5 rounded-2xl border border-line-strong bg-surface px-2 py-1.5 transition-colors hover:border-accent/60"
+      >
+        <Avatar name={session.username ?? "Player"} size={26} />
+        <span className="hidden text-[13px] font-medium sm:block">{session.username}</span>
+        <span className="numeric hidden text-[11px] text-accent sm:block">{session.rating}</span>
+        <span aria-hidden className={clsx("hidden text-[10px] text-dim transition-transform sm:block", open && "rotate-180")}>
+          ▾
+        </span>
+      </button>
+
+      {open ? (
+        <div
+          role="menu"
+          className="animate-rise panel absolute right-0 z-50 mt-2 w-64 overflow-hidden p-1.5"
+        >
+          <div className="px-3 py-2.5">
+            <p className="truncate text-sm font-semibold">{session.username}</p>
+            <p className="mt-0.5 truncate text-[11px] text-dim">
+              {session.walletAddress
+                ? `${session.walletAddress.slice(0, 6)}…${session.walletAddress.slice(-4)}`
+                : "Managed wallet"}
+              {session.custody === "managed" ? " · Chain Duel wallet" : " · External wallet"}
+            </p>
+          </div>
+          <div className="my-1 hairline" />
+          {items.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className={clsx(
+                "focus-ring block rounded-xl px-3 py-2 text-[13px] transition-colors",
+                pathname === item.href ? "bg-surface text-ink" : "text-muted hover:bg-surface hover:text-ink",
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+          <div className="my-1 hairline" />
+          <div className="px-1 py-1">
+            <DisconnectButton />
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
