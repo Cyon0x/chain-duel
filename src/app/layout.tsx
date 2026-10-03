@@ -4,6 +4,8 @@ import { GameCursor } from "@/components/game-cursor";
 import { PreferencesProvider, SessionProvider } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
 import { getSessionUser } from "@/lib/auth/session";
+import { isDurablePersistence } from "@/lib/db";
+import { isProduction } from "@/lib/config/env";
 import { publicStellarConfig } from "@/lib/config/stellar";
 import { isThemeId } from "@/lib/config/themes";
 
@@ -25,6 +27,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const session = await getSessionUser();
   const network = publicStellarConfig();
   const theme = isThemeId(session?.profile?.theme) ? session.profile.theme : "neon";
+  // A deployment without a durable database cannot keep accounts or duels
+  // between requests. Say so plainly instead of failing in confusing ways.
+  const storageWarning = isProduction() && !(await isDurablePersistence());
 
   return (
     <html lang="en" data-theme={theme} suppressHydrationWarning>
@@ -44,6 +49,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           >
             <GameCursor />
             <SiteHeader networkLabel={network.label} isTestnet={network.isTestnet} />
+            {storageWarning ? (
+              <div className="mx-auto w-full max-w-7xl px-4 pt-4 sm:px-6">
+                <p
+                  role="status"
+                  className="rounded-2xl border border-warning/40 bg-warning/10 px-4 py-3 text-xs text-warning"
+                >
+                  <span className="font-semibold">Preview mode — no database configured.</span> Accounts and duels are
+                  held in memory and may reset between requests. Set <code>DATABASE_URL</code> to a Postgres instance
+                  for durable play. Stellar escrow, settlement and the treasury are unaffected and fully live.
+                </p>
+              </div>
+            ) : null}
             <main className="mx-auto w-full max-w-7xl px-4 pb-24 pt-6 sm:px-6">{children}</main>
             <footer className="border-t border-line px-4 py-8 sm:px-6">
               <div className="mx-auto flex max-w-7xl flex-col gap-3 text-xs text-dim sm:flex-row sm:items-center sm:justify-between">

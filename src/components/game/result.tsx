@@ -30,9 +30,13 @@ export function MatchResult({ view, selfUserId, onPlayAgain }: ResultProps) {
 
   const selfScore = self?.score ?? 0;
   const opponentScore = opponent?.score ?? 0;
-  const isDraw = game.winner_id === null && !self?.is_bot;
   const won = game.winner_id === selfUserId;
-  const botWon = game.winner_id === null && game.mode === "bot";
+  // A computer win is recorded with a null winner_id (there is no human
+  // winner), so it must be distinguished from a genuine tie before the draw
+  // check — otherwise losing to the computer renders as "DRAW".
+  const selfIsBot = Boolean(self && self.is_bot === 1);
+  const botWon = !won && !selfIsBot && game.winner_id === null && game.mode === "bot";
+  const isDraw = !won && !botWon && game.winner_id === null;
   const [payload, setPayload] = useState<HistoryResponse | null>(null);
 
   const displayScore = useCountUp(selfScore, 900);
@@ -63,7 +67,7 @@ export function MatchResult({ view, selfUserId, onPlayAgain }: ResultProps) {
   const explorer = txExplorerUrl(txHash);
 
   const pool = game.entry_stroops * 2;
-  const title = isDraw ? "DRAW" : won ? "WINNER" : botWon ? "COMPUTER WINS" : "DEFEAT";
+  const title = won ? "WINNER" : botWon ? "COMPUTER WINS" : isDraw ? "DRAW" : "DEFEAT";
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">

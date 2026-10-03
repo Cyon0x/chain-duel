@@ -2,7 +2,7 @@
   "name": "chain-duel",
   "version": "1.0.0",
   "private": true,
-  "description": "Chain Duel \u2014 premium 1v1 competitive arcade game powered by Stellar",
+  "description": "Chain Duel — premium 1v1 competitive arcade game powered by Stellar",
   "engines": {
     "node": ">=22"
   },
@@ -15,8 +15,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:contract": "cargo test --manifest-path contracts/chain_duel/Cargo.toml",
-    "contract:wasm": "cargo build --manifest-path contracts/chain_duel/Cargo.toml --target wasm32v1-none --release",
+    "test:contract": "node scripts/cargo.mjs test --manifest-path contracts/chain_duel/Cargo.toml",
+    "contract:wasm": "node scripts/cargo.mjs build --manifest-path contracts/chain_duel/Cargo.toml --target wasm32v1-none --release",
     "stellar:setup": "node scripts/setup-testnet.mjs",
     "stellar:deploy": "node scripts/deploy-contract.mjs",
     "db:seed": "node scripts/seed.mjs",

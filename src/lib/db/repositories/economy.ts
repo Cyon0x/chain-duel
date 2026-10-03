@@ -67,6 +67,19 @@ export async function findTransactionByHash(
   return db.one<TransactionRow>("SELECT * FROM transactions WHERE tx_hash = ?", [hash]);
 }
 
+/** Idempotency probe: has this user already booked a line of this kind for a game? */
+export async function findTransactionForGame(
+  db: SqlDriver,
+  userId: string,
+  gameId: string,
+  kind: TransactionKind,
+): Promise<TransactionRow | null> {
+  return db.one<TransactionRow>(
+    "SELECT * FROM transactions WHERE user_id = ? AND game_id = ? AND kind = ? ORDER BY created_at ASC LIMIT 1",
+    [userId, gameId, kind],
+  );
+}
+
 export async function updateTransaction(
   db: SqlDriver,
   id: string,

@@ -21,6 +21,11 @@ async function createDatabase(): Promise<DatabaseState> {
     return { driver, mode: "postgres" };
   }
   const path = env.CHAIN_DUEL_DB_PATH ?? (isProduction() ? ":memory:" : "./chain-duel.db");
+  if (isProduction() && !env.CHAIN_DUEL_DB_PATH) {
+    console.warn(
+      "[chain-duel] No DATABASE_URL configured. Falling back to in-memory SQLite: accounts and duels will not persist between serverless invocations. Set DATABASE_URL to a Postgres connection string for durable state.",
+    );
+  }
   const driver = await SqliteDriver.open(path, MIGRATIONS);
   return { driver, mode: path === ":memory:" ? "sqlite-memory" : "sqlite-file" };
 }

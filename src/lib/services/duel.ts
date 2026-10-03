@@ -18,7 +18,7 @@ import {
   updateInviteStatus,
 } from "../db/repositories/duel";
 import { findProfile, findUserById, primaryWallet } from "../db/repositories/identity";
-import { createTransaction } from "../db/repositories/economy";
+import { createTransaction, findTransactionForGame } from "../db/repositories/economy";
 import type { GameMode, GameRow, InviteRow } from "../db/types";
 import {
   DUEL_JOIN_WINDOW_MS,
@@ -175,6 +175,25 @@ export async function commitEntry(input: {
   if (!signer) throw Object.assign(new Error("No wallet linked to this account."), { code: "no_wallet" });
 
   if (input.game.demo) {
+    // Demo duels move no money, but they still produce a clearly-labelled
+    // simulated ledger line so the demo experience matches a real match and the
+    // history page never looks broken. `demo = 1` and no transaction hash is
+    // what keeps it honestly separated from Testnet results.
+    const database = await db();
+    const existing = await findTransactionForGame(database, input.userId, input.game.id, "entry");
+    if (!existing) {
+      await createTransaction(database, {
+        userId: input.userId,
+        gameId: input.game.id,
+        kind: "entry",
+        direction: "out",
+        amountStroops: input.game.entry_stroops,
+        status: "confirmed",
+        address: signer.address,
+        demo: true,
+        metadata: { gameCode: input.game.code, mode: input.game.mode, demo: true },
+      });
+    }
     const updated = await advanceEscrowState(input.game, input.userId, null);
     return { mode: "offchain", game: updated };
   }

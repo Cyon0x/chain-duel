@@ -27,8 +27,8 @@ export function SiteHeader({ networkLabel, isTestnet }: { networkLabel: string; 
 
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-bg/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6">
-        <Link href="/" className="focus-ring flex items-center gap-2.5 rounded-xl pr-2">
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-3 sm:gap-4 sm:px-6">
+        <Link href="/" className="focus-ring flex min-w-0 items-center gap-2 rounded-xl pr-1 sm:gap-2.5 sm:pr-2">
           <span
             aria-hidden
             className="grid h-8 w-8 place-items-center rounded-xl border border-accent/40 bg-accent-soft text-[13px] font-bold text-accent"
@@ -58,18 +58,18 @@ export function SiteHeader({ networkLabel, isTestnet }: { networkLabel: string; 
           })}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2">
-          {isTestnet ? (
-            <Badge tone="warning" className="hidden sm:inline-flex">
-              Testnet
-            </Badge>
-          ) : (
-            <Badge tone="danger" className="hidden sm:inline-flex">
-              {networkLabel}
-            </Badge>
-          )}
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          {/* Wrapped, not class-merged: Badge/Button set their own display, so a
+              `hidden` utility on them would lose to their base `inline-flex`. */}
+          <div className="hidden sm:block">
+            {isTestnet ? (
+              <Badge tone="warning">Testnet</Badge>
+            ) : (
+              <Badge tone="danger">{networkLabel}</Badge>
+            )}
+          </div>
 
-          <div className="relative">
+          <div className="relative hidden sm:block">
             <Button
               variant="ghost"
               size="sm"
@@ -116,15 +116,17 @@ export function SiteHeader({ networkLabel, isTestnet }: { networkLabel: string; 
             ) : null}
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleSound}
-            aria-pressed={soundEnabled}
-            aria-label={soundEnabled ? "Mute sound" : "Enable sound"}
-          >
-            <span aria-hidden>{soundEnabled ? "◉" : "◌"}</span>
-          </Button>
+          <div className="hidden sm:block">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleSound}
+              aria-pressed={soundEnabled}
+              aria-label={soundEnabled ? "Mute sound" : "Enable sound"}
+            >
+              <span aria-hidden>{soundEnabled ? "◉" : "◌"}</span>
+            </Button>
+          </div>
 
           {session.authenticated ? (
             <Link
@@ -154,6 +156,31 @@ export function SiteHeader({ networkLabel, isTestnet }: { networkLabel: string; 
 
       {menuOpen ? (
         <div className="border-t border-line bg-bg-elevated px-4 py-3 lg:hidden">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2" role="radiogroup" aria-label="Theme">
+              {THEMES.map((id) => (
+                <button
+                  key={id}
+                  role="radio"
+                  aria-checked={theme === id}
+                  aria-label={`${THEME_DEFINITIONS[id].name} theme`}
+                  onClick={() => {
+                    setTheme(id);
+                    play("ui");
+                  }}
+                  className={clsx(
+                    "focus-ring h-8 w-8 rounded-full border-2 transition-transform",
+                    theme === id ? "border-ink scale-105" : "border-line-strong",
+                  )}
+                  style={{ background: THEME_DEFINITIONS[id].accent }}
+                />
+              ))}
+            </div>
+            <Button variant="ghost" size="sm" onClick={toggleSound} aria-pressed={soundEnabled}>
+              <span aria-hidden>{soundEnabled ? "◉" : "◌"}</span>
+              <span className="ml-1 text-xs">{soundEnabled ? "Sound on" : "Muted"}</span>
+            </Button>
+          </div>
           <nav className="grid grid-cols-2 gap-2" aria-label="Mobile">
             {NAV.map((item) => (
               <Link

@@ -596,7 +596,7 @@ async function applySettlement(database: SqlDriver, input: {
       demo,
     });
 
-    if (reward > 0 && !demo) {
+    if (reward > 0) {
       await createTransaction(database, {
         userId: player.user_id,
         gameId: game.id,
@@ -611,7 +611,7 @@ async function applySettlement(database: SqlDriver, input: {
         metadata: { role: "winner", reason },
       });
     }
-    if (!demo && fee > 0) {
+    if (fee > 0) {
       await createTransaction(database, {
         userId: player.user_id,
         gameId: game.id,

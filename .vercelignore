@@ -1,0 +1,15 @@
+# The contract is built and deployed from CI/dev machines, not by Vercel.
+# Uploading Rust build artifacts aborts the deployment upload.
+contracts/
+target/
+node_modules/
+.next/
+out/
+.git/
+chain-duel.db*
+*.log
+.env
+.env.local
+.env*.local
+coverage/
+docs/
