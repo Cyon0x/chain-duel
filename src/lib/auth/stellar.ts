@@ -46,13 +46,32 @@ export interface VerifyChallengeInput {
 function decodeSignature(signature: string): Buffer | null {
   const trimmed = signature.trim();
   if (/^[0-9a-fA-F]{128}$/.test(trimmed)) return Buffer.from(trimmed, "hex");
-  try {
-    const buffer = Buffer.from(trimmed, "base64");
-    if (buffer.length === 64) return buffer;
-  } catch {
-    return null;
-  }
+  const buffer = Buffer.from(trimmed, "base64");
+  if (buffer.length === 64) return buffer;
+  // Some wallets prefix the raw signature with a 4-byte public-key hint.
+  if (buffer.length === 68) return buffer.subarray(buffer.length - 64);
   return null;
+}
+
+/**
+ * Wallets do not agree on how a "sign in" message is signed:
+ *
+ *  - Freighter, xBull, Lobstr and Hot Wallet follow SEP-53: the Ed25519
+ *    signature is over `SHA-256("Stellar Signed Message:\n" + message)`.
+ *  - Some older clients sign the raw UTF-8 bytes directly.
+ *
+ * Both are signatures over the same single-use, domain- and address-bound
+ * challenge, so accepting either does not weaken the check. We verify SEP-53
+ * first because that is what current wallets produce.
+ */
+function verifyChallengeSignature(keypair: Keypair, message: string, signature: Buffer): boolean {
+  const bytes = Buffer.from(message, "utf8");
+  try {
+    if (keypair.verifyMessage(bytes, signature)) return true;
+  } catch {
+    // fall through to the legacy raw-bytes scheme
+  }
+  return keypair.verify(bytes, signature);
 }
 
 export async function verifyChallenge(input: VerifyChallengeInput): Promise<{ ok: boolean; reason?: string }> {
@@ -75,8 +94,8 @@ export async function verifyChallenge(input: VerifyChallengeInput): Promise<{ ok
   if (!signature) return { ok: false, reason: "invalid_signature_encoding" };
   try {
     const keypair = Keypair.fromPublicKey(input.address);
-    const valid = keypair.verify(Buffer.from(input.message, "utf8"), signature);
-    return valid ? { ok: true } : { ok: false, reason: "signature_rejected" };
+    const valid = verifyChallengeSignature(keypair, input.message, signature);
+    return valid ? { ok: true } : { ok: false, reason: "signature_invalid" };
   } catch {
     return { ok: false, reason: "invalid_public_key" };
   }

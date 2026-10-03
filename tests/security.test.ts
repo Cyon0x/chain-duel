@@ -11,8 +11,25 @@ function encode(keypair: Keypair, message: string): string {
   return Buffer.from(keypair.sign(Buffer.from(message, "utf8"))).toString("base64");
 }
 
+/** Freighter, xBull, Lobstr and Hot Wallet sign messages per SEP-53. */
+function encodeSep53(keypair: Keypair, message: string): string {
+  return Buffer.from(keypair.signMessage(message)).toString("base64");
+}
+
 describe("sign-in with stellar", () => {
-  it("accepts a real Ed25519 signature over the issued challenge", async () => {
+  it("accepts a SEP-53 signature from a current wallet such as Freighter", async () => {
+    const keypair = Keypair.random();
+    const challenge = await createChallenge(keypair.publicKey());
+    const signature = encodeSep53(keypair, challenge.message);
+    const result = await verifyChallenge({
+      address: keypair.publicKey(),
+      message: challenge.message,
+      signature,
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("still accepts a legacy raw-bytes Ed25519 signature", async () => {
     const keypair = Keypair.random();
     const challenge = await createChallenge(keypair.publicKey());
     const signature = encode(keypair, challenge.message);
@@ -35,7 +52,21 @@ describe("sign-in with stellar", () => {
     expect(replay.reason).toBe("nonce_invalid_or_used");
   });
 
-  it("rejects a signature from a different key", async () => {
+  it("rejects a SEP-53 signature from a different key", async () => {
+    const victim = Keypair.random();
+    const attacker = Keypair.random();
+    const challenge = await createChallenge(victim.publicKey());
+    const signature = encodeSep53(attacker, challenge.message);
+    const result = await verifyChallenge({
+      address: victim.publicKey(),
+      message: challenge.message,
+      signature,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe("signature_invalid");
+  });
+
+  it("rejects a legacy signature from a different key", async () => {
     const victim = Keypair.random();
     const attacker = Keypair.random();
     const challenge = await createChallenge(victim.publicKey());
@@ -46,14 +77,41 @@ describe("sign-in with stellar", () => {
       signature,
     });
     expect(result.ok).toBe(false);
-    expect(result.reason).toBe("signature_rejected");
+    expect(result.reason).toBe("signature_invalid");
+  });
+
+  it("rejects a signature whose signer address does not match", async () => {
+    const keypair = Keypair.random();
+    const challenge = await createChallenge(keypair.publicKey());
+    const signature = encodeSep53(keypair, challenge.message);
+    const result = await verifyChallenge({
+      address: keypair.publicKey(),
+      message: challenge.message,
+      signature,
+      signerAddress: Keypair.random().publicKey(),
+    });
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe("signer_mismatch");
+  });
+
+  it("rejects a signature over a tampered message", async () => {
+    const keypair = Keypair.random();
+    const challenge = await createChallenge(keypair.publicKey());
+    const signature = encodeSep53(keypair, challenge.message);
+    const result = await verifyChallenge({
+      address: keypair.publicKey(),
+      message: `${challenge.message}\nExtra: injected`,
+      signature,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe("signature_invalid");
   });
 
   it("rejects a tampered domain", async () => {
     const keypair = Keypair.random();
     const challenge = await createChallenge(keypair.publicKey());
     const tampered = challenge.message.replace("Domain: ", "Domain: https://evil.example");
-    const signature = encode(keypair, tampered);
+    const signature = encodeSep53(keypair, tampered);
     const result = await verifyChallenge({ address: keypair.publicKey(), message: tampered, signature });
     expect(result.ok).toBe(false);
     expect(result.reason).toBe("domain_mismatch");

@@ -28,8 +28,8 @@ export async function POST(request: Request) {
     });
     if (!verification.ok) {
       throw new ChainDuelError(
-        `We could not verify that signature (${verification.reason ?? "rejected"}).`,
-        "signature_rejected",
+        `We could not verify that signature (${verification.reason ?? "signature_invalid"}). Please try connecting again.`,
+        "signature_invalid",
         401,
       );
     }

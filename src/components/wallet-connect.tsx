@@ -3,7 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "./ui";
-import { connectWallet, disconnectWallet, signAuthMessage, walletError } from "@/lib/wallet/client";
+import {
+  connectWallet,
+  disconnectWallet,
+  signAuthMessage,
+  walletError,
+  WalletSignInError,
+} from "@/lib/wallet/client";
 
 type Status = "idle" | "connecting" | "signing" | "verifying" | "error";
 
@@ -46,15 +52,20 @@ export function WalletConnect({
         throw new Error(challenge.error ?? "Could not start the sign-in challenge.");
       }
 
-      const signature = await signAuthMessage(challenge.message, address);
+      const { signature, signerAddress } = await signAuthMessage(challenge.message, address);
       setStatus("verifying");
       const verifyResponse = await fetch("/api/auth/stellar/verify", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ address, message: challenge.message, signature }),
+        body: JSON.stringify({ address, message: challenge.message, signature, signerAddress }),
       });
-      const verified = (await verifyResponse.json()) as { error?: string };
-      if (!verifyResponse.ok) throw new Error(verified.error ?? "Signature rejected.");
+      const verified = (await verifyResponse.json()) as { error?: string; code?: string };
+      if (!verifyResponse.ok) {
+        throw new WalletSignInError(
+          verified.error ?? "We could not verify that signature. Please try again.",
+          verified.code ?? "signature_invalid",
+        );
+      }
 
       setStatus("idle");
       onConnected?.();

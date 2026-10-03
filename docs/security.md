@@ -79,8 +79,11 @@ Never present in: frontend code, git, public env vars, `localStorage`, API respo
 
 ### Authentication
 
-- SIWS: one-time challenge bound to the configured domain, ed25519 signature verification, expiry
-  and single use.
+- SIWS: one-time challenge bound to the configured domain, expiry and single use. Signatures are
+  verified as SEP-53 (what Freighter, xBull, Lobstr and Hot Wallet produce:
+  `ed25519(sha256("Stellar Signed Message:\n" + message))`), with a fallback to raw-bytes ed25519
+  for older clients. Both are signatures over the same nonce-bearing challenge. The wallet's
+  reported `signerAddress` must equal the claimed address.
 - OAuth: authorization-code flow with PKCE (S256), a `state` cookie validated on callback, and
   `id_token` verification against the provider's JWKS. No token is trusted without verification.
 - Sessions: stateless JWTs in `httpOnly`, `sameSite=lax`, `secure`-in-production cookies.

@@ -73,6 +73,21 @@ export class WalletNetworkMismatch extends Error {
   }
 }
 
+/**
+ * A failure raised by our own sign-in verification (as opposed to the wallet
+ * refusing to sign). Kept distinct so `walletError` does not mislabel a server
+ * message that happens to contain the word "rejected" as a user cancellation.
+ */
+export class WalletSignInError extends Error {
+  constructor(
+    message: string,
+    readonly code: string,
+  ) {
+    super(message);
+    this.name = "WalletSignInError";
+  }
+}
+
 export async function assertCorrectNetwork(): Promise<void> {
   initWalletKit();
   const expected = publicStellarConfig().networkPassphrase;
@@ -102,14 +117,20 @@ export async function signTransactionXdr(xdr: string, address: string): Promise<
   return result.signedTxXdr;
 }
 
-export async function signAuthMessage(message: string, address: string): Promise<string> {
+export interface SignedAuthMessage {
+  signature: string;
+  signerAddress: string | null;
+}
+
+export async function signAuthMessage(message: string, address: string): Promise<SignedAuthMessage> {
   initWalletKit();
   const result = await StellarWalletsKit.signMessage(message, { address });
   if (!result.signedMessage) throw new Error("The wallet did not return a signature.");
-  return result.signedMessage;
+  return { signature: result.signedMessage, signerAddress: result.signerAddress ?? null };
 }
 
 export function walletError(error: unknown): string {
+  if (error instanceof WalletSignInError) return error.message;
   const message = error instanceof Error ? error.message : String(error);
   if (/denied|reject|cancel|declin/i.test(message)) return "You rejected the request in your wallet.";
   if (/insufficient|balance/i.test(message)) return "That wallet does not have enough XLM for this entry.";
