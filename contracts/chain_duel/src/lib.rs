@@ -2,8 +2,9 @@
 //! Chain Duel — Stellar/Soroban escrow, settlement and protocol treasury contract.
 //!
 //! The contract owns the money. The game server owns the truth about who won:
-//! only the configured admin (the Chain Duel verifier) may settle a game, and
-//! only the configured admin wallet may ever receive a treasury withdrawal.
+//! only the configured admin (the Chain Duel verifier) may settle a game, while
+//! only the designated developer wallet may withdraw treasury revenue — and a
+//! withdrawal can only ever land back at that same wallet.
 
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, panic_with_error, symbol_short, token,
@@ -95,9 +96,12 @@ pub struct Game {
 #[contracttype]
 #[derive(Clone, Debug)]
 pub struct Config {
-    /// Sole settlement authority and sole treasury withdrawal destination.
+    /// Settlement/verifier authority: may settle games and change protocol
+    /// settings. Held by the Chain Duel server signing key.
     pub admin: Address,
-    /// Designated developer/admin wallet. Withdrawals always land here.
+    /// Designated developer wallet: the ONLY address that may withdraw from
+    /// the protocol treasury, and the ONLY address a withdrawal can land at.
+    /// Never the server key in a production deployment.
     pub treasury: Address,
     /// Stellar Asset Contract used for entries and payouts (native XLM SAC on Testnet).
     pub token: Address,
@@ -636,16 +640,17 @@ impl ChainDuel {
     }
 
     /// Treasury revenue (accrued protocol fees) may only ever be withdrawn by
-    /// the designated admin wallet, and only to that same wallet.
+    /// the designated developer wallet, and only to that same wallet.
+    ///
+    /// Note this is deliberately NOT an admin operation: the server's
+    /// settlement key can pay out games but can never move treasury revenue.
     pub fn withdraw_treasury(env: Env, amount: i128) -> i128 {
-        let admin = require_admin(&env);
         if amount <= 0 {
             panic_with_error!(&env, Error::InvalidAmount);
         }
         let config = read_config(&env);
-        if admin != config.treasury {
-            panic_with_error!(&env, Error::Unauthorized);
-        }
+        // Only the designated developer wallet, proving it is itself.
+        config.treasury.require_auth();
         let fees = accrued_fees(&env);
         if amount > fees {
             panic_with_error!(&env, Error::InsufficientTreasury);
@@ -658,21 +663,18 @@ impl ChainDuel {
 
         env.events().publish(
             (symbol_short!("treasury"), symbol_short!("withdraw")),
-            (admin, amount, remaining),
+            (config.treasury.clone(), amount, remaining),
         );
         remaining
     }
 
     /// Moves unallocated bot liquidity back to the treasury wallet.
     pub fn withdraw_bot_liquidity(env: Env, amount: i128) -> i128 {
-        let admin = require_admin(&env);
         if amount <= 0 {
             panic_with_error!(&env, Error::InvalidAmount);
         }
         let config = read_config(&env);
-        if admin != config.treasury {
-            panic_with_error!(&env, Error::Unauthorized);
-        }
+        config.treasury.require_auth();
         let pool = bot_pool(&env);
         if amount > pool {
             panic_with_error!(&env, Error::InsufficientBotLiquidity);
@@ -683,7 +685,7 @@ impl ChainDuel {
         client.transfer(&env.current_contract_address(), &config.treasury, &amount);
         env.events().publish(
             (symbol_short!("treasury"), symbol_short!("unlock")),
-            (admin, amount, remaining),
+            (config.treasury.clone(), amount, remaining),
         );
         remaining
     }
@@ -719,16 +721,29 @@ impl ChainDuel {
         config
     }
 
-    /// The withdrawal destination is hard-bound to the designated developer
-    /// wallet and can only be rotated by the current admin.
+    /// Rotates the designated developer wallet. Withdrawals are hard-bound to
+    /// this address, and only it may call the withdrawal entry points. The
+    /// settlement authority is intentionally left untouched.
     pub fn set_treasury(env: Env, treasury: Address) -> Config {
         require_admin(&env);
         let mut config = read_config(&env);
         config.treasury = treasury.clone();
-        config.admin = treasury.clone();
         write_config(&env, &config);
         env.events()
             .publish((symbol_short!("admin"), symbol_short!("treasury")), treasury);
+        config
+    }
+
+    /// Rotates the settlement/verifier authority. Admin-only, and separate from
+    /// the treasury so the protocol can change its server signer without ever
+    /// touching the developer wallet that controls withdrawals.
+    pub fn set_admin(env: Env, admin: Address) -> Config {
+        require_admin(&env);
+        let mut config = read_config(&env);
+        config.admin = admin.clone();
+        write_config(&env, &config);
+        env.events()
+            .publish((symbol_short!("admin"), symbol_short!("setadmin")), admin);
         config
     }
 

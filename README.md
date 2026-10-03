@@ -51,6 +51,12 @@ escrow → settlement → payout cycle has been executed on-chain (see [Testing]
 
 > Testnet XLM has no real-world value. Do not treat this deployment as real-money.
 
+> **Contract revision note.** The deployed instance above was built from the revision in which
+> `admin` and `treasury` were a single address. Current `main` splits them (see
+> [docs/stellar.md](docs/stellar.md)): `admin` settles games, `treasury` is the sole withdrawal
+> authority and destination. The split only takes effect on the next `npm run stellar:deploy`; the
+> live deployment behaves identically because its `admin` and `treasury` are the same wallet.
+
 ---
 
 ## How the game works

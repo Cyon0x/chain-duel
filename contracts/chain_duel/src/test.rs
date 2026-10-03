@@ -295,7 +295,7 @@ fn bot_game_cancel_returns_liquidity_to_the_pool() {
 // ---------------------------------------------------------------- treasury
 
 #[test]
-fn only_the_admin_wallet_can_withdraw_treasury() {
+fn only_the_developer_wallet_can_withdraw_treasury() {
     let env = Env::default();
     env.mock_all_auths();
     env.ledger().with_mut(|l| l.sequence_number = 100);
@@ -338,6 +338,91 @@ fn only_the_admin_wallet_can_withdraw_treasury() {
     // 1000 minted - 20 bot liquidity funded - 5 entry staked in the duel + 1 XLM withdrawn fee.
     assert_eq!(asset.balance(&admin), 976 * XLM);
     assert!(client.try_withdraw_treasury(&XLM).is_err());
+}
+
+/// Roles are deliberately split: `admin` (the server's settlement key) may
+/// settle games, but it can never move treasury revenue. Only the designated
+/// developer wallet can, and the funds can only land back at that wallet.
+#[test]
+fn withdrawal_requires_the_designated_developer_wallet_not_the_settler() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().with_mut(|l| l.sequence_number = 100);
+    let settler = Address::generate(&env);
+    let developer = Address::generate(&env);
+    let player = Address::generate(&env);
+    let sac = env.register_stellar_asset_contract_v2(developer.clone());
+    let token = sac.address();
+    let asset_admin = token::StellarAssetClient::new(&env, &token);
+    asset_admin.mint(&player, &(100 * XLM));
+    asset_admin.mint(&developer, &(100 * XLM));
+
+    let contract = env.register(
+        ChainDuel,
+        (settler.clone(), developer.clone(), token.clone(), FEE_BPS, 100 * XLM, 1_000 * XLM, 10 * XLM),
+    );
+    let client = ChainDuelClient::new(&env, &contract);
+    let config = client.get_config();
+    assert_eq!(config.admin, settler);
+    assert_eq!(config.treasury, developer);
+
+    // Accrue a 1 XLM protocol fee from a settled duel.
+    client.create_game(&player, &game_id(&env, 40), &MODE_PVP, &ENTRY, &500);
+    client.join_game(&developer, &game_id(&env, 40));
+    client.start_game(&game_id(&env, 40));
+    client.settle_game(&game_id(&env, 40), &player, &90, &10, &result_hash(&env));
+    assert_eq!(client.get_accrued_fees(), XLM);
+
+    // Only the developer wallet authorises the withdrawal...
+    assert_eq!(client.withdraw_treasury(&XLM), 0);
+    let auths = env.auths();
+    assert_eq!(auths.len(), 1);
+    assert_eq!(auths[0].0, developer);
+    // 100 minted - 5 entry staked + 1 XLM of accrued fees withdrawn.
+    let asset = token::Client::new(&env, &token);
+    assert_eq!(asset.balance(&developer), 96 * XLM);
+
+    // ...and with real auth required, the settler and a stranger both fail.
+    env.mock_auths(&[]);
+    assert!(client.try_withdraw_treasury(&XLM).is_err());
+    assert!(client.try_withdraw_bot_liquidity(&XLM).is_err());
+}
+
+#[test]
+fn set_admin_rotates_the_settler_without_moving_the_treasury() {
+    let (env, contract, _token, original_admin, _p1, _p2) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    let next_settler = Address::generate(&env);
+
+    let config = client.set_admin(&next_settler);
+    assert_eq!(config.admin, next_settler);
+    assert_eq!(config.treasury, original_admin);
+    // The rotation was authorised by the original settler.
+    assert_eq!(env.auths()[0].0, original_admin);
+
+    // The retired settler no longer has any authority.
+    env.mock_auths(&[]);
+    assert!(client.try_set_fee_bps(&2_000).is_err());
+    assert!(client.try_set_admin(&original_admin).is_err());
+    env.mock_all_auths();
+    assert_eq!(client.set_fee_bps(&2_000).fee_bps, 2_000);
+}
+
+#[test]
+fn treasury_rotation_is_admin_only_and_leaves_the_settler_alone() {
+    let (env, contract, _token, admin, _p1, _p2) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    let developer = Address::generate(&env);
+
+    env.mock_auths(&[]);
+    assert!(client.try_set_treasury(&developer).is_err());
+    assert!(client.try_set_admin(&developer).is_err());
+
+    env.mock_all_auths();
+    let config = client.set_treasury(&developer);
+    assert_eq!(config.treasury, developer);
+    assert_eq!(config.admin, admin);
+    assert_eq!(env.auths()[0].0, admin);
 }
 
 #[test]

@@ -67,7 +67,8 @@ Server-side gameplay configuration (safe to change without redeploying the contr
 Security-critical values are duplicated on-chain and enforced there: `fee_bps`, `max_entry`,
 `max_payout`, `min_treasury_balance`, `paused`, `bot_enabled`, `treasury`. Change them through the
 admin contract methods (`set_fee_bps`, `set_limits`, `set_paused`, `set_bot_enabled`,
-`set_treasury`), which require the admin's signature.
+`set_treasury`, `set_admin`), which require the admin's signature. Treasury withdrawals are
+deliberately *not* an admin operation: they require the designated developer wallet's signature.
 
 ## Emergency pause
 

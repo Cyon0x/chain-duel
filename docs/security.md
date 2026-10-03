@@ -12,7 +12,7 @@ and tests that enforce them.
 | --- | --- |
 | Browser → API | Every route re-validates input with `zod`/explicit checks and re-checks the session and ownership. No route trusts an id, amount, seat, score or winner supplied by the client. |
 | API → contract | The contract independently enforces amounts, state transitions, winner validity, authorization and payout destination. A bug in the API cannot move funds to an unapproved address. |
-| Contract → treasury | `withdraw_treasury` / `withdraw_bot_liquidity` are `require_admin` and can only send to the configured treasury address. |
+| Contract → treasury | `withdraw_treasury` / `withdraw_bot_liquidity` require the `treasury` (developer wallet) signature and can only send to that same address. The settlement `admin` key can never withdraw. |
 | Server → secrets | The settlement key and managed-wallet keys exist only in server memory. |
 
 ## Asset-specific controls

@@ -71,9 +71,15 @@ Errors: `1 AlreadyInitialized`, `2 NotInitialized`, `3 Unauthorized`, `4 Paused`
 | `cancel_game(caller, id)` | creator/admin | Refunds a duel nobody joined |
 | `claim_refund(id)` | anyone | Refunds after expiry |
 | `fund_bot_pool(from, amount)` | from | Adds treasury liquidity |
-| `withdraw_treasury(amount)` | admin | Sends accrued fees to the treasury wallet only |
-| `withdraw_bot_liquidity(amount)` | admin | Removes surplus bot liquidity above the minimum |
-| `set_fee_bps`, `set_paused`, `set_bot_enabled`, `set_treasury`, `set_limits` | admin | Configuration |
+| `withdraw_treasury(amount)` | treasury | Sends accrued fees to the treasury wallet only |
+| `withdraw_bot_liquidity(amount)` | treasury | Removes surplus bot liquidity above the minimum |
+| `set_fee_bps`, `set_paused`, `set_bot_enabled`, `set_treasury`, `set_admin`, `set_limits` | admin | Configuration |
+
+`admin` is the settlement/verifier authority (the server signing key): it settles games and changes
+protocol settings. `treasury` is the designated developer wallet: it is the sole withdrawal
+authority *and* the sole withdrawal destination, so the server key is structurally unable to move
+treasury revenue. `set_treasury` rotates the developer wallet; `set_admin` rotates the server signer
+independently.
 | `get_config`, `get_stats`, `get_game`, `get_bot_liquidity`, `get_accrued_fees`, `get_locked_escrow`, `get_contract_balance`, `available_bot_liquidity`, `is_admin` | — | Reads |
 
 ### Invariants enforced on-chain
@@ -84,7 +90,8 @@ Errors: `1 AlreadyInitialized`, `2 NotInitialized`, `3 Unauthorized`, `4 Paused`
 - Settlement requires the winner to be one of the two players (or the treasury for a bot game),
   rejects already-settled/cancelled/expired games, and enforces `max_payout`.
 - `settle_game` is atomic: payout and fee are transferred/accrued together.
-- `withdraw_treasury` sends only to `config.treasury`, only when above `min_treasury_balance`.
+- `withdraw_treasury` requires `config.treasury`'s own signature and sends only to
+  `config.treasury`, only when above `min_treasury_balance`. The `admin` key cannot withdraw.
 - `InsufficientBotLiquidity` blocks a bot game the pool cannot back; the pool can never go negative.
 
 ## Configuration history
