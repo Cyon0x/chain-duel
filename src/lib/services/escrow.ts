@@ -310,8 +310,18 @@ export interface TreasurySnapshot {
   maxEntryStroops: number;
   maxPayoutStroops: number;
   minTreasuryBalanceStroops: number;
-  stats: Awaited<ReturnType<typeof getOnChainStats>>;
+  stats: TreasuryStats;
 }
+
+/** On-chain stats with stroop totals narrowed to JSON-safe numbers. */
+export type TreasuryStats =
+  | (Omit<NonNullable<Awaited<ReturnType<typeof getOnChainStats>>>, "volume" | "feesCollected" | "payoutTotal" | "botPayouts"> & {
+      volume: number;
+      feesCollected: number;
+      payoutTotal: number;
+      botPayouts: number;
+    })
+  | null;
 
 export async function treasurySnapshot(): Promise<TreasurySnapshot> {
   if (!contractConfigured()) {
@@ -332,6 +342,7 @@ export async function treasurySnapshot(): Promise<TreasurySnapshot> {
     };
   }
   const [config, aggregate] = await Promise.all([getOnChainConfig(), readAggregates()]);
+  const stats = await getOnChainStats();
   return {
     available: true,
     botLiquidityStroops: aggregate.botLiquidity,
@@ -345,7 +356,17 @@ export async function treasurySnapshot(): Promise<TreasurySnapshot> {
     maxEntryStroops: Number(config?.maxEntry ?? 0n),
     maxPayoutStroops: Number(config?.maxPayout ?? 0n),
     minTreasuryBalanceStroops: Number(config?.minTreasuryBalance ?? 0n),
-    stats: await getOnChainStats(),
+    // Stroop totals fit safely in a double, and the dashboard payload is JSON,
+    // which cannot carry bigint at all.
+    stats: stats
+      ? {
+          ...stats,
+          volume: Number(stats.volume),
+          feesCollected: Number(stats.feesCollected),
+          payoutTotal: Number(stats.payoutTotal),
+          botPayouts: Number(stats.botPayouts),
+        }
+      : null,
   };
 }
 
