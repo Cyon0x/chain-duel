@@ -105,3 +105,60 @@ describe("oauth", () => {
     expect(() => authorizeUrl({ provider: "x", state: "s", codeChallenge: "c" })).toThrow(/not configured/i);
   });
 });
+
+describe("oauth token exchange", () => {
+  it("sends the client secret in the body for Google and never logs it", async () => {
+    const calls: { url: string; body: string; headers: Record<string, string> }[] = [];
+    vi.stubGlobal("fetch", async (url: string, init: RequestInit = {}) => {
+      calls.push({ url: String(url), body: String(init.body ?? ""), headers: (init.headers ?? {}) as Record<string, string> });
+      if (String(url).includes("/token")) {
+        return new Response(JSON.stringify({ access_token: "at-123" }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ sub: "google-1", email: "player@example.com", name: "Player" }), { status: 200 });
+    });
+    const { exchangeCode } = await oauth();
+    const profile = await exchangeCode({ provider: "google", code: "the-code", codeVerifier: "the-verifier" });
+
+    const tokenCall = calls.find((c) => c.url.includes("oauth2.googleapis.com/token"));
+    expect(tokenCall).toBeDefined();
+    const body = new URLSearchParams(tokenCall!.body);
+    expect(body.get("client_secret")).toBe("test-google-secret");
+    expect(body.get("client_id")).toBe("test-google-client");
+    expect(body.get("code")).toBe("the-code");
+    expect(body.get("code_verifier")).toBe("the-verifier");
+    expect(body.get("redirect_uri")).toBe("https://chain-duel.vercel.app/api/auth/oauth/google/callback");
+    expect(body.get("grant_type")).toBe("authorization_code");
+    expect(profile.providerAccountId).toBe("google-1");
+    vi.unstubAllGlobals();
+  });
+
+  it("authenticates X with HTTP Basic and keeps the secret out of the body", async () => {
+    const calls: { url: string; body: string; headers: Record<string, string> }[] = [];
+    vi.stubGlobal("fetch", async (url: string, init: RequestInit = {}) => {
+      calls.push({ url: String(url), body: String(init.body ?? ""), headers: (init.headers ?? {}) as Record<string, string> });
+      if (String(url).includes("/oauth2/token")) {
+        return new Response(JSON.stringify({ access_token: "at-123" }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ data: { id: "x-1", username: "duelist", name: "Duelist" } }), { status: 200 });
+    });
+    const { exchangeCode } = await oauth();
+    const profile = await exchangeCode({ provider: "x", code: "the-code", codeVerifier: "the-verifier" });
+
+    const tokenCall = calls.find((c) => c.url.includes("api.twitter.com/2/oauth2/token"));
+    expect(tokenCall).toBeDefined();
+    expect(new URLSearchParams(tokenCall!.body).get("client_secret")).toBeNull();
+    const expected = `Basic ${Buffer.from("test-x-client:test-x-secret").toString("base64")}`;
+    expect(tokenCall!.headers.authorization).toBe(expected);
+    expect(profile.providerAccountId).toBe("x-1");
+    vi.unstubAllGlobals();
+  });
+
+  it("surfaces a provider-neutral error when the exchange is rejected", async () => {
+    vi.stubGlobal("fetch", async () => new Response(JSON.stringify({ error: "invalid_grant" }), { status: 400 }));
+    const { exchangeCode } = await oauth();
+    await expect(exchangeCode({ provider: "google", code: "c", codeVerifier: "v" })).rejects.toThrow(
+      /Sign-in with Google failed/i,
+    );
+    vi.unstubAllGlobals();
+  });
+});

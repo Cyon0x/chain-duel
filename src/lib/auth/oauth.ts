@@ -97,7 +97,12 @@ export async function exchangeCode(input: {
     accept: "application/json",
   };
   if (input.provider === "x") {
+    // X confidential clients authenticate the token request with HTTP Basic.
     headers.authorization = `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`;
+  } else {
+    // Google's token endpoint requires the client secret in the body for a
+    // web-server client; omitting it makes every code exchange fail.
+    body.set("client_secret", clientSecret);
   }
 
   const tokenResponse = await fetch(tokenEndpoint(input.provider), {
@@ -106,6 +111,12 @@ export async function exchangeCode(input: {
     body,
   });
   if (!tokenResponse.ok) {
+    // Log the provider's reason server-side; never surface it to the player.
+    const detail = await tokenResponse.text().catch(() => "");
+    console.error(
+      `[chain-duel] ${input.provider} token exchange failed (${tokenResponse.status}):`,
+      detail.slice(0, 500),
+    );
     throw new ChainDuelError(
       `Sign-in with ${input.provider === "google" ? "Google" : "X"} failed.`,
       "oauth_failed",
