@@ -29,6 +29,10 @@ likewise synthesised from oscillator recipes in the same file.
   is live so hit feedback cuts through.
 - **Cheap when idle.** The sequencer is paused when the tab is hidden and resumes from its
   current position.
+- **Muting keeps the click.** The ball-hit feedback (`hit`, `gold`, `wrong`) is core
+  gameplay response, not ambience, so it stays audible while muted — but only during a live
+  duel. Music, UI, results and the countdown all obey the master switch. Muting is gain-based
+  and never tears the graph down, so unmuting is instant and the loop resumes in place.
 
 ## Autoplay policy
 
@@ -51,7 +55,8 @@ Browsers block audio until the user interacts. Chain Duel handles this without c
 | `cd.music` | `on` / `off` | Just the soundtrack. Defaults to **on**; only an explicit opt-out is stored. |
 
 The header's speaker control drives the master switch; the settings page exposes the
-soundtrack separately.
+soundtrack separately. While muted during a duel, only the ball-click cues listed above
+still sound (see `isCueAudible` in `audio.ts`).
 
 ## Verification
 
@@ -67,5 +72,7 @@ throwaway harness that measures output on the master bus with an `AnalyserNode`:
   click/tap/keypress starts playback — with no console output from the blocked attempt;
 - the toggle mutes the graph without tearing it down, unpausing continues from the paused
   position, and the choice survives navigation and reload;
+- while muted in a duel, clicking a target is still audible while every other cue stays
+  silent (and the same clicks are silent outside a duel);
 - a live duel docks the bed to 0.65 of its level and restores it on exit;
 - the control is a 40px tap target on mobile and renders no text.

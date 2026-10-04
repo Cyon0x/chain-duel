@@ -92,6 +92,22 @@ const DELAY_SECONDS = MUSIC_STEP_SECONDS * 3;
 /** Wet mix for the lead echo. */
 const DELAY_SEND_GAIN = 0.3;
 
+/**
+ * The ball-hit click is core gameplay feedback rather than ambience, so it is
+ * the one thing that keeps sounding while the player has muted — but only
+ * during a live duel. Everything else (music, UI, results, countdown) obeys
+ * the master switch.
+ */
+export const DUEL_CLICK_CUES: ReadonlySet<SoundCue> = new Set<SoundCue>(["hit", "gold", "wrong"]);
+
+export function isCueAudible(
+  cue: SoundCue,
+  state: { enabled: boolean; matchActive: boolean },
+): boolean {
+  if (state.enabled) return true;
+  return state.matchActive && DUEL_CLICK_CUES.has(cue);
+}
+
 export interface AudioSnapshot {
   contexts: number;
   /** Voices currently scheduled/ringing — proves the sequencer is producing notes. */
@@ -305,7 +321,8 @@ class SoundEngine {
   }
 
   play(cue: SoundCue): void {
-    if (!this.enabled) return;
+    // Muting still leaves the in-duel ball click audible (see DUEL_CLICK_CUES).
+    if (!isCueAudible(cue, { enabled: this.enabled, matchActive: this.matchActive })) return;
     // Never build an AudioContext before the first interaction: autoplay policy
     // blocks it and it only creates console noise.
     if (!this.context && !this.gestureSeen) return;

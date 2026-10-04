@@ -119,10 +119,11 @@ to download and nothing to preload, so audio never competes with the game for lo
   autoplay policy would block).
 - **One instance.** A module singleton owns the `AudioContext` and the music bed, so
   navigating or re-rendering can never stack soundtracks.
-- **One control, one preference.** The header's speaker icon is the master sound switch
-  (soundtrack + all cues) and is mirrored in Settings. The choice is stored under
-  `cd.sound`; the soundtrack alone can be switched off with `cd.music`. New players default
-  to sound on.
+- **One control, one preference.** The header's speaker icon is the master sound switch and
+  is mirrored in Settings. Muting stops the soundtrack and every non-gameplay cue, but the
+  ball-hit click stays audible during a live duel — it is core feedback, not ambience. The
+  choice is stored under `cd.sound`; the soundtrack alone can be switched off with
+  `cd.music`. New players default to sound on.
 
 ---
 
