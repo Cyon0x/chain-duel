@@ -19,6 +19,13 @@ import { rawEnv } from "../config/env";
 
 export const DEFAULT_TIMEOUT_SECONDS = 60;
 
+/** How long a submitted contract call stays valid on the ledger. */
+const SUBMIT_WINDOW_SECONDS = 180;
+/** How long we wait for a submission to be included before giving up. */
+const CONFIRM_TIMEOUT_MS = 90_000;
+/** Delay before re-broadcasting a submission that has not been seen at all. */
+const RESEND_AFTER_MS = 12_000;
+
 let cachedServer: rpc.Server | null = null;
 
 export function rpcServer(): rpc.Server {
@@ -52,6 +59,43 @@ export class StellarIntegrationError extends Error {
     super(message);
     this.name = "StellarIntegrationError";
   }
+}
+
+/**
+ * Re-stamps an assembled Soroban transaction with a fresh validity window.
+ *
+ * `assembleTransaction` clones the *pre*-simulation timebounds, which can be
+ * nearly expired by the time simulation and auth signing finish — the network
+ * then drops the submission without ever including it. Auth entries carry their
+ * own ledger bound, so re-stamping the envelope keeps them valid.
+ *
+ * `cloneFrom` does not carry the Soroban extension across, so it is passed
+ * explicitly (otherwise the result is rejected as tx_malformed). The fee is
+ * left to `cloneFrom`, which strips the resource fee and re-derives the classic
+ * per-operation fee.
+ */
+export function refreshTimebounds(
+  transaction: Transaction,
+  windowSeconds = SUBMIT_WINDOW_SECONDS,
+): Transaction {
+  return TransactionBuilder.cloneFrom(transaction, {
+    networkPassphrase: transaction.networkPassphrase,
+    sorobanData: sorobanDataOf(transaction),
+    timebounds: { minTime: 0, maxTime: Math.floor(Date.now() / 1000) + windowSeconds },
+  }).build();
+}
+
+/** The Soroban extension (footprint + resource fee) of an assembled transaction. */
+function sorobanDataOf(transaction: Transaction): xdr.SorobanTransactionData {
+  const envelope = transaction.toEnvelope();
+  if (envelope.type === "envelopeTypeTx") {
+    const ext = envelope.value.tx.ext;
+    if (ext.type === "sorobanData") return ext.value;
+  }
+  throw new StellarIntegrationError(
+    "Assembled transaction is missing its Soroban transaction data.",
+    "simulation_failed",
+  );
 }
 
 export function settlementKeypair(): Keypair {
@@ -141,7 +185,7 @@ export async function prepareInvocation(input: {
     networkPassphrase: net.networkPassphrase,
   })
     .addOperation(contractCall(input.method, input.args))
-    .setTimeout(DEFAULT_TIMEOUT_SECONDS)
+    .setTimeout(SUBMIT_WINDOW_SECONDS)
     .build();
 
   const simulation = await server.simulateTransaction(transaction);
@@ -168,10 +212,14 @@ export interface SubmittedTransaction {
   status: "SUCCESS";
 }
 
-async function pollForResult(hash: string, timeoutMs = 60_000): Promise<SubmittedTransaction> {
+async function pollForResult(
+  hash: string,
+  options: { timeoutMs?: number; resend?: () => Promise<void> } = {},
+): Promise<SubmittedTransaction> {
   const server = rpcServer();
-  const deadline = Date.now() + timeoutMs;
+  const deadline = Date.now() + (options.timeoutMs ?? CONFIRM_TIMEOUT_MS);
   let last: rpc.Api.GetTransactionResponse | null = null;
+  let lastResend = Date.now();
   while (Date.now() < deadline) {
     const result = await server.getTransaction(hash);
     last = result;
@@ -190,6 +238,13 @@ async function pollForResult(hash: string, timeoutMs = 60_000): Promise<Submitte
         result,
       );
     }
+    // NOT_FOUND means the transaction never reached a ledger. Testnet RPC
+    // occasionally drops a queued submission, so re-broadcast the identical
+    // signed envelope: the hash is unchanged, so this can never execute twice.
+    if (options.resend && Date.now() - lastResend > RESEND_AFTER_MS) {
+      lastResend = Date.now();
+      await options.resend().catch(() => undefined);
+    }
     await new Promise((resolve) => setTimeout(resolve, 1_200));
   }
   throw new StellarIntegrationError(
@@ -205,6 +260,12 @@ export async function submitSignedXdr(xdrBase64: string): Promise<SubmittedTrans
   const transaction = TransactionBuilder.fromXDR(xdrBase64, net.networkPassphrase) as
     | Transaction
     | FeeBumpTransaction;
+  const resend = async () => {
+    const retry = TransactionBuilder.fromXDR(xdrBase64, net.networkPassphrase) as
+      | Transaction
+      | FeeBumpTransaction;
+    await server.sendTransaction(retry);
+  };
   const sent = await server.sendTransaction(transaction);
   if (sent.status === "ERROR") {
     throw new StellarIntegrationError(
@@ -213,10 +274,7 @@ export async function submitSignedXdr(xdrBase64: string): Promise<SubmittedTrans
       sent,
     );
   }
-  if (sent.status === "DUPLICATE") {
-    return pollForResult(sent.hash);
-  }
-  return pollForResult(sent.hash);
+  return pollForResult(sent.hash, { resend });
 }
 
 /**
@@ -238,7 +296,7 @@ export async function invokeWithKeypair(input: {
     networkPassphrase: net.networkPassphrase,
   })
     .addOperation(contractCall(input.method, input.args))
-    .setTimeout(DEFAULT_TIMEOUT_SECONDS)
+    .setTimeout(SUBMIT_WINDOW_SECONDS)
     .build();
 
   const simulation = await server.simulateTransaction(transaction);
@@ -265,7 +323,7 @@ export async function invokeWithKeypair(input: {
     ),
   );
 
-  const built = rpc
+  const assembled = rpc
     .assembleTransaction(transaction, simulation)
     .clearOperations()
     .addOperation(
@@ -276,6 +334,8 @@ export async function invokeWithKeypair(input: {
       }),
     )
     .build();
+
+  const built = refreshTimebounds(assembled);
   built.sign(input.keypair);
   return submitSignedXdr(built.toXDR());
 }
