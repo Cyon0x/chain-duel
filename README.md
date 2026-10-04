@@ -401,6 +401,8 @@ CHAIN_DUEL_LIVE=1 npx vitest run tests/live-treasury.test.ts
 # smoke the deployed app (demo duel, no funds)
 CHAIN_DUEL_LIVE=1 CHAIN_DUEL_DEPLOYED_URL=https://chain-duel.vercel.app \
   npx vitest run tests/live-deployed.test.ts
+CHAIN_DUEL_LIVE=1 CHAIN_DUEL_DEPLOYED_URL=https://chain-duel.vercel.app \
+  npx vitest run tests/live-rematch.test.ts
 ```
 
 What is covered:
@@ -427,6 +429,8 @@ What is covered:
 - **Treasury (opt-in)** — anonymous, player, destination-injected and correctly-signed
   non-admin withdrawal attempts all fail; only the designated developer wallet may withdraw, and
   the withdrawal is recorded in the admin audit log.
+- **Play again (opt-in, deployed)** — after a matchmaking duel settles its ticket is released, so
+  the next search starts a new duel instead of looping back to the finished result screen.
 
 ---
 
