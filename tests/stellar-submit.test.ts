@@ -63,7 +63,7 @@ describe("refreshTimebounds", () => {
     const assembled = assembledLike(60);
     const refreshed = refreshTimebounds(assembled, 180);
     // Classic fee (one operation) plus the resource fee, exactly once.
-    expect(Number(refreshed.fee)).toBe(BASE_FEE * 1 + 12345);
+    expect(Number(refreshed.fee)).toBe(Number(BASE_FEE) * 1 + 12345);
   });
 
   it("keeps the operation and source account intact", () => {

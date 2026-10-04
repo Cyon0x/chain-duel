@@ -627,6 +627,13 @@ async function applySettlement(database: SqlDriver, input: {
     }
 
     if (isBotMatch && !demo) {
+      // Net protocol result for the match, excluding the protocol fee (which is
+      // recorded as its own ledger line): a player win costs the treasury its
+      // bot stake (-entry); a bot win returns the stake plus the player's entry
+      // minus the fee. `treasuryDelta + fee` therefore equals the exact change
+      // in protocol-owned value on chain (bot liquidity + accrued fees +
+      // treasury wallet balance).
+      const treasuryDelta = won ? -game.entry_stroops : game.entry_stroops - fee;
       await recordBotMatch(database, {
         game_id: game.id,
         player_id: player.user_id,
@@ -638,15 +645,15 @@ async function applySettlement(database: SqlDriver, input: {
         winner: won ? "player" : "bot",
         fee_stroops: fee,
         player_reward_stroops: reward,
-        treasury_delta_stroops: won ? -game.entry_stroops : game.entry_stroops,
+        treasury_delta_stroops: treasuryDelta,
         settlement_tx_hash: settlementTxHash,
         created_at: nowIso(),
       });
       await recordBotTreasuryMovement(
         {
           kind: "bot_settlement",
-          direction: won ? "out" : "in",
-          amountStroops: won ? payout : game.entry_stroops,
+          direction: treasuryDelta >= 0 ? "in" : "out",
+          amountStroops: Math.abs(treasuryDelta),
           txHash: settlementTxHash,
           gameId: game.id,
           metadata: { winner: won ? "player" : "bot" },

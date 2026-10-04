@@ -12,6 +12,7 @@ import {
   findInviteByGame,
   listGamePlayers,
   listOpenPublicGames,
+  removeGamePlayer,
   staleWaitingGames,
   transitionGame,
   updateGame,
@@ -33,7 +34,8 @@ import { DEFAULT_BOT } from "../config/game";
 import { botAvailability } from "./treasury";
 import { escrowUnavailableError } from "./errors";
 import { onChainEscrowAvailable, messageOf } from "./escrow";
-import { serverClaimRefund } from "../stellar/contract";
+import { getOnChainGame, serverCancelGame, serverClaimRefund } from "../stellar/contract";
+import { latestLedger } from "../stellar/server";
 import { signerForUser } from "../wallet/signer";
 
 export interface DuelCreation {
@@ -307,12 +309,52 @@ export async function joinDuel(input: {
     throw Object.assign(new Error("That duel is already full."), { code: "full" });
   }
 
+  if (game.mode !== "bot" && game.contract_game_id && onChainEscrowAvailable()) {
+    // The creator must have locked their side before anyone can join; otherwise
+    // the contract has no game to match against. Surface that as a plain
+    // message instead of a raw simulation failure.
+    try {
+      const onChain = await getOnChainGame(game.contract_game_id);
+      if (!onChain) {
+        throw Object.assign(
+          new Error("The duel creator has not locked their entry yet. Try again in a moment."),
+          { code: "creator_not_ready" },
+        );
+      }
+    } catch (error) {
+      if ((error as { code?: string }).code === "creator_not_ready") throw error;
+      if (messageOf(error).includes("GameNotFound") || messageOf(error).includes("Error(Contract, #5)")) {
+        throw Object.assign(
+          new Error("The duel creator has not locked their entry yet. Try again in a moment."),
+          { code: "creator_not_ready" },
+        );
+      }
+      // A transient RPC hiccup should not block the join; the escrow call below
+      // performs the authoritative check.
+    }
+  }
+
   await addGamePlayer(database, {
     gameId: game.id,
     userId: input.userId,
     seat: 2,
     address: (await primaryWallet(database, input.userId))?.address ?? null,
   });
+
+  let escrow: EscrowHandoffResult;
+  try {
+    escrow = await commitEntry({ game: { ...game, status: "joined" }, userId: input.userId, role: "joiner" });
+  } catch (error) {
+    // Roll the tentative seat back so the duel stays open and a retry is clean.
+    await removeGamePlayer(database, game.id, input.userId);
+    if (messageOf(error).includes("GameNotFound") || messageOf(error).includes("Error(Contract, #5)")) {
+      throw Object.assign(
+        new Error("The duel creator has not locked their entry yet. Try again in a moment."),
+        { code: "creator_not_ready" },
+      );
+    }
+    throw error;
+  }
 
   if (game.mode !== "bot") {
     await updateGame(database, game.id, { status: "joined", opponent_id: input.userId });
@@ -323,7 +365,6 @@ export async function joinDuel(input: {
     await updateInviteStatus(database, invite.id, "accepted", input.userId);
   }
 
-  const escrow = await commitEntry({ game: { ...game, status: "joined" }, userId: input.userId, role: "joiner" });
   return { game: escrow.game, escrow };
 }
 
@@ -378,7 +419,13 @@ export async function cancelDuel(input: {
 
   if (!game.demo && game.contract_game_id && onChainEscrowAvailable() && game.escrow_state === "onchain") {
     try {
-      const result = await serverClaimRefund(game.contract_game_id);
+      // A duel nobody joined is refunded immediately via cancel_game. A duel
+      // where both sides already staked can only be unwound once the join
+      // window has elapsed, using claim_refund.
+      const result =
+        game.status === "waiting"
+          ? await serverCancelGame(game.contract_game_id)
+          : await serverClaimRefund(game.contract_game_id);
       await createTransaction(database, {
         userId: game.creator_id,
         gameId: game.id,
@@ -391,10 +438,20 @@ export async function cancelDuel(input: {
         metadata: { reason: "duel_cancelled" },
       });
     } catch (error) {
+      // Do not leave the duel marked cancelled while the funds are still
+      // escrowed — roll the status back so a retry/refund can still happen.
+      await transitionGame(database, game.id, ["cancelled"], game.status);
       await updateGame(database, game.id, { settlement_status: "failed" });
-      throw Object.assign(new Error(`Refund could not be submitted: ${messageOf(error)}`), {
-        code: "refund_failed",
-      });
+      const detail = messageOf(error);
+      const notExpired = detail.includes("GameNotExpired") || detail.includes("Error(Contract, #11)");
+      throw Object.assign(
+        new Error(
+          notExpired
+            ? "Both players have already staked — this duel can be cancelled once the join window expires."
+            : `Refund could not be submitted: ${detail}`,
+        ),
+        { code: "refund_failed" },
+      );
     }
   }
   const fresh = await findGameById(database, game.id);
@@ -406,7 +463,14 @@ export async function expireStaleDuels(limit = 25): Promise<{ refunded: number }
   const database = await db();
   const stale = await staleWaitingGames(database, nowIso());
   let refunded = 0;
+  const ledger = await latestLedger().catch(() => null);
   for (const game of stale.slice(0, limit)) {
+    // The on-chain expiry includes headroom on top of the database window, so
+    // skip games the contract will not refund yet; the next run picks them up.
+    if (!game.demo && game.contract_game_id && onChainEscrowAvailable() && game.escrow_state === "onchain" && ledger !== null) {
+      const onChain = await getOnChainGame(game.contract_game_id).catch(() => null);
+      if (onChain && ledger < onChain.expiryLedger) continue;
+    }
     const claimed = await transitionGame(database, game.id, ["waiting", "joined"], "expired");
     if (!claimed) continue;
     const invite = await findInviteByGame(database, game.id);

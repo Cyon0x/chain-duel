@@ -220,6 +220,10 @@ export async function listGamePlayers(db: SqlDriver, gameId: string): Promise<Ga
   );
 }
 
+export async function removeGamePlayer(db: SqlDriver, gameId: string, userId: string): Promise<void> {
+  await db.execute("DELETE FROM game_players WHERE game_id = ? AND user_id = ?", [gameId, userId]);
+}
+
 export async function findGamePlayer(
   db: SqlDriver,
   gameId: string,
@@ -333,6 +337,15 @@ export async function updateInviteStatus(
   const affected = await db.run(
     "UPDATE invites SET status = ?, responded_at = ?, accepted_by = COALESCE(?, accepted_by) WHERE id = ? AND status IN ('created','pending')",
     [status, nowIso(), acceptedBy ?? null, id],
+  );
+  return affected > 0;
+}
+
+/** Releases a tentative accept when the escrow that followed it failed. */
+export async function revertInviteClaim(db: SqlDriver, id: string, acceptedBy: string): Promise<boolean> {
+  const affected = await db.run(
+    "UPDATE invites SET status = 'pending', responded_at = NULL, accepted_by = NULL WHERE id = ? AND status = 'accepted' AND accepted_by = ?",
+    [id, acceptedBy],
   );
   return affected > 0;
 }
