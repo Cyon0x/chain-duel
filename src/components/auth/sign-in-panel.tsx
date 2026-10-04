@@ -167,9 +167,11 @@ export function SignInPanel({
         />
         {!providers.google || !providers.x ? (
           <p className="text-center text-[11px] leading-relaxed text-dim">
-            {providers.google || providers.x
-              ? "The other provider is not enabled on this deployment."
-              : "Social sign-in is not enabled on this deployment — wallets and demo mode work now."}
+            {providers.google
+              ? "X sign-in is not enabled on this deployment yet."
+              : providers.x
+                ? "Google sign-in is not enabled on this deployment yet."
+                : "Social sign-in is not enabled on this deployment — wallets and demo mode work now."}
           </p>
         ) : null}
       </div>
