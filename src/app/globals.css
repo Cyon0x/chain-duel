@@ -361,3 +361,84 @@ body {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* --------------------------------------------------------- sound toggle */
+
+@keyframes cd-soundwave {
+  0%, 100% { opacity: 0.45; transform: scale(0.94); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+@keyframes cd-soundglow {
+  0%, 100% { opacity: 0.3; transform: scale(0.92); }
+  50% { opacity: 0.6; transform: scale(1.06); }
+}
+
+.sound-toggle {
+  position: relative;
+  isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sound-toggle__glow {
+  position: absolute;
+  inset: 7px;
+  z-index: -1;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.sound-toggle--on .sound-toggle__glow {
+  opacity: 1;
+  transform: scale(1);
+  animation: cd-soundglow 2.6s ease-in-out infinite;
+}
+
+.sound-toggle__icon {
+  width: 22px;
+  height: 22px;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sound-toggle__body {
+  fill: currentColor;
+  fill-opacity: 0.18;
+  transition: fill-opacity 200ms ease;
+}
+
+.sound-toggle--on .sound-toggle__body {
+  fill-opacity: 0.32;
+}
+
+.sound-toggle__wave {
+  transform-box: fill-box;
+  transform-origin: left center;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.sound-toggle--on .sound-toggle__wave {
+  opacity: 1;
+  animation: cd-soundwave 1.5s ease-in-out infinite;
+}
+
+.sound-toggle--on .sound-toggle__wave--2 {
+  animation-delay: 0.22s;
+}
+
+.sound-toggle__mute {
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.sound-toggle--off .sound-toggle__mute {
+  opacity: 1;
+}

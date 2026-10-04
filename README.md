@@ -19,6 +19,7 @@ It is a game with a wallet, not a dashboard with a game attached.
 
 - [Live Testnet deployment](#live-testnet-deployment)
 - [How the game works](#how-the-game-works)
+- [Audio & soundtrack](#audio--soundtrack)
 - [Architecture](#architecture)
 - [Stellar integration](#stellar-integration)
 - [Soroban escrow contract](#soroban-escrow-contract)
@@ -97,6 +98,31 @@ client used and rejects impossible input:
 - a `clientScore` that disagrees with the replay.
 
 Only a verified result can be settled.
+
+---
+
+## Audio & soundtrack
+
+All audio is synthesised in the browser with the Web Audio API — there are no media files
+to download and nothing to preload, so audio never competes with the game for load time.
+
+- **Original soundtrack.** An 8-bar, 124 BPM electro/arcade loop authored for Chain Duel in
+  [`src/lib/sound/music.ts`](src/lib/sound/music.ts). It is generated from the project's own
+  source rather than sampled, so it is legally safe for commercial use with no third-party
+  attribution. See [docs/audio.md](docs/audio.md).
+- **Seamless and cheap.** A look-ahead scheduler queues notes ~200 ms ahead of the audio
+  clock, so the loop point is sample-accurate. Notes are short, self-stopping nodes, so CPU
+  stays flat and nothing accumulates. The sequencer pauses when the tab is hidden.
+- **Autoplay-aware.** On load the engine starts immediately when the browser already permits
+  it; otherwise it starts on the first tap/click/key press. Entering a duel asks for the
+  soundtrack explicitly, and the `AudioContext` is never created on a cold load (which the
+  autoplay policy would block).
+- **One instance.** A module singleton owns the `AudioContext` and the music bed, so
+  navigating or re-rendering can never stack soundtracks.
+- **One control, one preference.** The header's speaker icon is the master sound switch
+  (soundtrack + all cues) and is mirrored in Settings. The choice is stored under
+  `cd.sound`; the soundtrack alone can be switched off with `cd.music`. New players default
+  to sound on.
 
 ---
 

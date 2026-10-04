@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { THEMES, isThemeId, type ThemeId } from "@/lib/config/themes";
 import { sound, type SoundCue } from "@/lib/sound/audio";
 
@@ -33,8 +33,12 @@ export function PreferencesProvider({
 }) {
   const [theme, setThemeState] = useState<ThemeId>(initialTheme);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [musicEnabled, setMusicEnabled] = useState(false);
+  // Music is on by default; the stored value only records an explicit opt-out.
+  const [musicEnabled, setMusicEnabled] = useState(true);
   const [notifyEnabled, setNotifyEnabled] = useState(false);
+  const soundEnabledRef = useRef(soundEnabled);
+  const musicEnabledRef = useRef(musicEnabled);
+  const notifyEnabledRef = useRef(notifyEnabled);
 
   useEffect(() => {
     // Preferences are read after mount on purpose: reading localStorage during
@@ -44,7 +48,7 @@ export function PreferencesProvider({
     if (isThemeId(storedTheme)) setThemeState(storedTheme);
     const storedSound = window.localStorage.getItem("cd.sound");
     if (storedSound === "off") setSoundEnabled(false);
-    setMusicEnabled(window.localStorage.getItem("cd.music") === "on");
+    setMusicEnabled(window.localStorage.getItem("cd.music") !== "off");
     setNotifyEnabled(window.localStorage.getItem("cd.notify") === "on");
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
@@ -55,44 +59,52 @@ export function PreferencesProvider({
   }, [theme]);
 
   useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+    musicEnabledRef.current = musicEnabled;
+  }, [musicEnabled, soundEnabled]);
+
+  useEffect(() => {
+    // One place owns the engine state: master sound, then music. Running both
+    // here (and never inside a state updater) keeps React StrictMode's double
+    // invocation from starting two music beds.
     sound.setEnabled(soundEnabled);
-    if (!soundEnabled) sound.setMusicEnabled(false);
-    else if (musicEnabled) sound.setMusicEnabled(true);
+    sound.setMusicEnabled(soundEnabled && musicEnabled);
     window.localStorage.setItem("cd.sound", soundEnabled ? "on" : "off");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [soundEnabled]);
+    window.localStorage.setItem("cd.music", musicEnabled ? "on" : "off");
+  }, [musicEnabled, soundEnabled]);
 
   const setTheme = useCallback((next: ThemeId) => {
     if (THEMES.includes(next)) setThemeState(next);
   }, []);
 
   const toggleSound = useCallback(() => {
-    setSoundEnabled((previous) => {
-      const next = !previous;
-      sound.setEnabled(next);
-      if (next) sound.play("ui");
-      return next;
-    });
+    const next = !soundEnabledRef.current;
+    soundEnabledRef.current = next;
+    sound.setEnabled(next);
+    if (next) {
+      // This is a real gesture, so the context can be unlocked and acknowledged.
+      sound.unlock();
+      sound.play("ui");
+    }
+    setSoundEnabled(next);
   }, []);
 
   const toggleMusic = useCallback(() => {
-    setMusicEnabled((previous) => {
-      const next = !previous;
-      sound.setMusicEnabled(next && sound.enabled);
-      window.localStorage.setItem("cd.music", next ? "on" : "off");
-      return next;
-    });
+    const next = !musicEnabledRef.current;
+    musicEnabledRef.current = next;
+    sound.setMusicEnabled(next && sound.enabled);
+    window.localStorage.setItem("cd.music", next ? "on" : "off");
+    setMusicEnabled(next);
   }, []);
 
   const toggleNotify = useCallback(() => {
-    setNotifyEnabled((previous) => {
-      const next = !previous;
-      window.localStorage.setItem("cd.notify", next ? "on" : "off");
-      if (next && typeof Notification !== "undefined" && Notification.permission === "default") {
-        void Notification.requestPermission();
-      }
-      return next;
-    });
+    const next = !notifyEnabledRef.current;
+    notifyEnabledRef.current = next;
+    window.localStorage.setItem("cd.notify", next ? "on" : "off");
+    if (next && typeof Notification !== "undefined" && Notification.permission === "default") {
+      void Notification.requestPermission();
+    }
+    setNotifyEnabled(next);
   }, []);
 
   const play = useCallback((cue: SoundCue) => sound.play(cue), []);

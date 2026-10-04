@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { PulseDuelSession, type TargetSpec } from "@/lib/game/pulse";
 import { usePreferences } from "@/components/providers";
+import { sound } from "@/lib/sound/audio";
 import type { MatchView, SubmitResponse } from "@/lib/api/views";
 
 interface HitRecordLocal {
@@ -60,6 +61,15 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
   useEffect(() => {
     phaseRef.current = phase;
   }, [phase]);
+
+  useEffect(() => {
+    // Entering a duel is the strongest signal that the player wants the
+    // soundtrack: start it here (subject to autoplay policy) and duck the bed
+    // so hit feedback stays on top. The graph is never torn down on exit.
+    sound.setMatchActive(true);
+    sound.ensurePlaying();
+    return () => sound.setMatchActive(false);
+  }, []);
 
   /**
    * The match clock is anchored to the server: `t0` is when match time reaches

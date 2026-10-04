@@ -8,6 +8,7 @@ import { Avatar, Badge, Button } from "./ui";
 import { usePreferences, useSession } from "./providers";
 import { DisconnectButton } from "./wallet-connect";
 import { SignInDialog } from "./auth/sign-in-dialog";
+import { SoundToggle } from "./sound-toggle";
 import type { AuthProviders } from "./auth/types";
 import { THEME_DEFINITIONS, THEMES } from "@/lib/config/themes";
 
@@ -31,7 +32,7 @@ export function SiteHeader({
 }) {
   const pathname = usePathname();
   const session = useSession();
-  const { theme, setTheme, soundEnabled, toggleSound, play } = usePreferences();
+  const { theme, setTheme, play } = usePreferences();
   const [menuOpen, setMenuOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
 
@@ -126,17 +127,7 @@ export function SiteHeader({
             ) : null}
           </div>
 
-          <div className="hidden sm:block">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleSound}
-              aria-pressed={soundEnabled}
-              aria-label={soundEnabled ? "Mute sound" : "Enable sound"}
-            >
-              <span aria-hidden>{soundEnabled ? "◉" : "◌"}</span>
-            </Button>
-          </div>
+          <SoundToggle className="hidden sm:grid" />
 
           {session.authenticated ? (
             <AccountMenu />
@@ -179,10 +170,7 @@ export function SiteHeader({
                 />
               ))}
             </div>
-            <Button variant="ghost" size="sm" onClick={toggleSound} aria-pressed={soundEnabled}>
-              <span aria-hidden>{soundEnabled ? "◉" : "◌"}</span>
-              <span className="ml-1 text-xs">{soundEnabled ? "Sound on" : "Muted"}</span>
-            </Button>
+            <SoundToggle />
           </div>
           <nav className="grid grid-cols-2 gap-2" aria-label="Mobile">
             {NAV.map((item) => (

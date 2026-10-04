@@ -77,10 +77,15 @@ export function SettingsPanel({
 
       <Panel className="flex flex-col gap-3 px-5 py-5">
         <p className="eyebrow">Audio &amp; alerts</p>
-        <Toggle label="Sound effects" hint="Targets, combos, countdown and results." value={soundEnabled} onChange={toggleSound} />
         <Toggle
-          label="Ambient music"
-          hint="A quiet synthesised pad while you browse."
+          label="Sound &amp; music"
+          hint="Master switch for the soundtrack and every game sound."
+          value={soundEnabled}
+          onChange={toggleSound}
+        />
+        <Toggle
+          label="Game soundtrack"
+          hint="Chain Duel's original competitive loop. Plays while you browse and duel."
           value={musicEnabled}
           onChange={toggleMusic}
           disabled={!soundEnabled}
