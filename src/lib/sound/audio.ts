@@ -75,6 +75,8 @@ class SoundEngine {
 
   enabled = true;
   musicEnabled = false;
+  private gestureSeen = false;
+  private gestureHookInstalled = false;
 
   private ensureContext(): AudioContext | null {
     if (typeof window === "undefined") return null;
@@ -94,15 +96,38 @@ class SoundEngine {
   }
 
   unlock(): void {
+    this.gestureSeen = true;
     const context = this.ensureContext();
     if (context && context.state === "suspended") void context.resume();
+  }
+
+  /**
+   * Browsers block audio until the user interacts. Install one-shot listeners
+   * so the context is only ever created from inside a real gesture — never on
+   * page load, which would be blocked and merely log a console warning.
+   */
+  private primeOnGesture(): void {
+    if (this.gestureHookInstalled || typeof window === "undefined") return;
+    this.gestureHookInstalled = true;
+    const unlock = () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+      this.unlock();
+      if (this.enabled && this.musicEnabled) this.startMusic();
+    };
+    window.addEventListener("pointerdown", unlock, { passive: true });
+    window.addEventListener("keydown", unlock);
   }
 
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
     if (enabled) {
-      this.unlock();
-      if (this.musicEnabled) this.startMusic();
+      if (this.musicEnabled && this.gestureSeen) {
+        this.unlock();
+        this.startMusic();
+      } else {
+        this.primeOnGesture();
+      }
     } else {
       this.stopMusic();
     }
@@ -115,8 +140,12 @@ class SoundEngine {
   setMusicEnabled(enabled: boolean): void {
     this.musicEnabled = enabled;
     if (enabled) {
-      this.unlock();
-      this.startMusic();
+      if (this.gestureSeen) {
+        this.unlock();
+        this.startMusic();
+      } else {
+        this.primeOnGesture();
+      }
     } else {
       this.stopMusic();
     }
@@ -171,9 +200,15 @@ class SoundEngine {
 
   play(cue: SoundCue): void {
     if (!this.enabled) return;
+    // Never instantiate an AudioContext before the first user interaction:
+    // browser autoplay policy blocks it and it only creates console noise.
+    if (!this.context && !this.gestureSeen) return;
     const context = this.ensureContext();
     if (!context || !this.master) return;
-    if (context.state === "suspended") return;
+    if (context.state === "suspended") {
+      void context.resume();
+      return;
+    }
 
     const now = context.currentTime;
     const last = this.lastPlayed.get(cue) ?? 0;
