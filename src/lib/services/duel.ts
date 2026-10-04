@@ -3,6 +3,7 @@ import { db, newId, nowIso } from "../db";
 import {
   addGamePlayer,
   appendGameEvent,
+  completeQueueEntriesForGame,
   createGame,
   createInvite,
   enqueue,
@@ -454,6 +455,7 @@ export async function cancelDuel(input: {
       );
     }
   }
+  await completeQueueEntriesForGame(database, game.id);
   const fresh = await findGameById(database, game.id);
   return fresh ?? game;
 }

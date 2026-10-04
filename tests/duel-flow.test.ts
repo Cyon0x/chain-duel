@@ -11,6 +11,7 @@ import { settleMatch, startMatch, submitResult } from "@/lib/services/match";
 import { completeOnboarding, signInWithWallet } from "@/lib/services/accounts";
 import { botAvailability } from "@/lib/services/treasury";
 import { requireAdmin, withdrawTreasury } from "@/lib/services/admin";
+import { joinQueue, queueStatus } from "@/lib/services/matchmaking";
 import { PulseDuelSession, buildTargetSchedule } from "@/lib/game/pulse";
 import { findGameById, listGamePlayers } from "@/lib/db/repositories/duel";
 import { db } from "@/lib/db";
@@ -169,6 +170,60 @@ describe("duel lifecycle (demo)", () => {
     const creation = await createDuel({ userId: alice, mode: "private", entryStroops: ENTRY, demo: true });
     const open = await openDuels(50);
     expect(open.find((game) => game.id === creation.game.id)).toBeUndefined();
+  });
+});
+
+describe("matchmaking", () => {
+  it("releases the queue ticket when the duel finishes so play again starts a fresh search", async () => {
+    const x = await makeUser("queuex");
+    const y = await makeUser("queuey");
+
+    const first = await joinQueue({ userId: x.userId, entryStroops: ENTRY, demo: true });
+    expect(first.status).toBe("searching");
+    expect(first.gameId).toBeNull();
+
+    const second = await joinQueue({ userId: y.userId, entryStroops: ENTRY, demo: true });
+    expect(second.status).toBe("matched");
+    const gameId = second.gameId;
+    expect(gameId).toBeTruthy();
+
+    // Both players are pointed at the same duel.
+    expect((await queueStatus(x.userId)).status).toBe("matched");
+    expect((await queueStatus(x.userId)).gameId).toBe(gameId);
+
+    const database = await db();
+    const game = await findGameById(database, gameId!);
+    expect(game).toBeTruthy();
+
+    await commitEntry({ game: game!, userId: x.userId, role: "creator" });
+    await commitEntry({ game: game!, userId: y.userId, role: "joiner" });
+
+    const started = await startMatch({ gameId: gameId!, userId: x.userId });
+    expect(started.status).toBe("active");
+
+    const xLog = eventLog(started.seed, started.duration_ms);
+    const yLog = eventLog(started.seed, started.duration_ms, 3);
+    await submitResult({
+      gameId: gameId!,
+      userId: x.userId,
+      payload: { seat: 1, hits: xLog.hits, misses: [], clientScore: scoreOf(started.seed, started.duration_ms, xLog.hits) },
+    });
+    const settled = await submitResult({
+      gameId: gameId!,
+      userId: y.userId,
+      payload: { seat: 2, hits: yLog.hits, misses: [], clientScore: scoreOf(started.seed, started.duration_ms, yLog.hits) },
+    });
+    expect(settled.settled).toBe(true);
+
+    // The finished duel must no longer be offered as a live match.
+    expect((await queueStatus(x.userId)).status).toBe("idle");
+    expect((await queueStatus(x.userId)).gameId).toBeNull();
+
+    // "Play again" opens a genuinely new search, not the same finished duel.
+    const again = await joinQueue({ userId: x.userId, entryStroops: ENTRY, demo: true });
+    expect(again.status).toBe("searching");
+    expect(again.gameId).toBeNull();
+    expect(again.queueId).not.toBe(first.queueId);
   });
 });
 

@@ -11,6 +11,7 @@ import {
   recordRating,
   recordReputation,
   recordBotMatch,
+  completeQueueEntriesForGame,
   transitionGame,
   updateGame,
   upsertMatch,
@@ -705,6 +706,10 @@ async function applySettlement(database: SqlDriver, input: {
     finished_at: nowIso(),
     escrow_state: demo ? "offchain" : "settled",
   });
+
+  // The duel is over: release any matchmaking ticket that pointed at it so the
+  // players can queue for a fresh match instead of being sent back here.
+  await completeQueueEntriesForGame(database, game.id);
 }
 
 export async function gameDurationMs(game: GameRow): Promise<number> {

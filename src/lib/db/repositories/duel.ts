@@ -429,6 +429,18 @@ export async function closeQueueEntry(
   return affected > 0;
 }
 
+/**
+ * Releases every queue ticket pointing at a duel that is no longer playable.
+ * Without this a finished match keeps its 'matched' ticket, so re-queueing
+ * would hand the player the same finished duel back again.
+ */
+export async function completeQueueEntriesForGame(db: SqlDriver, gameId: string): Promise<number> {
+  return db.run(
+    "UPDATE matchmaking_queue SET status = 'completed', updated_at = ? WHERE game_id = ? AND status IN ('searching','matched')",
+    [nowIso(), gameId],
+  );
+}
+
 export async function expireQueueEntries(db: SqlDriver, beforeIso: string): Promise<number> {
   return db.run(
     "UPDATE matchmaking_queue SET status = 'expired', updated_at = ? WHERE status = 'searching' AND expires_at < ?",

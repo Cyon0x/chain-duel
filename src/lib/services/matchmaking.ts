@@ -4,6 +4,7 @@ import {
   addGamePlayer,
   claimQueueEntry,
   closeQueueEntry,
+  completeQueueEntriesForGame,
   createGame,
   enqueue,
   expireQueueEntries,
@@ -14,7 +15,7 @@ import {
   updateGame,
 } from "../db/repositories/duel";
 import { findProfile, primaryWallet } from "../db/repositories/identity";
-import type { GameRow, QueueRow } from "../db/types";
+import type { GameRow, GameStatus, QueueRow } from "../db/types";
 import { ECONOMY, PULSE_DUEL, QUEUE_TTL_MS, inviteCode } from "../config/game";
 import { secureSeed } from "../game/rng";
 import { randomContractGameId } from "../auth/stellar";
@@ -29,6 +30,24 @@ export interface QueueSnapshot {
   demo: boolean;
   searchStartedAt: string | null;
   opponent: { username: string; avatar: string | null; rating: number } | null;
+}
+
+const PLAYABLE_GAME_STATUSES: GameStatus[] = ["waiting", "joined", "active"];
+
+/**
+ * Resolves the duel a queue ticket points at. If that duel already finished,
+ * the ticket is released so the player gets a new search instead of being
+ * bounced back to a result screen forever.
+ */
+async function resolveQueuedGame(
+  database: Awaited<ReturnType<typeof db>>,
+  entry: QueueRow,
+): Promise<GameRow | null> {
+  if (!entry.game_id) return null;
+  const game = await findGameById(database, entry.game_id);
+  if (game && PLAYABLE_GAME_STATUSES.includes(game.status)) return game;
+  await completeQueueEntriesForGame(database, entry.game_id);
+  return null;
 }
 
 export async function joinQueue(input: {
@@ -50,16 +69,30 @@ export async function joinQueue(input: {
   const database = await db();
   const existing = await findActiveQueueEntry(database, input.userId);
   if (existing) {
-    const matched = existing.game_id ? await findGameById(database, existing.game_id) : null;
-    return {
-      status: matched ? "matched" : "searching",
-      queueId: existing.id,
-      gameId: existing.game_id,
-      entryStroops: existing.entry_stroops,
-      demo: existing.demo === 1,
-      searchStartedAt: existing.created_at,
-      opponent: null,
-    };
+    if (!existing.game_id) {
+      return {
+        status: "searching",
+        queueId: existing.id,
+        gameId: null,
+        entryStroops: existing.entry_stroops,
+        demo: existing.demo === 1,
+        searchStartedAt: existing.created_at,
+        opponent: null,
+      };
+    }
+    const matched = await resolveQueuedGame(database, existing);
+    if (matched) {
+      return {
+        status: "matched",
+        queueId: existing.id,
+        gameId: matched.id,
+        entryStroops: existing.entry_stroops,
+        demo: existing.demo === 1,
+        searchStartedAt: existing.created_at,
+        opponent: null,
+      };
+    }
+    // The previous duel is finished; fall through and open a fresh ticket.
   }
 
   const entry = await enqueue(database, {
@@ -103,11 +136,22 @@ export async function queueStatus(userId: string): Promise<QueueSnapshot> {
     if (paired) return paired;
   }
   if (entry.game_id) {
-    const game = await findGameById(database, entry.game_id);
+    const game = await resolveQueuedGame(database, entry);
+    if (!game) {
+      return {
+        status: "idle",
+        queueId: null,
+        gameId: null,
+        entryStroops: 0,
+        demo: false,
+        searchStartedAt: null,
+        opponent: null,
+      };
+    }
     return {
-      status: game ? "matched" : "idle",
+      status: "matched",
       queueId: entry.id,
-      gameId: entry.game_id,
+      gameId: game.id,
       entryStroops: entry.entry_stroops,
       demo: entry.demo === 1,
       searchStartedAt: entry.created_at,
