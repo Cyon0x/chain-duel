@@ -361,12 +361,16 @@ committed, exposed to the browser, or stored in the database.**
 
 The app is Vercel-ready (`next build`, App Router, `pg` for Postgres).
 
+Production: **https://chain-duel.vercel.app** (Stellar Testnet, Neon Postgres, Google + X
+sign-in live). The production database is a pooled Postgres connection; the app fails closed
+with a 503 rather than falling back to in-memory state when it is unreachable.
+
 1. Import the repository in Vercel, or run `vercel deploy --prod`.
 2. Set the environment variables from [`.env.example`](.env.example). At minimum for a durable
    production deployment:
    - `DATABASE_URL` — a Postgres connection string (Supabase, Neon, …). **Required in
-     production**: without it the app falls back to in-memory SQLite and state does not persist
-     between serverless invocations.
+     production**: use the provider's *pooled* connection string for serverless. Without it the
+     app refuses to serve authenticated state (HTTP 503) instead of pretending data persisted.
    - `SESSION_SECRET`, `WALLET_ENCRYPTION_KEY` — 32+ random characters each (the app refuses to
      start in production with insecure defaults).
    - `SETTLEMENT_SECRET_KEY`, `ADMIN_WALLET_ADDRESS`, `CHAIN_DUEL_CONTRACT_ID`,
@@ -386,11 +390,17 @@ The app is Vercel-ready (`next build`, App Router, `pg` for Postgres).
 ## Testing
 
 ```bash
-npm run verify        # typecheck + lint + 66 unit/integration tests + production build
-npm run test:contract # 18 Rust contract tests
+npm run verify        # typecheck + lint + 113 unit/integration tests + production build
+npm run test:contract # 21 Rust contract tests
 
-# opt-in live suite: spends real Testnet XLM against the deployed contract
+# opt-in live suites: spend real Testnet XLM against the deployed contract
 CHAIN_DUEL_LIVE=1 npx vitest run tests/live-e2e.test.ts
+CHAIN_DUEL_LIVE=1 npx vitest run tests/live-flows.test.ts
+CHAIN_DUEL_LIVE=1 npx vitest run tests/live-treasury.test.ts
+
+# smoke the deployed app (demo duel, no funds)
+CHAIN_DUEL_LIVE=1 CHAIN_DUEL_DEPLOYED_URL=https://chain-duel.vercel.app \
+  npx vitest run tests/live-deployed.test.ts
 ```
 
 What is covered:
@@ -408,8 +418,15 @@ What is covered:
 - **Contract** — create/join/cancel/refund/start/settle, fee math, winner payout, bot settlement,
   treasury accounting, admin and unauthorized withdrawal, duplicate settlement, invalid/expired
   game, wrong player, wrong amount, and the balance invariant across a full bot match.
-- **Live (opt-in)** — a real 1v1 duel (5 + 5 XLM escrowed, settled, winner paid, hash in history)
-  and a real bot duel settled against the on-chain treasury.
+- **Live (opt-in)** — a real 1v1 duel (5 + 5 XLM escrowed, settled, winner paid, hash in
+  history); random matchmaking pairing two queued accounts into one duel; a targeted challenge
+  through the invite inbox (including a premature accept that is refused cleanly and an
+  unauthorised accept that is rejected); a creator cancel with an on-chain refund; and a bot
+  duel whose database treasury accounting reconciles exactly with the on-chain bot liquidity,
+  accrued fees and treasury wallet movement.
+- **Treasury (opt-in)** — anonymous, player, destination-injected and correctly-signed
+  non-admin withdrawal attempts all fail; only the designated developer wallet may withdraw, and
+  the withdrawal is recorded in the admin audit log.
 
 ---
 
@@ -434,13 +451,11 @@ Full threat model and mitigations: [docs/security.md](docs/security.md).
 
 ## Known limitations
 
-- **Google and X sign-in are implemented but unconfigured** in the current Testnet deployment
-  (no OAuth client credentials were supplied). Freighter and demo sign-in work today.
-- **The Vercel deployment needs `DATABASE_URL`** to be durable. The code path is complete and
-  auto-migrating; only the credential is missing. Locally the SQLite file driver is fully durable.
 - The bot treasury is replenished by the protocol, not automatically: each computer match commits
   one entry of liquidity from the pool, so the pool needs occasional `treasury:fund` top-ups. This
   is by design and is visible on-chain and in `/admin/treasury`.
 - Matchmaking is intentionally simple (game type + entry + availability). Ranked matchmaking and
   tournaments are future work.
+- The live contract instance was deployed before `admin`/`treasury` were split into separate
+  roles; see the contract revision note above. Both roles are the same Testnet wallet today.
 
