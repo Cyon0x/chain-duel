@@ -4,7 +4,7 @@ import { GameCursor } from "@/components/game-cursor";
 import { PreferencesProvider, SessionProvider } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
 import { getSessionUser } from "@/lib/auth/session";
-import { isDurablePersistence } from "@/lib/db";
+import { persistenceStatus } from "@/lib/db";
 import { demoModeEnabled, integrationStatus, isProduction } from "@/lib/config/env";
 import { publicStellarConfig } from "@/lib/config/stellar";
 import { isThemeId } from "@/lib/config/themes";
@@ -24,13 +24,16 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await getSessionUser();
+  // Reading the session touches the database. If persistence is down we still
+  // render the chrome and let pages surface their own error state.
+  const session = await getSessionUser().catch(() => null);
   const network = publicStellarConfig();
   const integrations = integrationStatus();
   const theme = isThemeId(session?.profile?.theme) ? session.profile.theme : "neon";
-  // A deployment without a durable database cannot keep accounts or duels
-  // between requests. Say so plainly instead of failing in confusing ways.
-  const storageWarning = isProduction() && !(await isDurablePersistence());
+  const persistence = await persistenceStatus();
+  // Only warn when durable persistence is genuinely unavailable — never to
+  // advertise deployment instructions to players.
+  const storageWarning = isProduction() && !persistence.available;
 
   return (
     <html lang="en" data-theme={theme} suppressHydrationWarning>
@@ -62,11 +65,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <div className="mx-auto w-full max-w-7xl px-4 pt-4 sm:px-6">
                 <p
                   role="status"
-                  className="rounded-2xl border border-warning/40 bg-warning/10 px-4 py-3 text-xs text-warning"
+                  className="rounded-2xl border border-danger/40 bg-danger/10 px-4 py-3 text-xs text-danger"
                 >
-                  <span className="font-semibold">Preview mode — no database configured.</span> Accounts and duels are
-                  held in memory and may reset between requests. Set <code>DATABASE_URL</code> to a Postgres instance
-                  for durable play. Stellar escrow, settlement and the treasury are unaffected and fully live.
+                  <span className="font-semibold">Chain Duel is temporarily unavailable.</span> We cannot reach the
+                  game database right now, so signing in and staked duels are paused. Please try again in a moment.
                 </p>
               </div>
             ) : null}

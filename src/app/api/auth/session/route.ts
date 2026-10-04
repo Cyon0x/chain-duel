@@ -1,7 +1,7 @@
 import { fail, ok } from "@/lib/api/respond";
 import { destroySession, getSessionUser } from "@/lib/auth/session";
 import { accountWallet } from "@/lib/services/account-view";
-import { persistenceMode } from "@/lib/db";
+import { persistenceStatus } from "@/lib/db";
 import { integrationStatus } from "@/lib/config/env";
 
 export const dynamic = "force-dynamic";
@@ -9,11 +9,12 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const session = await getSessionUser();
+    const persistence = await persistenceStatus();
     if (!session) {
       return ok({
         authenticated: false,
         providers: integrationStatus(),
-        persistence: await persistenceMode(),
+        persistence: persistence.mode,
       });
     }
     return ok({
@@ -40,7 +41,7 @@ export async function GET() {
         : null,
       wallet: accountWallet(session),
       providers: integrationStatus(),
-      persistence: await persistenceMode(),
+      persistence: persistence.mode,
     });
   } catch (error) {
     return fail(error);

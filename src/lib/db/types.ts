@@ -11,7 +11,7 @@ export interface SqlDriver {
   close(): Promise<void>;
 }
 
-export type PersistenceMode = "postgres" | "sqlite-file" | "sqlite-memory";
+export type PersistenceMode = "postgres" | "sqlite-file" | "sqlite-memory" | "unavailable";
 
 // --------------------------------------------------------------- identity
 
