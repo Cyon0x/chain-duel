@@ -40,7 +40,13 @@ export class StellarIntegrationError extends Error {
       | "submit_failed"
       | "timeout"
       | "failed_on_chain"
-      | "invalid_input" = "simulation_failed",
+      | "invalid_input"
+      | "balance_unavailable"
+      | "source_not_funded"
+      | "build_failed"
+      | "insufficient_balance"
+      | "no_friendbot"
+      | "faucet_failed" = "simulation_failed",
     readonly detail?: unknown,
   ) {
     super(message);

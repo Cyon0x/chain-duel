@@ -238,6 +238,7 @@ function AccountMenu() {
 
   const items = [
     { href: "/dashboard", label: "Dashboard" },
+    { href: "/wallet", label: "Wallet" },
     { href: "/profile", label: "Profile" },
     { href: "/transactions", label: "Transactions" },
     { href: "/settings", label: "Settings" },

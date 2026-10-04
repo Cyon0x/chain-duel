@@ -326,4 +326,9 @@ export const MIGRATIONS: string[] = [
   DROP INDEX IF EXISTS transactions_hash_idx;
   CREATE INDEX IF NOT EXISTS transactions_hash_idx ON transactions (tx_hash);
   `,
+  `
+  -- Money is int64 stroops. An int32 column silently overflows above ~214 XLM,
+  -- which a single 250 XLM payout already crosses. Safe to re-run.
+  {{WIDEN_STROOPS}}
+  `,
 ];

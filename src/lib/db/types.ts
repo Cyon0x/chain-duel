@@ -248,6 +248,7 @@ export interface BotMatchRow {
 
 export type TransactionKind =
   | "deposit"
+  | "transfer"
   | "entry"
   | "payout"
   | "refund"

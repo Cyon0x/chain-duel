@@ -60,6 +60,7 @@ export function MatchRowItem({ match }: { match: MatchRowView }) {
 
 const TX_LABELS: Record<string, string> = {
   deposit: "Deposit",
+  transfer: "Wallet transfer",
   entry: "Duel entry",
   payout: "Winner payout",
   refund: "Refund",
