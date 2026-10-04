@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { GameCursor } from "@/components/game-cursor";
@@ -5,15 +6,28 @@ import { PreferencesProvider, SessionProvider } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
 import { getSessionUser } from "@/lib/auth/session";
 import { persistenceStatus } from "@/lib/db";
-import { demoModeEnabled, integrationStatus, isProduction } from "@/lib/config/env";
+import { appUrl, demoModeEnabled, integrationStatus, isProduction } from "@/lib/config/env";
 import { publicStellarConfig } from "@/lib/config/stellar";
 import { isThemeId } from "@/lib/config/themes";
+import brandMark from "@/assets/brand/chain-duel-mark.png";
+
+const TITLE = "Chain Duel — Compete. React. Duel.";
+const DESCRIPTION =
+  "Chain Duel is a skill-based 1v1 competitive arcade game with real Stellar Testnet escrow, settlement and rewards.";
 
 export const metadata: Metadata = {
-  title: "Chain Duel — Compete. React. Duel.",
-  description:
-    "Chain Duel is a skill-based 1v1 competitive arcade game with real Stellar Testnet escrow, settlement and rewards.",
+  metadataBase: new URL(appUrl()),
+  title: TITLE,
+  description: DESCRIPTION,
   applicationName: "Chain Duel",
+  openGraph: {
+    type: "website",
+    siteName: "Chain Duel",
+    title: TITLE,
+    description: DESCRIPTION,
+    url: appUrl(),
+  },
+  twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
 };
 
 export const viewport: Viewport = {
@@ -75,9 +89,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <main className="mx-auto w-full max-w-7xl px-4 pb-24 pt-6 sm:px-6">{children}</main>
             <footer className="border-t border-line px-4 py-8 sm:px-6">
               <div className="mx-auto flex max-w-7xl flex-col gap-3 text-xs text-dim sm:flex-row sm:items-center sm:justify-between">
-                <p>
-                  Chain Duel runs on {network.label}. Testnet assets carry no real-world value.
-                </p>
+                <div className="flex items-center gap-2.5">
+                  <Image
+                    src={brandMark}
+                    alt=""
+                    aria-hidden
+                    quality={92}
+                    sizes="20px"
+                    className="h-5 w-auto opacity-80"
+                  />
+                  <p>
+                    Chain Duel runs on {network.label}. Testnet assets carry no real-world value.
+                  </p>
+                </div>
                 <nav className="flex flex-wrap gap-4" aria-label="Legal">
                   <a className="hover:text-muted" href="/how-to-play">How to Play</a>
                   <a className="hover:text-muted" href="/rules">Game Rules</a>

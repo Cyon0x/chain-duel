@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Badge, ButtonLink, Panel } from "@/components/ui";
 import { LandingPreview } from "@/components/landing/preview";
@@ -5,6 +6,7 @@ import { THEME_DEFINITIONS, THEMES } from "@/lib/config/themes";
 import { PULSE_DUEL, ECONOMY, formatXlm } from "@/lib/config/game";
 import { publicStellarConfig } from "@/lib/config/stellar";
 import { getSessionUser } from "@/lib/auth/session";
+import brandLockup from "@/assets/brand/chain-duel-lockup.png";
 
 export const dynamic = "force-dynamic";
 
@@ -51,10 +53,15 @@ export default async function LandingPage() {
       <section className="grid items-center gap-10 pt-6 lg:grid-cols-[1.05fr_1fr] lg:gap-14">
         <div className="animate-rise">
           <Badge tone="accent">Stellar {network.isTestnet ? "Testnet" : "Mainnet"} · Season 0</Badge>
-          <h1 className="text-display mt-5 text-[clamp(3rem,10vw,5.25rem)]">
-            CHAIN
-            <br />
-            <span className="text-accent">DUEL</span>
+          <h1 className="mt-6">
+            <Image
+              src={brandLockup}
+              alt="Chain Duel"
+              priority
+              quality={92}
+              sizes="(max-width: 640px) 62vw, 420px"
+              className="block h-auto w-[clamp(238px,62vw,420px)]"
+            />
           </h1>
           <p className="mt-5 max-w-md text-lg text-muted">
             Compete. React. Duel. A skill-based 1v1 arcade game where the match is off-chain and the payout is real —

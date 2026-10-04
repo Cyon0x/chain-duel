@@ -4,6 +4,11 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   serverExternalPackages: ["pg", "node:sqlite"],
+  images: {
+    // The brand art is served at 92 so gradients and the emblem's metallic edges
+    // stay crisp; 75 is Next's default and is noticeably soft on this artwork.
+    qualities: [75, 92],
+  },
   experimental: {
     optimizePackageImports: ["framer-motion", "@stellar/stellar-sdk"],
   },

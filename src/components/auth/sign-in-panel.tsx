@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import clsx from "clsx";
 import { Button, Spinner } from "@/components/ui";
 import { listWallets, type WalletOption } from "@/lib/wallet/client";
 import { post } from "@/lib/api/client";
 import { useWalletSignIn, WALLET_STATUS_LABEL } from "./use-wallet-sign-in";
 import type { AuthProviders } from "./types";
+import brandMark from "@/assets/brand/chain-duel-mark.png";
 
 const MONOGRAM: Record<string, string> = {
   freighter: "◈",
@@ -72,8 +74,11 @@ export function SignInPanel({
 
   return (
     <div className="flex flex-col">
-      <p className="eyebrow">Chain Duel</p>
-      <h2 className="text-display mt-2 text-2xl">{heading}</h2>
+      <div className="flex items-center gap-3">
+        <Image src={brandMark} alt="" aria-hidden quality={92} sizes="32px" className="h-8 w-auto" />
+        <p className="eyebrow">Chain Duel</p>
+      </div>
+      <h2 className="text-display mt-3 text-2xl">{heading}</h2>
       <p className="mt-1.5 text-sm text-muted">{subheading}</p>
 
       <div className="mt-6 flex flex-col gap-3">

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -11,6 +12,7 @@ import { SignInDialog } from "./auth/sign-in-dialog";
 import { SoundToggle } from "./sound-toggle";
 import type { AuthProviders } from "./auth/types";
 import { THEME_DEFINITIONS, THEMES } from "@/lib/config/themes";
+import brandMark from "@/assets/brand/chain-duel-mark.png";
 
 const NAV = [
   { href: "/play", label: "Play" },
@@ -40,12 +42,15 @@ export function SiteHeader({
     <header className="sticky top-0 z-50 border-b border-line bg-bg/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-3 sm:gap-4 sm:px-6">
         <Link href="/" className="focus-ring flex min-w-0 items-center gap-2 rounded-xl pr-1 sm:gap-2.5 sm:pr-2">
-          <span
+          <Image
+            src={brandMark}
+            alt=""
             aria-hidden
-            className="grid h-8 w-8 place-items-center rounded-xl border border-accent/40 bg-accent-soft text-[13px] font-bold text-accent"
-          >
-            CD
-          </span>
+            priority
+            quality={92}
+            sizes="36px"
+            className="h-8 w-auto sm:h-9"
+          />
           <span className="text-[15px] font-semibold tracking-tight">
             CHAIN<span className="text-accent"> DUEL</span>
           </span>

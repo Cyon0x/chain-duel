@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import clsx from "clsx";
@@ -9,6 +10,7 @@ import { api } from "@/lib/api/client";
 import { txExplorerUrl } from "@/lib/explorer";
 import { usePreferences } from "@/components/providers";
 import type { MatchRowView, MatchView, TransactionView } from "@/lib/api/views";
+import brandMark from "@/assets/brand/chain-duel-mark.png";
 
 interface ResultProps {
   view: MatchView;
@@ -85,6 +87,14 @@ export function MatchResult({ view, selfUserId, onPlayAgain }: ResultProps) {
               ? "radial-gradient(60% 100% at 50% 100%, var(--accent-soft), transparent 70%)"
               : "radial-gradient(60% 100% at 50% 100%, rgba(255,95,122,0.18), transparent 70%)",
           }}
+        />
+        <Image
+          src={brandMark}
+          alt=""
+          aria-hidden
+          quality={92}
+          sizes="44px"
+          className="relative mx-auto mb-3 block h-11 w-auto"
         />
         <p className="eyebrow">{game.demo ? "Demo duel" : "Pulse Duel"}</p>
         <h1
