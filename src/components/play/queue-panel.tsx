@@ -33,6 +33,7 @@ export function QueuePanel({
 }) {
   const router = useRouter();
   const [entry, setEntry] = useState(defaultEntry);
+  const [entryValid, setEntryValid] = useState(true);
   const [demo, setDemo] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +60,10 @@ export function QueuePanel({
   }, [data?.gameId, router, status]);
 
   async function find() {
+    if (!demo && !entryValid) {
+      setError("Enter a valid stake before joining the queue.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -149,7 +154,10 @@ export function QueuePanel({
       <StakePicker
         options={options}
         value={entry}
-        onChange={setEntry}
+        onChange={(next, isValid) => {
+          setEntry(next);
+          setEntryValid(isValid);
+        }}
         demo={demo}
         onDemoChange={setDemo}
         demoAllowed={demoAllowed}
@@ -162,7 +170,7 @@ export function QueuePanel({
         </p>
       ) : null}
 
-      <Button size="lg" loading={busy} onClick={find}>
+      <Button size="lg" loading={busy} onClick={find} disabled={!demo && !entryValid}>
         Find random player
       </Button>
     </Panel>

@@ -99,8 +99,8 @@ independently.
 | Setting | Default | Changeable |
 | --- | --- | --- |
 | `fee_bps` | 1000 (10%) | `set_fee_bps` (admin, ≤ 3000) |
-| `max_entry` | 25 XLM | `set_limits` (admin) |
-| `max_payout` | 250 XLM | `set_limits` (admin) |
+| `max_entry` | 250 XLM | `set_limits` (admin) |
+| `max_payout` | 500 XLM | `set_limits` (admin) |
 | `min_treasury_balance` | 100 XLM | `set_limits` (admin) |
 | `paused` | false | `set_paused` (admin) |
 
@@ -112,4 +112,3 @@ npm run treasury:fund -- 500           # fund bot liquidity with 500 XLM
 npm run stellar:verify                 # print live on-chain config/stats
 npm run test:contract                  # Rust test suite (18 tests)
 ```
-

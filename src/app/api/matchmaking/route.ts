@@ -1,4 +1,5 @@
-import { fail, numeric, ok, readJson } from "@/lib/api/respond";
+import { fail, ok, readJson } from "@/lib/api/respond";
+import { entryStroopsOrThrow } from "@/lib/api/stake";
 import { requireSessionUser } from "@/lib/auth/session";
 import { cancelQueue, joinQueue, queueStatus } from "@/lib/services/matchmaking";
 import { ECONOMY } from "@/lib/config/game";
@@ -18,15 +19,16 @@ export async function POST(request: Request) {
   try {
     const session = await requireSessionUser();
     const body = await readJson<{ entryXlm?: number; demo?: boolean }>(request);
+    const demo = body.demo ?? false;
     const entryStroops =
       body.entryXlm !== undefined
-        ? Math.round(numeric(body.entryXlm) * 10_000_000)
+        ? entryStroopsOrThrow(body.entryXlm, { demo })
         : ECONOMY.defaultEntryStroops;
     return ok(
       await joinQueue({
         userId: session.user.id,
         entryStroops,
-        demo: body.demo ?? false,
+        demo,
       }),
     );
   } catch (error) {

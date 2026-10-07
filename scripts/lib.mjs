@@ -22,8 +22,8 @@ export const WASM_PATH = resolve(CONTRACT_DIR, "target/wasmv1-none/release/chain
 /** Values mirrored from src/lib/config/game.ts — the contract enforces them too. */
 export const ECONOMY = {
   feeBps: 1000,
-  maxEntryStroops: 250_000_000, // 25 XLM
-  maxPayoutStroops: 2_500_000_000, // 250 XLM
+  maxEntryStroops: 2_500_000_000, // 250 XLM (largest stake preset)
+  maxPayoutStroops: 5_000_000_000, // 500 XLM (covers a 250+250 XLM pool payout)
   minTreasuryBalanceStroops: 1_000_000_000, // 100 XLM
 };
 

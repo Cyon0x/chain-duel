@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ComputerPanel } from "@/components/play/computer-panel";
 import { getSessionUser } from "@/lib/auth/session";
-import { ECONOMY } from "@/lib/config/game";
+import { ECONOMY, STAKE_PRESETS } from "@/lib/config/game";
 
 export const dynamic = "force-dynamic";
 
@@ -18,11 +18,7 @@ export default async function PlayComputerPage() {
       </Link>
       <ComputerPanel
         defaultEntryXlm={ECONOMY.defaultEntryStroops / 10_000_000}
-        options={[
-          { xlm: 2, label: "Casual" },
-          { xlm: 5, label: "Standard" },
-          { xlm: 10, label: "High stakes" },
-        ]}
+        options={STAKE_PRESETS}
       />
       <p className="text-center text-xs text-dim">
         Computer duels do not affect your competitive rating. They are still settled on Stellar.

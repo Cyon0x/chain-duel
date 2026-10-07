@@ -4,12 +4,14 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Badge, Button, ButtonLink, Panel } from "@/components/ui";
 import { StakePicker } from "./stake-picker";
+import { ArenaQrCode } from "./arena-qr";
 import { EscrowStatus } from "@/components/escrow-status";
 import { post } from "@/lib/api/client";
 import { runEscrow, type EscrowStep } from "@/lib/wallet/escrow-client";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/components/providers";
 import { formatXlm } from "@/lib/config/game";
+import { arenaInviteUrl } from "@/lib/arena";
 import type { DuelCreationResponse } from "@/lib/api/views";
 
 type Mode = "pvp" | "private" | "bot";
@@ -38,15 +40,21 @@ export function CreateDuelPanel({
   const router = useRouter();
   const session = useSession();
   const [entry, setEntry] = useState(defaultEntry);
+  const [entryValid, setEntryValid] = useState(true);
   const [demo, setDemo] = useState(false);
   const [step, setStep] = useState<EscrowStep>("idle");
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<DuelCreationResponse | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const inviteUrl = created && typeof window !== "undefined" ? `${window.location.origin}/duel/${created.game.code}` : "";
+  const inviteUrl =
+    created && typeof window !== "undefined" ? arenaInviteUrl(window.location.origin, created.game.code) : "";
 
   async function create() {
+    if (!demo && !entryValid) {
+      setError("Enter a valid stake before creating the duel.");
+      return;
+    }
     setError(null);
     setStep("preparing");
     try {
@@ -132,6 +140,14 @@ export function CreateDuelPanel({
           <span className="numeric text-2xl font-semibold tracking-[0.2em] text-ink">{created.game.code}</span>
         </div>
 
+        <div className="panel-flat flex flex-col items-center gap-4 px-4 py-5">
+          <p className="eyebrow">Arena QR</p>
+          {inviteUrl ? <ArenaQrCode url={inviteUrl} /> : null}
+          <p className="max-w-xs text-center text-xs text-dim">
+            Same invite as the link above — scanning it opens this exact arena. No new duel is created.
+          </p>
+        </div>
+
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <div className="panel-flat px-3.5 py-2.5">
             <p className="eyebrow">Entry</p>
@@ -181,7 +197,10 @@ export function CreateDuelPanel({
       <StakePicker
         options={options}
         value={entry}
-        onChange={setEntry}
+        onChange={(next, isValid) => {
+          setEntry(next);
+          setEntryValid(isValid);
+        }}
         demo={demo}
         onDemoChange={setDemo}
         demoAllowed={demoAllowed}
@@ -194,7 +213,7 @@ export function CreateDuelPanel({
         size="lg"
         loading={step === "preparing" || step === "awaiting_wallet" || step === "submitting" || step === "confirming"}
         onClick={create}
-        disabled={step === "confirmed"}
+        disabled={step === "confirmed" || (!demo && !entryValid)}
       >
         {mode === "bot"
           ? "Start computer duel"

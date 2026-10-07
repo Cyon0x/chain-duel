@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CreateDuelPanel } from "@/components/play/create-duel";
 import { getSessionUser } from "@/lib/auth/session";
-import { ECONOMY, TREASURY_LIMITS } from "@/lib/config/game";
+import { ECONOMY, STAKE_PRESETS } from "@/lib/config/game";
 
 export const dynamic = "force-dynamic";
 
@@ -20,14 +20,10 @@ export default async function PlayFriendPage() {
         mode="private"
         title="Create private duel"
         description="Set the entry, create the duel, and share one link. Whoever opens it first can accept."
-        options={[
-          { xlm: 2, label: "Casual" },
-          { xlm: 5, label: "Standard" },
-          { xlm: 10, label: "High stakes" },
-        ]}
+        options={STAKE_PRESETS}
         defaultEntry={ECONOMY.defaultEntryStroops / 10_000_000}
         demoAllowed
-        maxEntryXlm={TREASURY_LIMITS.maxBotEntryStroops / 10_000_000}
+        maxEntryXlm={ECONOMY.maxEntryStroops / 10_000_000}
       />
     </div>
   );

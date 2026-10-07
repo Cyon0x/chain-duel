@@ -5,7 +5,7 @@ import { MatchRowItem } from "@/components/lists";
 import { ChallengeSection } from "@/components/play/challenge-section";
 import { getSessionUser } from "@/lib/auth/session";
 import { publicProfile } from "@/lib/services/profile";
-import { ECONOMY, TREASURY_LIMITS, formatXlm } from "@/lib/config/game";
+import { ECONOMY, STAKE_PRESETS, formatXlm } from "@/lib/config/game";
 import { truncateAddress } from "@/lib/explorer";
 
 export const dynamic = "force-dynamic";
@@ -59,14 +59,10 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
       ) : session ? (
         <ChallengeSection
           username={profile.username}
-          options={[
-            { xlm: 2, label: "Casual" },
-            { xlm: 5, label: "Standard" },
-            { xlm: 10, label: "High stakes" },
-          ]}
+          options={STAKE_PRESETS}
           defaultEntry={ECONOMY.defaultEntryStroops / 10_000_000}
           demoAllowed
-          maxEntryXlm={TREASURY_LIMITS.maxBotEntryStroops / 10_000_000}
+          maxEntryXlm={ECONOMY.maxEntryStroops / 10_000_000}
         />
       ) : (
         <Panel className="flex items-center justify-between gap-4 px-5 py-4">

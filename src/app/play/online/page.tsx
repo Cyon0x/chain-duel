@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { QueuePanel } from "@/components/play/queue-panel";
 import { getSessionUser } from "@/lib/auth/session";
-import { ECONOMY, TREASURY_LIMITS } from "@/lib/config/game";
+import { ECONOMY, STAKE_PRESETS } from "@/lib/config/game";
 
 export const dynamic = "force-dynamic";
 
@@ -17,14 +17,10 @@ export default async function PlayOnlinePage() {
         ← Play hub
       </Link>
       <QueuePanel
-        options={[
-          { xlm: 2, label: "Casual" },
-          { xlm: 5, label: "Standard" },
-          { xlm: 10, label: "High stakes" },
-        ]}
+        options={STAKE_PRESETS}
         defaultEntry={ECONOMY.defaultEntryStroops / 10_000_000}
         demoAllowed
-        maxEntryXlm={TREASURY_LIMITS.maxBotEntryStroops / 10_000_000}
+        maxEntryXlm={ECONOMY.maxEntryStroops / 10_000_000}
         selfName={session.profile?.username ?? null}
       />
       <p className="text-center text-xs text-dim">

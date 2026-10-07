@@ -1,4 +1,5 @@
-import { fail, numeric, ok, readJson } from "@/lib/api/respond";
+import { fail, ok, readJson } from "@/lib/api/respond";
+import { entryStroopsOrThrow } from "@/lib/api/stake";
 import { requireSessionUser } from "@/lib/auth/session";
 import { createDuel, openDuels } from "@/lib/services/duel";
 import { ChainDuelError } from "@/lib/services/errors";
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
     const demo = body.demo ?? false;
     const entryStroops =
       body.entryXlm !== undefined
-        ? Math.round(numeric(body.entryXlm) * 10_000_000)
+        ? entryStroopsOrThrow(body.entryXlm, { demo })
         : ECONOMY.defaultEntryStroops;
 
     if (body.invitedUsername) {

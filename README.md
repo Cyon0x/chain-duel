@@ -86,7 +86,8 @@ escrow → settlement → payout cycle has been executed on-chain (see [Testing]
 | Winner reward | 9 XLM |
 | Protocol | 1 XLM |
 
-Ranges: entry 1–100 XLM (`max_entry` 25 XLM on-chain for bot matches), max payout 250 XLM.
+Ranges: entry 1–250 XLM (`max_entry` 250 XLM and `max_payout` 500 XLM on-chain). Computer
+matches stay capped at 25 XLM by the treasury rails.
 
 ### Reading the result
 
@@ -505,4 +506,3 @@ Full threat model and mitigations: [docs/security.md](docs/security.md).
   tournaments are future work.
 - The live contract instance was deployed before `admin`/`treasury` were split into separate
   roles; see the contract revision note above. Both roles are the same Testnet wallet today.
-

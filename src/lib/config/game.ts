@@ -2,6 +2,9 @@
 
 export const STROOPS_PER_XLM = 10_000_000;
 
+/** Stellar XLM precision: 1 XLM = 10,000,000 stroops, i.e. 7 decimal places. */
+export const XLM_DECIMALS = 7;
+
 export function xlmToStroops(xlm: number): number {
   return Math.round(xlm * STROOPS_PER_XLM);
 }
@@ -92,10 +95,64 @@ export interface EconomyConfig {
 export const ECONOMY: EconomyConfig = {
   defaultEntryStroops: xlmToStroops(5),
   minEntryStroops: xlmToStroops(1),
-  maxEntryStroops: xlmToStroops(100),
+  maxEntryStroops: xlmToStroops(250),
   feeBps: 1000,
   demoEntryStroops: 0,
 };
+
+/**
+ * Stake presets offered across every duel mode. `ECONOMY.minEntryStroops` and
+ * `ECONOMY.maxEntryStroops` stay the authoritative bounds; an individual mode
+ * may apply a tighter cap (bot matches are underwritten by the treasury and
+ * stay limited to `TREASURY_LIMITS.maxBotEntryStroops`).
+ */
+export const STAKE_PRESETS: { xlm: number; label: string }[] = [
+  { xlm: 5, label: "Standard" },
+  { xlm: 25, label: "Contender" },
+  { xlm: 50, label: "High stakes" },
+  { xlm: 250, label: "Whale" },
+];
+
+export const STAKE_PRESETS_XLM: number[] = STAKE_PRESETS.map((preset) => preset.xlm);
+
+export type StakeParseResult =
+  | { ok: true; stroops: number; xlm: number }
+  | { ok: false; error: string };
+
+export interface StakeParseOptions {
+  /** Demo duels stake nothing, so a zero amount is valid. */
+  demo?: boolean;
+  minStroops?: number;
+  maxStroops?: number;
+}
+
+/**
+ * Single source of truth for turning a user-entered XLM stake into stroops.
+ * Rejects empty, non-numeric, non-positive, over-precise and out-of-range
+ * amounts so the client and the API enforce exactly the same rules.
+ */
+export function parseStakeXlm(value: unknown, opts: StakeParseOptions = {}): StakeParseResult {
+  const min = opts.minStroops ?? ECONOMY.minEntryStroops;
+  const max = opts.maxStroops ?? ECONOMY.maxEntryStroops;
+
+  if (value === null || value === undefined) return { ok: false, error: "Enter a stake amount." };
+  const text = typeof value === "string" ? value.trim() : value;
+  if (text === "") return { ok: false, error: "Enter a stake amount." };
+
+  const xlm = typeof text === "number" ? text : Number(text);
+  if (!Number.isFinite(xlm)) return { ok: false, error: "Enter a valid number." };
+
+  if (xlm === 0 && opts.demo) return { ok: true, stroops: 0, xlm: 0 };
+  if (xlm <= 0) return { ok: false, error: "Stake must be greater than zero." };
+
+  const stroops = Math.round(xlm * STROOPS_PER_XLM);
+  if (Math.abs(stroops / STROOPS_PER_XLM - xlm) > 1e-9) {
+    return { ok: false, error: `XLM supports at most ${XLM_DECIMALS} decimal places.` };
+  }
+  if (stroops < min) return { ok: false, error: `Minimum stake is ${formatXlm(min)} XLM.` };
+  if (stroops > max) return { ok: false, error: `Maximum stake is ${formatXlm(max)} XLM.` };
+  return { ok: true, stroops, xlm: stroopsToXlm(stroops) };
+}
 
 export interface TreasuryLimits {
   minTreasuryBalanceStroops: number;
