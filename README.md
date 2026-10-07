@@ -66,6 +66,9 @@ escrow → settlement → payout cycle has been executed on-chain (see [Testing]
 
 - 60-second match, both players see the same deterministic target sequence (`seed` is generated
   server-side and stored on the game row).
+- Pace is set by `PULSE_SPEED_MULTIPLIER` in `src/lib/config/game.ts`: **1.25×**, so targets spawn,
+  expire and roll the combo window 25% faster than the original baseline. Match length, target mix,
+  point values and combo tiers are unchanged.
 - Targets:
   - **Blue** +10
   - **Gold** +25
@@ -84,6 +87,14 @@ escrow → settlement → payout cycle has been executed on-chain (see [Testing]
 | Protocol | 1 XLM |
 
 Ranges: entry 1–100 XLM (`max_entry` 25 XLM on-chain for bot matches), max payout 250 XLM.
+
+### Reading the result
+
+`src/lib/game/outcome.ts` is the single place WIN / LOSE / DRAW is decided, and it only reads a game
+once settlement has written it (`status: "settled"`). A game briefly sits at `status: "finished"`
+while the settlement transaction confirms — that intermediate row has no winner yet, so the UI shows
+a "settling" state and keeps polling rather than guessing. This is what previously let a loss render
+as "DRAW" until the page was refreshed.
 
 ### Result verification
 
@@ -264,11 +275,16 @@ See [docs/security.md](docs/security.md).
 ## Computer opponent (bot mode)
 
 **VEX-7** is a genuine opponent, not a result screen. It runs the same `PulseDuelSession` engine as
-a human with its own parameters (reaction time, accuracy, jitter, mistake rate, combo awareness)
-and its final score is produced by playing the same deterministic schedule.
+a human with its own skill profile (reaction time and jitter, per-target accuracy, extra focus on
+gold targets, combo protection, red avoidance) and its final score is produced by playing the same
+deterministic schedule. Nothing about its score or the recorded result is ever rewritten.
 
-- The protocol's configured win probability is **server-side only**. It never appears in any API
-  response or UI, and `drawBotOutcome` uses a `crypto`-backed RNG, never `Math.random()`.
+- Its score is a pure function of `(seed, profile)`, so the score the HUD shows during the duel is
+  byte-for-byte the score settlement records — the same play is simply replayed.
+- The profile is calibrated so an *average* human (the reference model in `tests/bot.test.ts`) loses
+  about **80%** of matches, while a strong player wins more often than not. That is a measured
+  property of the skill parameters, not a coin flip on the winner.
+- Never uses `Math.random()`: gameplay randomness is the seeded, replayable `Rng`.
 - Bot matches are played and settled for real against the **bot treasury**, funded on-chain with
   real Testnet XLM via `fund_bot_pool`.
 - If the treasury is short, bot mode disables itself and shows *"Computer matches are temporarily

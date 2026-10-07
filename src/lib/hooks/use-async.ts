@@ -14,7 +14,12 @@ export interface AsyncState<T> {
 export function useAsync<T>(
   loader: () => Promise<T>,
   deps: unknown[] = [],
-  options: { pollMs?: number; enabled?: boolean } = {},
+  options: {
+    pollMs?: number;
+    enabled?: boolean;
+    /** Return false to skip a poll tick (e.g. once the data is final). */
+    shouldPoll?: (data: T | null) => boolean;
+  } = {},
 ): AsyncState<T> {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +27,12 @@ export function useAsync<T>(
   const loaderRef = useRef(loader);
   const mounted = useRef(true);
   const disabled = options.enabled === false;
+  const dataRef = useRef<T | null>(null);
+  const shouldPollRef = useRef(options.shouldPoll);
+
+  useEffect(() => {
+    shouldPollRef.current = options.shouldPoll;
+  });
 
   useEffect(() => {
     mounted.current = true;
@@ -38,6 +49,7 @@ export function useAsync<T>(
     try {
       const value = await loaderRef.current();
       if (mounted.current) {
+        dataRef.current = value;
         setData(value);
         setError(null);
       }
@@ -59,12 +71,18 @@ export function useAsync<T>(
   useEffect(() => {
     if (!options.pollMs || disabled) return;
     const timer = window.setInterval(() => {
+      if (shouldPollRef.current && !shouldPollRef.current(dataRef.current)) return;
       void reload();
     }, options.pollMs);
     return () => window.clearInterval(timer);
   }, [options.pollMs, disabled, reload]);
 
-  return { data, error, loading: disabled ? false : internalLoading, reload, setData };
+  const updateData = useCallback((value: T | null) => {
+    dataRef.current = value;
+    setData(value);
+  }, []);
+
+  return { data, error, loading: disabled ? false : internalLoading, reload, setData: updateData };
 }
 
 /** Counts up to a target value — used by the result screens. */

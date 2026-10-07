@@ -9,6 +9,7 @@ import { useCountUp } from "@/lib/hooks/use-async";
 import { api } from "@/lib/api/client";
 import { txExplorerUrl } from "@/lib/explorer";
 import { usePreferences } from "@/components/providers";
+import { resolveOutcome } from "@/lib/game/outcome";
 import type { MatchRowView, MatchView, TransactionView } from "@/lib/api/views";
 import brandMark from "@/assets/brand/chain-duel-mark.png";
 
@@ -32,22 +33,22 @@ export function MatchResult({ view, selfUserId, onPlayAgain }: ResultProps) {
 
   const selfScore = self?.score ?? 0;
   const opponentScore = opponent?.score ?? 0;
-  const won = game.winner_id === selfUserId;
-  // A computer win is recorded with a null winner_id (there is no human
-  // winner), so it must be distinguished from a genuine tie before the draw
-  // check — otherwise losing to the computer renders as "DRAW".
-  const selfIsBot = Boolean(self && self.is_bot === 1);
-  const botWon = !won && !selfIsBot && game.winner_id === null && game.mode === "bot";
-  const isDraw = !won && !botWon && game.winner_id === null;
+  // Derived from the server's authoritative settled state (see outcome.ts).
+  // Never re-derive DRAW locally from a partially-loaded game row.
+  const outcome = resolveOutcome(game, selfUserId);
+  const won = outcome === "win";
+  const isDraw = outcome === "draw";
+  const botWon = outcome === "loss" && game.mode === "bot";
   const [payload, setPayload] = useState<HistoryResponse | null>(null);
 
   const displayScore = useCountUp(selfScore, 900);
   const displayOpponent = useCountUp(opponentScore, 900);
 
   useEffect(() => {
-    if (won) play("victory");
-    else play("defeat");
-  }, [play, won]);
+    if (outcome === "win") play("victory");
+    else if (outcome === "loss") play("defeat");
+    else play("ui");
+  }, [outcome, play]);
 
   useEffect(() => {
     let cancelled = false;

@@ -36,7 +36,9 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
   const durationMs = view.game.duration_ms;
   const schedule = useMemo(() => view.schedule as TargetSpec[], [view.schedule]);
 
-  const sessionRef = useRef(new PulseDuelSession(schedule, durationMs));
+  // Constructed lazily once per mount: `useRef(new X())` would rebuild the
+  // target map on every render (60×/second during play) and only keep the first.
+  const [session] = useState(() => new PulseDuelSession(schedule, durationMs));
 
   const [phase, setPhase] = useState<Phase>("countdown");
   const [visible, setVisible] = useState<TargetSpec[]>([]);
@@ -57,6 +59,8 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
   const submittedRef = useRef(false);
   const lastCountRef = useRef<number | null>(null);
   const clockRef = useRef<{ t0: number; offset: number } | null>(null);
+  const barRef = useRef<HTMLDivElement | null>(null);
+  const lastSecondRef = useRef<number | null>(null);
 
   useEffect(() => {
     phaseRef.current = phase;
@@ -122,7 +126,6 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
     submittedRef.current = true;
     phaseRef.current = "submitting";
     setPhase("submitting");
-    const session = sessionRef.current;
     const snapshot = session.snapshot();
     try {
       const response = await fetch(`/api/matches/${view.game.id}/submit`, {
@@ -154,7 +157,7 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
         submittedRef.current = false;
       }, 1_500);
     }
-  }, [addMark, durationMs, onFinished, play, self?.seat, view.game.id]);
+  }, [addMark, durationMs, onFinished, play, session, self?.seat, view.game.id]);
 
   /* ------------------------------------------------------------------ game loop */
   useEffect(() => {
@@ -184,9 +187,19 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
             play("countdownGo");
           }
           const remaining = Math.max(0, durationMs - matchMsValue);
-          setTimeLeftMs(remaining);
+          // The clock bar is driven straight to the DOM every frame; React state
+          // only changes when the displayed second does, so the HUD re-renders
+          // once per second instead of sixty times.
+          if (barRef.current) {
+            const fraction = Math.max(0, Math.min(1, remaining / durationMs));
+            barRef.current.style.transform = `scaleX(${fraction})`;
+          }
+          const seconds = Math.ceil(remaining / 1000);
+          if (lastSecondRef.current !== seconds) {
+            lastSecondRef.current = seconds;
+            setTimeLeftMs(remaining);
+          }
 
-          const session = sessionRef.current;
           const next = session.visibleAt(matchMsValue);
           setVisible((prev) => (sameTargets(prev, next) ? prev : next));
 
@@ -205,13 +218,12 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [durationMs, ensureClock, matchMs, nowMs, play, submit]);
+  }, [durationMs, ensureClock, matchMs, nowMs, play, session, submit]);
 
   /* ------------------------------------------------------- opponent + progress */
   useEffect(() => {
     if (phase !== "playing") return;
     const timer = window.setInterval(async () => {
-      const session = sessionRef.current;
       const snapshot = session.snapshot();
       try {
         await fetch(`/api/matches/${view.game.id}/progress`, {
@@ -230,7 +242,7 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
       }
     }, 2_000);
     return () => window.clearInterval(timer);
-  }, [matchMs, phase, view.game.id]);
+  }, [matchMs, phase, session, view.game.id]);
 
   useEffect(() => {
     if (phase !== "playing") return;
@@ -254,7 +266,6 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
     (target: TargetSpec) => {
       if (phaseRef.current !== "playing") return;
       const atMs = matchMs();
-      const session = sessionRef.current;
       const result = session.applyHit(target.id, atMs);
       if (!result.accepted) {
         setShake((value) => value + 1);
@@ -285,25 +296,23 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
       }
       setVisible((prev) => prev.filter((entry) => entry.id !== target.id));
     },
-    [addMark, matchMs, play],
+    [addMark, matchMs, play, session],
   );
 
   const handleBackground = useCallback(() => {
     if (phaseRef.current !== "playing") return;
     const atMs = matchMs();
-    const session = sessionRef.current;
     const isCombo = session.comboCount > 0;
     session.applyMiss(atMs);
     missesRef.current.push(atMs);
     setCombo(0);
     setMultiplier(1);
     if (isCombo) play("miss");
-  }, [matchMs, play]);
+  }, [matchMs, play, session]);
 
   const selfScore = score;
   const progressSelf = Math.min(1, selfScore / Math.max(1, view.maxScore * 0.6));
   const progressOpponent = Math.min(1, opponentScore / Math.max(1, view.maxScore * 0.6));
-  const timeFraction = Math.max(0, Math.min(1, timeLeftMs / durationMs));
 
   return (
     <div className="flex flex-col gap-4">
@@ -329,8 +338,9 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
         aria-label="Pulse Duel arena"
       >
         <div
-          className="absolute inset-x-0 top-0 h-0.5 origin-left bg-accent transition-transform duration-100"
-          style={{ transform: `scaleX(${timeFraction})`, opacity: 0.5 }}
+          ref={barRef}
+          className="absolute inset-x-0 top-0 h-0.5 origin-left bg-accent"
+          style={{ transform: "scaleX(1)", opacity: 0.5 }}
         />
 
         {phase === "countdown" && countdown !== null ? (

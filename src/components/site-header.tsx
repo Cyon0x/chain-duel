@@ -5,11 +5,30 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
+import dynamic from "next/dynamic";
 import { Avatar, Badge, Button } from "./ui";
 import { usePreferences, useSession } from "./providers";
-import { DisconnectButton } from "./wallet-connect";
-import { SignInDialog } from "./auth/sign-in-dialog";
 import { SoundToggle } from "./sound-toggle";
+
+/*
+ * The wallet UI drags in the Stellar wallet kit (a few hundred kB). The header
+ * renders on every route, so these are code-split and fetched only when the
+ * dialog is opened or the account menu needs a disconnect button — the shared
+ * layout never ships wallet code again.
+ */
+const SignInDialog = dynamic(() => import("./auth/sign-in-dialog").then((mod) => mod.SignInDialog), {
+  ssr: false,
+  loading: () => (
+    <Button variant="secondary" size="sm" className="opacity-70">
+      Sign in
+    </Button>
+  ),
+});
+
+const DisconnectButton = dynamic(
+  () => import("./wallet-connect").then((mod) => mod.DisconnectButton),
+  { ssr: false, loading: () => <Button variant="secondary" size="sm" className="opacity-70">Sign out</Button> },
+);
 import type { AuthProviders } from "./auth/types";
 import { THEME_DEFINITIONS, THEMES } from "@/lib/config/themes";
 import brandMark from "@/assets/brand/chain-duel-mark.png";

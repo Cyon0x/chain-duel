@@ -60,7 +60,7 @@ Server-side gameplay configuration (safe to change without redeploying the contr
 - game duration, target scores, combo multipliers, spawn cadence,
 - entry bounds, protocol fee (mirrors the contract's `fee_bps`),
 - bot parameters (reaction time, accuracy, jitter, mistake rate, combo awareness) and the
-  server-only win probability,
+  calibrated target win rate (measured against the reference average human in `tests/bot.test.ts`),
 - treasury thresholds: `MIN_TREASURY_BALANCE`, `MAX_BOT_ENTRY`, `MAX_PAYOUT`,
   `DAILY_BOT_LIABILITY`.
 

@@ -1,16 +1,19 @@
 "use client";
 
-import { StellarWalletsKit, Networks } from "@creit.tech/stellar-wallets-kit";
-import { FreighterModule } from "@creit.tech/stellar-wallets-kit/modules/freighter";
-import { xBullModule } from "@creit.tech/stellar-wallets-kit/modules/xbull";
-import { AlbedoModule } from "@creit.tech/stellar-wallets-kit/modules/albedo";
-import { LobstrModule } from "@creit.tech/stellar-wallets-kit/modules/lobstr";
-import { RabetModule } from "@creit.tech/stellar-wallets-kit/modules/rabet";
 import { publicStellarConfig } from "../config/stellar";
 
-let initialised = false;
+/**
+ * The Stellar wallet kit (plus five wallet modules) is ~290 kB of JavaScript.
+ * It is only ever needed once a player actually connects, signs or disconnects,
+ * so it is loaded with a dynamic import instead of being shipped in the shared
+ * layout bundle. Every entry point below awaits `loadWalletKit()`.
+ */
+type WalletKitModule = typeof import("@creit.tech/stellar-wallets-kit");
 
-function networkEnum(): Networks {
+let kitPromise: Promise<WalletKitModule> | null = null;
+
+function networkEnum(kit: WalletKitModule) {
+  const { Networks } = kit;
   const config = publicStellarConfig();
   if (config.id === "mainnet") return Networks.PUBLIC;
   if (config.id === "futurenet") return Networks.FUTURENET;
@@ -18,20 +21,39 @@ function networkEnum(): Networks {
   return Networks.TESTNET;
 }
 
-export function initWalletKit(): void {
-  if (initialised) return;
-  StellarWalletsKit.init({
-    modules: [
-      new FreighterModule(),
-      new xBullModule(),
-      new AlbedoModule(),
-      new LobstrModule(),
-      new RabetModule(),
-    ],
-    network: networkEnum(),
-    authModal: { showInstallLabel: true, hideUnsupportedWallets: false },
-  });
-  initialised = true;
+export function loadWalletKit(): Promise<WalletKitModule> {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("Wallets can only be used in the browser."));
+  }
+  if (!kitPromise) {
+    kitPromise = (async () => {
+      const [kit, freighter, xbull, albedo, lobstr, rabet] = await Promise.all([
+        import("@creit.tech/stellar-wallets-kit"),
+        import("@creit.tech/stellar-wallets-kit/modules/freighter"),
+        import("@creit.tech/stellar-wallets-kit/modules/xbull"),
+        import("@creit.tech/stellar-wallets-kit/modules/albedo"),
+        import("@creit.tech/stellar-wallets-kit/modules/lobstr"),
+        import("@creit.tech/stellar-wallets-kit/modules/rabet"),
+      ]);
+      kit.StellarWalletsKit.init({
+        modules: [
+          new freighter.FreighterModule(),
+          new xbull.xBullModule(),
+          new albedo.AlbedoModule(),
+          new lobstr.LobstrModule(),
+          new rabet.RabetModule(),
+        ],
+        network: networkEnum(kit),
+        authModal: { showInstallLabel: true, hideUnsupportedWallets: false },
+      });
+      return kit;
+    })().catch((error) => {
+      // A failed chunk load must not poison every later attempt.
+      kitPromise = null;
+      throw error;
+    });
+  }
+  return kitPromise;
 }
 
 export interface ConnectedWallet {
@@ -62,7 +84,7 @@ export interface WalletOption {
  * that would silently fail.
  */
 export async function listWallets(): Promise<WalletOption[]> {
-  initWalletKit();
+  const { StellarWalletsKit } = await loadWalletKit();
   let detected = new Map<string, { available: boolean; url: string | null }>();
   try {
     const supported = await StellarWalletsKit.refreshSupportedWallets();
@@ -86,7 +108,7 @@ export async function listWallets(): Promise<WalletOption[]> {
 }
 
 export async function connectWallet(walletId?: string): Promise<ConnectedWallet> {
-  initWalletKit();
+  const { StellarWalletsKit } = await loadWalletKit();
   let address: string | undefined;
   if (walletId) {
     // The player picked a specific provider, so open that wallet directly
@@ -108,7 +130,7 @@ export async function connectWallet(walletId?: string): Promise<ConnectedWallet>
 }
 
 export async function disconnectWallet(): Promise<void> {
-  initWalletKit();
+  const { StellarWalletsKit } = await loadWalletKit();
   try {
     await StellarWalletsKit.disconnect();
   } catch {
@@ -143,7 +165,7 @@ export class WalletSignInError extends Error {
 }
 
 export async function assertCorrectNetwork(): Promise<void> {
-  initWalletKit();
+  const { StellarWalletsKit } = await loadWalletKit();
   const expected = publicStellarConfig().networkPassphrase;
   try {
     const network = await StellarWalletsKit.getNetwork();
@@ -162,7 +184,7 @@ export async function assertCorrectNetwork(): Promise<void> {
 }
 
 export async function signTransactionXdr(xdr: string, address: string): Promise<string> {
-  initWalletKit();
+  const { StellarWalletsKit } = await loadWalletKit();
   await assertCorrectNetwork();
   const result = await StellarWalletsKit.signTransaction(xdr, {
     networkPassphrase: publicStellarConfig().networkPassphrase,
@@ -177,7 +199,7 @@ export interface SignedAuthMessage {
 }
 
 export async function signAuthMessage(message: string, address: string): Promise<SignedAuthMessage> {
-  initWalletKit();
+  const { StellarWalletsKit } = await loadWalletKit();
   const result = await StellarWalletsKit.signMessage(message, { address });
   if (!result.signedMessage) throw new Error("The wallet did not return a signature.");
   return { signature: result.signedMessage, signerAddress: result.signerAddress ?? null };

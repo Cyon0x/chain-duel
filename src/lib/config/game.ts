@@ -42,17 +42,29 @@ export interface PulseDuelConfig {
   missedHitPenalty: number;
 }
 
+/**
+ * Global gameplay pace. `1.25` makes every timed beat (target spawn cadence,
+ * target lifetime and the combo window) 25% faster while leaving the match
+ * length, target mix, point values and combo tiers untouched.
+ */
+export const PULSE_SPEED_MULTIPLIER = 1.25;
+
+/** Scales a base millisecond value by the pace multiplier (faster = smaller). */
+function paced(ms: number): number {
+  return Math.round(ms / PULSE_SPEED_MULTIPLIER);
+}
+
 export const PULSE_DUEL: PulseDuelConfig = {
   durationMs: 60_000,
   countdownMs: 3_200,
   maxTargetsOnScreen: 4,
-  spawnIntervalMs: 620,
-  comboWindowMs: 2_200,
+  spawnIntervalMs: paced(620),
+  comboWindowMs: paced(2_200),
   missedHitPenalty: 0,
   targets: [
-    { kind: "blue", points: 10, weight: 62, lifetimeMs: 1_500, radiusFactor: 1 },
-    { kind: "gold", points: 25, weight: 18, lifetimeMs: 1_150, radiusFactor: 0.82 },
-    { kind: "red", points: -15, weight: 20, lifetimeMs: 1_700, radiusFactor: 1.08 },
+    { kind: "blue", points: 10, weight: 62, lifetimeMs: paced(1_500), radiusFactor: 1 },
+    { kind: "gold", points: 25, weight: 18, lifetimeMs: paced(1_150), radiusFactor: 0.82 },
+    { kind: "red", points: -15, weight: 20, lifetimeMs: paced(1_700), radiusFactor: 1.08 },
   ],
   combos: [
     { hits: 3, multiplier: 1.2 },
@@ -103,13 +115,25 @@ export interface BotProfile {
   id: string;
   name: string;
   difficulty: "rookie" | "standard" | "veteran";
+  /** Median reaction time to a freshly spawned target. */
   reactionMs: number;
+  /** Per-target hit probability for a reachable blue target. */
   accuracy: number;
-  /** Probability the bot wins the match. Server-side only — never rendered. */
-  winProbability: number;
+  /** Higher-value gold targets are chased a little harder. */
+  goldAccuracy: number;
+  /** Probability of accidentally tapping a red (penalty) target. */
   mistakeRate: number;
+  /** 0..1 — how strongly a live combo is protected with extra focus. */
   comboAwareness: number;
+  /** Reaction-time spread, so the bot is strong but not robotic. */
   jitterMs: number;
+  /**
+   * Documented empirical win rate against the reference average human.
+   * This is a *target that the skill parameters are tuned to produce*, not a
+   * coin flip: the bot never has its score or outcome altered, and it can
+   * always be beaten by a strong player. Verified by tests/bot.test.ts.
+   */
+  targetWinRate: number;
 }
 
 /**
@@ -122,12 +146,13 @@ export const BOT_PROFILES: Record<string, BotProfile> = {
     id: "cd-computer-01",
     name: "VEX-7",
     difficulty: "standard",
-    reactionMs: 240,
-    accuracy: 0.86,
-    winProbability: 0.8,
-    mistakeRate: 0.14,
+    reactionMs: 200,
+    accuracy: 0.915,
+    goldAccuracy: 0.935,
+    mistakeRate: 0.015,
     comboAwareness: 0.7,
-    jitterMs: 90,
+    jitterMs: 40,
+    targetWinRate: 0.8,
   },
 };
 

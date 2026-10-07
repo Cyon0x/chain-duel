@@ -14,8 +14,8 @@ other. Each layer has one job, and the layers below it assume the layers above a
 │  pulse.ts  deterministic schedule + incremental session (same on both  │
 │  rng.ts    crypto-backed RNG + seeded shuffle                          │
 │  verify.ts authoritative replay of a submitted event log                │
-│  bot.ts    VEX-7 opponent: real play + server-only outcome draw         │
-│  rating.ts Elo, achievements                                           │
+│  bot.ts    VEX-7 opponent: deterministic skill model (≈80% vs average) │
+│  outcome.ts authoritative WIN/LOSE/DRAW from settled game state        │
 └──────────────────────────────┬─────────────────────────────────────────┘
                                │
 ┌──────────────────────────────▼─────────────────────────────────────────┐
@@ -73,6 +73,7 @@ BOT ENGINE → BOT MATCH STATE → VERIFICATION → BOT TREASURY SETTLEMENT
 | Sessions | `src/lib/auth/session.ts` |
 | Wallet handshake (client) | `src/lib/wallet/escrow-client.ts` |
 | Arena / HUD | `src/components/game/arena.tsx` |
+| Result resolution (WIN/LOSE/DRAW) | `src/lib/game/outcome.ts` |
 | Result screens | `src/components/game/result.tsx` |
 
 ## Request flows

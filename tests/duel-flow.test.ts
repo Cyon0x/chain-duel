@@ -13,6 +13,7 @@ import { botAvailability } from "@/lib/services/treasury";
 import { requireAdmin, withdrawTreasury } from "@/lib/services/admin";
 import { joinQueue, queueStatus } from "@/lib/services/matchmaking";
 import { PulseDuelSession, buildTargetSchedule } from "@/lib/game/pulse";
+import { resolveOutcome } from "@/lib/game/outcome";
 import { findGameById, listGamePlayers } from "@/lib/db/repositories/duel";
 import { db } from "@/lib/db";
 
@@ -130,6 +131,9 @@ describe("duel lifecycle (demo)", () => {
     expect(bobResult.settled).toBe(true);
     expect(bobResult.game.status).toBe("settled");
     expect(bobResult.game.winner_id).toBe(alice);
+    // The result screen derives WIN/LOSE from the settled row, never locally.
+    expect(resolveOutcome(bobResult.game, alice)).toBe("win");
+    expect(resolveOutcome(bobResult.game, bob)).toBe("loss");
     expect(bobResult.game.player_one_score).toBeGreaterThanOrEqual(bobResult.game.player_two_score);
 
     // Settlement is idempotent: a retry returns the same settled game.
@@ -258,6 +262,34 @@ describe("computer duels", () => {
     const botPlayer = (await listGamePlayers(await db(), gameId)).find((player) => player.is_bot === 1)!;
     expect(botPlayer.score).toBeGreaterThan(0);
     expect(botPlayer.result).toBe("finished");
+    // A computer win must resolve to a LOSS for the human, never a DRAW.
+    expect(resolveOutcome(result.game, bob)).toBe(
+      result.game.winner_id === bob ? "win" : "loss",
+    );
+    expect(resolveOutcome(result.game, bob)).not.toBe("draw");
+  });
+
+  it("shows WIN when the human out-scores the computer", async () => {
+    const creation = await createDuel({ userId: alice, mode: "bot", entryStroops: ENTRY, demo: true });
+    const gameId = creation.game.id;
+    await commitEntry({ game: creation.game, userId: alice, role: "creator" });
+    const started = await startMatch({ gameId, userId: alice });
+
+    // A perfect run beats the computer's bounded skill ceiling.
+    const log = eventLog(started.seed, started.duration_ms);
+    const result = await submitResult({
+      gameId,
+      userId: alice,
+      payload: {
+        seat: 1,
+        hits: log.hits,
+        misses: [],
+        clientScore: scoreOf(started.seed, started.duration_ms, log.hits),
+      },
+    });
+    expect(result.settled).toBe(true);
+    expect(result.game.status).toBe("settled");
+    expect(resolveOutcome(result.game, alice)).toBe("win");
   });
 
   it("refuses a staked computer duel when the contract is not configured", async () => {

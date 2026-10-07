@@ -24,9 +24,8 @@ import { explorerTxUrl } from "../config/stellar";
 import { evaluateAchievements, applyElo } from "../game/rating";
 import { buildTargetSchedule, theoreticalMaxScore, type TargetSpec } from "../game/pulse";
 import { verifySubmission, type SubmissionPayload } from "../game/verify";
-import { PulseBot, drawBotOutcome, type BotOutcome } from "../game/bot";
+import { PulseBot } from "../game/bot";
 import { DEFAULT_BOT } from "../config/game";
-import type { BotState } from "../game/bot";
 import { beginOnChainGame, settleOnChain, messageOf } from "./escrow";
 import { recordBotTreasuryMovement } from "./treasury";
 import { ChainDuelError } from "./errors";
@@ -80,12 +79,8 @@ export async function loadGameView(gameId: string): Promise<GameView | null> {
     });
   }
 
-  let botScore: number | null = null;
-  if (game.mode === "bot" && game.status === "active") {
-    const bot = await botSnapshotFor(game, players);
-    botScore = bot?.score ?? null;
-    if (bot) await persistBotState(game, bot.state);
-  }
+  const botScore =
+    game.mode === "bot" && game.status === "active" ? botScoreFor(game, Date.now()) : null;
 
   const liveScores = await liveScoresFor(database, game.id);
   const startAtMs = game.started_at ? new Date(game.started_at).getTime() : null;
@@ -167,59 +162,18 @@ export async function recordProgress(input: {
   });
 }
 
-async function botSnapshotFor(
-  game: GameRow,
-  players: GameView["players"],
-): Promise<{ score: number; state: StoredBotState } | null> {
-  if (!game.started_at || !game.bot_outcome) return null;
-  const humanSeat = players.find((player) => player.is_bot !== 1);
-  const elapsed = Math.min(Date.now() - new Date(game.started_at).getTime(), game.duration_ms);
-  const state = parseBotState(game.bot_state);
-  const restoreMs = state && state.atMs <= elapsed ? state.atMs : 0;
-
-  const bot = resumeBot(game, state && state.atMs <= elapsed ? state : null);
-  const steps = Math.max(1, Math.ceil((elapsed - restoreMs) / 250));
-  const stepMs = (elapsed - restoreMs) / steps;
-  for (let index = 1; index <= steps; index += 1) {
-    bot.update(Math.round(restoreMs + stepMs * index), humanSeat?.score ?? 0);
-  }
-  const snapshot = bot.snapshot();
-  return {
-    score: snapshot.score,
-    state: { ...bot.exportState(), atMs: elapsed },
-  };
-}
-
-interface StoredBotState extends BotState {
-  atMs: number;
-}
-
-function parseBotState(raw: string | null): StoredBotState | null {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as StoredBotState;
-  } catch {
-    return null;
-  }
-}
-
-function resumeBot(game: GameRow, state: StoredBotState | null): PulseBot {
-  const bot = new PulseBot(
-    game.seed,
-    DEFAULT_BOT,
-    (game.bot_outcome ?? "bot") as BotOutcome,
-    game.duration_ms,
-  );
-  if (state) bot.restoreState(state);
-  return bot;
-}
-
-async function persistBotState(
-  game: GameRow,
-  snapshot: StoredBotState,
-): Promise<void> {
-  const database = await db();
-  await updateGame(database, game.id, { bot_state: JSON.stringify(snapshot) });
+/**
+ * The computer opponent's live score. It is a pure function of `(seed,
+ * profile, elapsedMs)` — the same play is reproduced at settlement — so it is
+ * never persisted, never depends on the human's score and can never drift from
+ * the authoritative result.
+ */
+function botScoreFor(game: GameRow, atMs: number): number | null {
+  if (!game.started_at) return null;
+  const elapsed = Math.min(Math.max(0, atMs - new Date(game.started_at).getTime()), game.duration_ms);
+  const bot = new PulseBot(game.seed, DEFAULT_BOT, game.duration_ms);
+  bot.update(elapsed);
+  return bot.snapshot().score;
 }
 
 export async function startMatch(input: { gameId: string; userId: string }): Promise<GameRow> {
@@ -237,11 +191,6 @@ export async function startMatch(input: { gameId: string; userId: string }): Pro
   if (!game.demo && game.escrow_state !== "onchain") {
     throw new ChainDuelError("Escrow is not funded for this duel.", "not_funded");
   }
-  if (game.mode === "bot" && !game.bot_outcome) {
-    // Settlement randomness is drawn once, on the server, and never exposed.
-    await updateGame(database, game.id, { bot_outcome: drawBotOutcome(DEFAULT_BOT) });
-  }
-
   const claimed = await transitionGame(database, game.id, ["joined"], "active", {
     started_at: nowIso(),
   });
@@ -344,8 +293,8 @@ async function finalizeBotMatch(game: GameRow): Promise<GameRow> {
   const human = players.find((player) => player.is_bot !== 1);
   if (!human) throw new ChainDuelError("Bot duel has no human player.", "invalid_state");
 
-  const bot = resumeBot(game, parseBotState(game.bot_state));
-  bot.update(game.duration_ms, human.score);
+  const bot = new PulseBot(game.seed, DEFAULT_BOT, game.duration_ms);
+  bot.update(game.duration_ms);
   const snapshot = bot.snapshot();
 
   await recordPlayerResult(database, game.id, botSeatId(), {
@@ -355,7 +304,6 @@ async function finalizeBotMatch(game: GameRow): Promise<GameRow> {
     misses: snapshot.misses,
     result: "finished",
   });
-  await updateGame(database, game.id, { bot_state: JSON.stringify({ ...bot.exportState(), atMs: game.duration_ms }) });
   return settleMatch(game.id);
 }
 
@@ -728,7 +676,7 @@ export async function botWinProbability(): Promise<number> {
   const database = await db();
   const stored = await getSetting(database, "bot.win_probability");
   const parsed = stored ? Number(stored) : Number.NaN;
-  return Number.isFinite(parsed) && parsed > 0 && parsed < 1 ? parsed : DEFAULT_BOT.winProbability;
+  return Number.isFinite(parsed) && parsed > 0 && parsed < 1 ? parsed : DEFAULT_BOT.targetWinRate;
 }
 
 export async function botThresholds() {

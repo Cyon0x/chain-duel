@@ -27,7 +27,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         clientDurationMs: body.clientDurationMs,
       },
     });
-    return ok({ game: result.game, score: result.score, settled: result.settled });
+    return ok({
+      game: result.game,
+      score: result.score,
+      settled: result.settled,
+      waitingForOpponent: result.waitingForOpponent,
+    });
   } catch (error) {
     return fail(error);
   }

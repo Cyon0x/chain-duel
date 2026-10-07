@@ -25,6 +25,7 @@ export function GameCursor() {
     root.style.opacity = "0";
 
     let frame = 0;
+    let running = false;
     let targetX = window.innerWidth / 2;
     let targetY = window.innerHeight / 2;
     let currentX = targetX;
@@ -46,6 +47,18 @@ export function GameCursor() {
       if (dotRef.current) {
         dotRef.current.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) translate(-50%, -50%)`;
       }
+      // Park the loop once the ring has caught up: an idle page should not burn
+      // a rAF slot forever on every desktop session.
+      if (Math.abs(targetX - currentX) < 0.2 && Math.abs(targetY - currentY) < 0.2) {
+        running = false;
+        return;
+      }
+      frame = window.requestAnimationFrame(render);
+    };
+
+    const start = () => {
+      if (running) return;
+      running = true;
       frame = window.requestAnimationFrame(render);
     };
 
@@ -53,6 +66,7 @@ export function GameCursor() {
       targetX = event.clientX;
       targetY = event.clientY;
       root.style.opacity = "1";
+      start();
     };
 
     const resolveState = (element: Element | null): CursorState => {

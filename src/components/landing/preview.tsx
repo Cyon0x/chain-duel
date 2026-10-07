@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { usePreferences } from "@/components/providers";
+import { PULSE_DUEL } from "@/lib/config/game";
 
 type Kind = "blue" | "gold" | "red";
 
@@ -16,7 +17,14 @@ interface PreviewTarget {
 }
 
 const KIND_POINTS: Record<Kind, number> = { blue: 10, gold: 25, red: -15 };
-const LIFETIME: Record<Kind, number> = { blue: 1500, gold: 1150, red: 1700 };
+/** Lifetimes come from the live game config so the preview always feels the same. */
+const lifetimeFor = (kind: Kind) =>
+  PULSE_DUEL.targets.find((target) => target.kind === kind)?.lifetimeMs ?? 1_500;
+const LIFETIME: Record<Kind, number> = {
+  blue: lifetimeFor("blue"),
+  gold: lifetimeFor("gold"),
+  red: lifetimeFor("red"),
+};
 
 /**
  * A genuinely interactive slice of Pulse Duel shown on the landing page so

@@ -8,6 +8,7 @@ import { useAsync } from "@/lib/hooks/use-async";
 import { EscrowStatus } from "@/components/escrow-status";
 import { runEscrow, type EscrowStep } from "@/lib/wallet/escrow-client";
 import { useSession } from "@/components/providers";
+import { isResultFinal } from "@/lib/game/outcome";
 import { PulseArena } from "./arena";
 import { MatchResult } from "./result";
 import type { MatchView, SubmitResponse } from "@/lib/api/views";
@@ -16,8 +17,11 @@ const LOCK_RETRIES = 5;
 
 /**
  * Owns the duel lifecycle: lock entry → lobby → countdown/arena → settlement.
- * The server is the source of truth for status at every step, and the entry is
- * only considered locked once a Stellar transaction has been confirmed.
+ *
+ * The server view is the only source of truth here. The result screen is
+ * rendered exclusively from a *settled* game (see `isResultFinal`); while a
+ * settlement is still confirming we show a progress panel and keep polling
+ * instead of guessing an outcome from a half-written game row.
  */
 export function MatchStage({ gameId, selfUserId }: { gameId: string; selfUserId: string | null }) {
   const router = useRouter();
@@ -25,17 +29,19 @@ export function MatchStage({ gameId, selfUserId }: { gameId: string; selfUserId:
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState<EscrowStep>("idle");
   const [actionError, setActionError] = useState<string | null>(null);
-  const [waiting, setWaiting] = useState(false);
-  const [finished, setFinished] = useState<SubmitResponse | null>(null);
-  const [finalView, setFinalView] = useState<MatchView | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [waitingForOpponent, setWaitingForOpponent] = useState(false);
 
-  const { data, error, loading, reload } = useAsync<MatchView>(
+  const { data: view, error, loading, reload } = useAsync<MatchView>(
     () => api<MatchView>(`/api/matches/${gameId}`),
     [gameId],
-    { pollMs: 4000 },
+    {
+      pollMs: 4000,
+      // Once the result is authoritative there is nothing left to poll for.
+      shouldPoll: (current) => !current || !isResultFinal(current.game),
+    },
   );
 
-  const view = finalView ?? data;
   const self = useMemo(
     () => view?.players.find((player) => player.user_id === selfUserId) ?? null,
     [selfUserId, view],
@@ -75,8 +81,7 @@ export function MatchStage({ gameId, selfUserId }: { gameId: string; selfUserId:
         }
         if (lastError) throw lastError;
       }
-      const started = await api<MatchView>(`/api/matches/${gameId}/start`, { method: "POST" });
-      setFinalView(started);
+      await api<MatchView>(`/api/matches/${gameId}/start`, { method: "POST" });
       await reload();
       setStep("idle");
     } catch (caught) {
@@ -89,19 +94,14 @@ export function MatchStage({ gameId, selfUserId }: { gameId: string; selfUserId:
 
   const onFinished = useCallback(
     async (response: SubmitResponse) => {
-      setFinished(response);
-      if (response.settled) {
-        try {
-          setFinalView(await api<MatchView>(`/api/matches/${gameId}`));
-        } catch {
-          setFinalView(null);
-        }
-      } else {
-        setWaiting(true);
-      }
+      // Until the next view arrives we must never fall back to the arena, which
+      // would restart the duel from a fresh client session.
+      setSubmitted(true);
+      setWaitingForOpponent(!response.settled);
       await reload();
+      setSubmitted(false);
     },
-    [gameId, reload],
+    [reload],
   );
 
   if (loading && !view) return <LoadingBlock label="Loading duel" />;
@@ -138,24 +138,30 @@ export function MatchStage({ gameId, selfUserId }: { gameId: string; selfUserId:
     );
   }
 
-  if (game.status === "settled" || game.status === "finished") {
+  // Authoritative result only — WIN / LOSE / DRAW can never be guessed here.
+  if (isResultFinal(game)) {
     if (!selfUserId) return <LoadingBlock />;
     return <MatchResult view={view} selfUserId={selfUserId} onPlayAgain={() => router.push("/play")} />;
   }
 
+  if (submitted || game.status === "finished") {
+    return (
+      <SettlementPendingPanel
+        title={game.status === "finished" ? "Settling the duel" : "Verifying result"}
+        body="Replaying both event logs and confirming settlement on Stellar. This updates automatically."
+        onRetry={() => reload()}
+      />
+    );
+  }
+
   if (game.status === "active" && selfUserId) {
-    if (waiting || finished?.waitingForOpponent) {
+    if (waitingForOpponent) {
       return (
-        <Panel className="mx-auto flex max-w-md flex-col items-center gap-3 px-6 py-10 text-center">
-          <Spinner className="text-accent" />
-          <h1 className="text-lg font-semibold">Result submitted</h1>
-          <p className="text-sm text-muted">
-            Waiting for your opponent to finish. Settlement runs automatically the moment both event logs are verified.
-          </p>
-          <Button variant="secondary" onClick={() => reload()}>
-            Check again
-          </Button>
-        </Panel>
+        <SettlementPendingPanel
+          title="Result submitted"
+          body="Waiting for your opponent to finish. Settlement runs automatically the moment both event logs are verified."
+          onRetry={() => reload()}
+        />
       );
     }
     return <PulseArena view={view} selfUserId={selfUserId} onFinished={onFinished} />;
@@ -236,6 +242,27 @@ export function MatchStage({ gameId, selfUserId }: { gameId: string; selfUserId:
           </p>
         )}
       </div>
+    </Panel>
+  );
+}
+
+function SettlementPendingPanel({
+  title,
+  body,
+  onRetry,
+}: {
+  title: string;
+  body: string;
+  onRetry: () => void;
+}) {
+  return (
+    <Panel className="mx-auto flex max-w-md flex-col items-center gap-3 px-6 py-10 text-center">
+      <Spinner className="text-accent" />
+      <h1 className="text-lg font-semibold">{title}</h1>
+      <p className="text-sm text-muted">{body}</p>
+      <Button variant="secondary" onClick={onRetry}>
+        Check again
+      </Button>
     </Panel>
   );
 }
