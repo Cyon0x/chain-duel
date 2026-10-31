@@ -91,8 +91,8 @@ export function QueuePanel({
 
   if (searching) {
     return (
-      <Panel className="flex flex-col items-center gap-6 px-6 py-12 text-center">
-        <div className="relative grid h-32 w-32 place-items-center">
+      <Panel className="flex flex-col items-center gap-5 px-4 py-6 text-center sm:px-6 sm:py-9">
+        <div className="relative grid h-24 w-24 place-items-center">
           <span
             aria-hidden
             className="absolute inset-0 animate-ping rounded-full border border-accent/40"
@@ -102,7 +102,7 @@ export function QueuePanel({
           <span className="numeric text-xs uppercase tracking-[0.2em] text-accent">Searching</span>
         </div>
         <div>
-          <h2 className="text-display text-2xl">Searching for opponent</h2>
+          <h1 className="text-display text-2xl">Searching for opponent</h1>
           <p className="numeric mt-2 text-sm text-muted">
             {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")} elapsed ·{" "}
             {demo ? "Demo" : `${formatXlm(data?.entryStroops ?? 0)} XLM`}
@@ -123,7 +123,7 @@ export function QueuePanel({
   }
 
   return (
-    <Panel className="flex flex-col gap-6 px-6 py-7">
+    <Panel className="flex flex-col gap-5 px-4 py-5 sm:px-6 sm:py-7">
       <div>
         <p className="eyebrow">Play online</p>
         <h1 className="text-display mt-2 text-3xl">Find random player</h1>
@@ -132,21 +132,21 @@ export function QueuePanel({
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="panel-flat flex items-center gap-3 px-4 py-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        <div className="panel-flat flex min-w-0 items-center gap-2 px-3 py-3">
           <Avatar name={selfName ?? "You"} size={36} />
-          <div>
-            <p className="text-sm font-medium">{selfName ?? "You"}</p>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{selfName ?? "You"}</p>
             <p className="text-xs text-dim">You</p>
           </div>
         </div>
-        <div className="panel-flat flex items-center gap-3 px-4 py-3 opacity-70">
+        <div className="panel-flat flex min-w-0 items-center gap-2 px-3 py-3">
           <span aria-hidden className="grid h-9 w-9 place-items-center rounded-2xl border border-line-strong text-dim">
             ?
           </span>
           <div>
             <p className="text-sm font-medium">Opponent</p>
-            <p className="text-xs text-dim">Searching…</p>
+            <p className="text-xs text-dim">Not matched</p>
           </div>
         </div>
       </div>

@@ -16,8 +16,8 @@ export function AuthPanel({
   error?: string;
 }) {
   return (
-    <Panel className="px-6 py-7">
-      <SignInPanel providers={providers} initialError={error} heading="Enter Chain Duel" />
+    <Panel className="px-4 py-5 sm:px-6 sm:py-6">
+      <SignInPanel providers={providers} initialError={error} heading="Enter Chain Duel" headingAs="h1" />
     </Panel>
   );
 }

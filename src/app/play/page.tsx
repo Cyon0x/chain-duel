@@ -1,37 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Badge, EmptyState, Panel, SectionHeader } from "@/components/ui";
+import { EmptyState, Panel, SectionHeader } from "@/components/ui";
+import { DuelModeLinks } from "@/components/play/mode-links";
+import { Icon } from "@/components/icons";
 import { getSessionUser } from "@/lib/auth/session";
 import { dashboardFor } from "@/lib/services/profile";
-import { formatXlm } from "@/lib/config/game";
+import { ECONOMY, formatXlm } from "@/lib/config/game";
 import { MatchRowItem } from "@/components/lists";
 
 export const dynamic = "force-dynamic";
-
-const MODES = [
-  {
-    href: "/play/online",
-    tag: "Live queue",
-    title: "Play online",
-    body: "Get matched with another duelist at your entry. Same targets, same clock.",
-    glyph: "◈",
-    accent: true,
-  },
-  {
-    href: "/play/friend",
-    tag: "Private",
-    title: "Play with a friend",
-    body: "Create a private duel and send a single link. Expires in 30 minutes.",
-    glyph: "⟁",
-  },
-  {
-    href: "/play/computer",
-    tag: "Vs computer",
-    title: "Vs computer",
-    body: "Face VEX-7, the Chain Duel computer. It plays the real game engine.",
-    glyph: "⌘",
-  },
-];
 
 export default async function PlayPage() {
   const session = await getSessionUser();
@@ -47,41 +24,15 @@ export default async function PlayPage() {
           <p className="eyebrow">Play hub</p>
           <h1 className="text-display mt-2 text-4xl sm:text-5xl">Choose your duel</h1>
           <p className="mt-3 max-w-lg text-sm text-muted">
-            Pulse Duel is sixty seconds of targets and combos. Pick an opponent type and we handle escrow, verification
-            and settlement.
+            Sixty seconds of targets and combos. Pick your opponent and entry. Highest verified score wins.
           </p>
         </div>
-        <div className="panel-flat px-4 py-3 text-right">
-          <p className="eyebrow">Default entry</p>
-          <p className="numeric mt-1.5 text-xl font-semibold text-accent">
-            {formatXlm(5 * 10_000_000)} <span className="text-sm text-dim">XLM</span>
-          </p>
+        <div className="inline-flex items-center gap-2 text-sm text-muted">
+          <Icon name="layers" size={16} />Default entry <span className="numeric text-accent">{formatXlm(ECONOMY.defaultEntryStroops)} XLM</span>
         </div>
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        {MODES.map((mode) => (
-          <Link key={mode.href} href={mode.href} className="focus-ring group rounded-[18px]">
-            <Panel
-              className={`flex h-full flex-col gap-4 px-5 py-6 transition-colors ${
-                mode.accent ? "border-accent/40" : "group-hover:border-accent/40"
-              }`}
-            >
-              <span aria-hidden className="text-2xl text-accent">
-                {mode.glyph}
-              </span>
-              <div>
-                <Badge tone={mode.accent ? "accent" : "neutral"}>{mode.tag}</Badge>
-                <h2 className="text-display mt-3 text-2xl">{mode.title}</h2>
-                <p className="mt-2 text-sm text-muted">{mode.body}</p>
-              </div>
-              <span className="mt-auto text-sm font-medium text-accent">
-                {mode.accent ? "Find a match" : "Open"} <span aria-hidden>→</span>
-              </span>
-            </Panel>
-          </Link>
-        ))}
-      </div>
+      <DuelModeLinks />
 
       {data.activeGames.length > 0 ? (
         <section>

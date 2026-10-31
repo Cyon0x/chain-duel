@@ -124,18 +124,18 @@ export function CreateDuelPanel({
       <Panel className="flex flex-col gap-5 px-6 py-7">
         <div>
           <Badge tone="success">Duel created</Badge>
-          <h2 className="text-display mt-3 text-3xl">Invite ready</h2>
+          <h1 className="text-display mt-3 text-3xl">Invite ready</h1>
           <p className="mt-2 text-sm text-muted">
             {invitedUsername
               ? `${invitedUsername} will see your challenge in their dashboard. You can also share the link directly.`
-              : "Share this link with your friend. The duel expires in 30 minutes if nobody joins."}
+              : `Share this link with your friend. Join before ${new Date(created.game.expires_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`}
           </p>
         </div>
 
-        <div className="panel-flat flex items-center justify-between gap-3 px-4 py-3.5">
-          <div className="min-w-0">
+        <div className="panel-flat flex flex-wrap items-center justify-between gap-3 px-4 py-3.5">
+          <div className="min-w-0 flex-1 basis-40">
             <p className="eyebrow">Invite link</p>
-            <p className="numeric mt-1 truncate text-sm text-accent">{inviteUrl}</p>
+            <p className="numeric mt-1 break-all text-sm text-accent">{inviteUrl}</p>
           </div>
           <span className="numeric text-2xl font-semibold tracking-[0.2em] text-ink">{created.game.code}</span>
         </div>
@@ -175,7 +175,7 @@ export function CreateDuelPanel({
           </ButtonLink>
         </div>
         <p className="text-xs text-dim">
-          Your entry is escrowed. If nobody joins before the window closes you can cancel and reclaim it.
+          {created.game.demo ? "Demo invitation · no funds are escrowed." : "Your entry is escrowed. If nobody joins before the window closes you can cancel and reclaim it."}
         </p>
       </Panel>
     );

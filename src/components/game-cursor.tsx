@@ -111,7 +111,7 @@ export function GameCursor() {
   }, []);
 
   return (
-    <div ref={rootRef} className="cd-cursor" data-state="normal" aria-hidden>
+    <div ref={rootRef} className="cd-cursor" style={{ opacity: 0 }} data-state="normal" aria-hidden>
       <div ref={ringRef} className="cd-cursor__ring" />
       <div ref={dotRef} className="cd-cursor__dot" />
     </div>

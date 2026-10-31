@@ -2,6 +2,7 @@ import Link from "next/link";
 import clsx from "clsx";
 import { Avatar, Badge } from "@/components/ui";
 import { formatXlm } from "@/lib/config/game";
+import { Icon } from "@/components/icons";
 import type {
   DirectoryPlayer,
   GameViewRow,
@@ -20,7 +21,7 @@ export function MatchRowItem({ match }: { match: MatchRowView }) {
   return (
     <Link
       href={match.game_id ? `/match/${match.game_id}` : "/profile"}
-      className="focus-ring flex items-center gap-4 rounded-2xl border border-line bg-surface px-4 py-3 transition-colors hover:border-line-strong"
+      className="focus-ring flex items-center gap-3 rounded-xl border border-line bg-surface px-3 py-3 transition-colors hover:border-line-strong sm:px-4"
     >
       <span
         className={clsx(
@@ -46,12 +47,12 @@ export function MatchRowItem({ match }: { match: MatchRowView }) {
           {match.demo ? "Demo" : match.reward_stroops > 0 ? `+${formatXlm(match.reward_stroops)}` : `−${formatXlm(match.entry_stroops)}`}
         </p>
         {match.mode !== "bot" && match.rating_delta !== 0 ? (
-          <p className={clsx("numeric text-[11px]", match.rating_delta > 0 ? "text-success" : "text-danger")}>
+          <p className={clsx("numeric text-xs", match.rating_delta > 0 ? "text-success" : "text-danger")}>
             {match.rating_delta > 0 ? "+" : ""}
             {match.rating_delta} rating
           </p>
         ) : (
-          <p className="text-[11px] text-dim">Unrated</p>
+          <p className="text-xs text-dim">Unrated</p>
         )}
       </div>
     </Link>
@@ -73,7 +74,7 @@ const TX_LABELS: Record<string, string> = {
 export function TransactionItem({ tx }: { tx: TransactionView }) {
   const incoming = tx.direction === "in";
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-line bg-surface px-4 py-3">
+    <div className="flex items-center gap-3 rounded-xl border border-line bg-surface px-3 py-3 sm:px-4">
       <span
         aria-hidden
         className={clsx(
@@ -156,7 +157,7 @@ export function PlayerCard({ player }: { player: DirectoryPlayer }) {
           { label: "Streak", value: player.current_streak },
         ].map((stat) => (
           <div key={stat.label}>
-            <dt className="text-[10px] uppercase tracking-[0.12em] text-dim">{stat.label}</dt>
+            <dt className="text-xs uppercase tracking-[0.12em] text-dim">{stat.label}</dt>
             <dd className="numeric mt-0.5 text-sm">{stat.value}</dd>
           </div>
         ))}
@@ -176,7 +177,7 @@ export function ActiveDuelCard({ game }: { game: GameViewRow }) {
       className="focus-ring flex items-center gap-4 rounded-2xl border border-accent/40 bg-accent-soft px-4 py-3"
     >
       <span aria-hidden className="grid h-9 w-9 place-items-center rounded-xl border border-accent/40 text-accent">
-        ⚡
+        <Icon name="bolt" size={20} />
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">

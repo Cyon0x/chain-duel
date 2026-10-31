@@ -297,7 +297,7 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
                 Share
               </Button>
             </div>
-            <p className="text-[11px] text-dim">
+            <p className="text-xs text-dim">
               Only send XLM on {wallet.network.label}. Other assets or networks cannot be recovered.
             </p>
           </div>
@@ -341,7 +341,7 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
                   Max
                 </Button>
               </div>
-              <span className="text-[11px] text-dim">Up to {wallet.balance.spendableXlm} XLM sendable</span>
+              <span className="text-xs text-dim">Up to {wallet.balance.spendableXlm} XLM sendable</span>
             </label>
             <label className="flex flex-col gap-1.5">
               <span className="eyebrow">Memo (optional)</span>
@@ -359,7 +359,7 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
             </Button>
 
             {busy ? (
-              <ol className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-dim">
+              <ol className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-dim">
                 {stageSteps.map((step) => (
                   <li
                     key={step}
@@ -449,7 +449,7 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
                   </p>
                   <p
                     className={clsx(
-                      "text-[11px]",
+                      "text-xs",
                       transfer.status === "confirmed"
                         ? "text-success"
                         : transfer.status === "failed"

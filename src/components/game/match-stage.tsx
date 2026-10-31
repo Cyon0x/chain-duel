@@ -172,7 +172,7 @@ export function MatchStage({ gameId, selfUserId }: { gameId: string; selfUserId:
   const opponentReady = game.mode === "bot" || humans.length >= 2;
 
   return (
-    <Panel className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-8">
+    <Panel className="duel-lobby mx-auto flex max-w-2xl flex-col gap-5 px-4 py-5 sm:px-6 sm:py-7">
       <div className="text-center">
         <p className="eyebrow">{game.demo ? "Demo duel" : "Pulse Duel"}</p>
         <h1 className="text-display mt-2 text-3xl">
@@ -186,11 +186,11 @@ export function MatchStage({ gameId, selfUserId }: { gameId: string; selfUserId:
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         {view.players.map((player) => {
           const locked = player.seat === 1 ? view.escrow.creator : view.escrow.joiner;
           return (
-            <div key={player.id} className="panel-flat flex items-center justify-between px-4 py-3">
+            <div key={player.id} className="panel-flat flex min-w-0 flex-wrap items-center justify-between gap-2 px-3 py-3">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{player.username}</p>
                 <p className="text-xs text-dim">
@@ -198,7 +198,7 @@ export function MatchStage({ gameId, selfUserId }: { gameId: string; selfUserId:
                 </p>
               </div>
               <span
-                className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+                className={`rounded-full border px-2 py-1 text-xs font-semibold ${
                   locked ? "border-success/40 text-success" : "border-line-strong text-dim"
                 }`}
               >
@@ -236,7 +236,7 @@ export function MatchStage({ gameId, selfUserId }: { gameId: string; selfUserId:
           <p className="text-xs text-dim">Waiting for an opponent to accept the invitation…</p>
         ) : (
           <p className="text-xs text-dim">
-            {selfLocked
+            {game.demo ? "Demo duel · no stake or wallet signature required." : selfLocked
               ? "Your entry is locked in escrow."
               : "Your wallet will ask you to sign the escrow transaction."}
           </p>

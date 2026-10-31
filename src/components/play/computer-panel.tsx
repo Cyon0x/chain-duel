@@ -5,6 +5,7 @@ import { CreateDuelPanel } from "./create-duel";
 import { useAsync } from "@/lib/hooks/use-async";
 import { api } from "@/lib/api/client";
 import { formatXlm } from "@/lib/config/game";
+import { Icon } from "@/components/icons";
 
 interface BotStatus {
   available: boolean;
@@ -52,7 +53,7 @@ export function ComputerPanel({ defaultEntryXlm, options }: { defaultEntryXlm: n
       <div className="panel-flat flex flex-wrap items-center justify-between gap-3 px-4 py-3">
         <div className="flex items-center gap-3">
           <span aria-hidden className="grid h-10 w-10 place-items-center rounded-2xl border border-accent/40 bg-accent-soft text-accent">
-            ⌘
+            <Icon name="cpu" size={22} />
           </span>
           <div>
             <p className="text-sm font-medium">{data.opponent.name}</p>

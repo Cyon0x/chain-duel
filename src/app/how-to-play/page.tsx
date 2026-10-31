@@ -1,5 +1,5 @@
 import { Badge, ButtonLink, Panel, SectionHeader } from "@/components/ui";
-import { PULSE_DUEL, ECONOMY, formatXlm } from "@/lib/config/game";
+import { PULSE_DUEL, ECONOMY, formatXlm, splitPool } from "@/lib/config/game";
 
 export const metadata = { title: "How to Play — Chain Duel" };
 
@@ -16,7 +16,7 @@ const STEPS = [
 
 export default function HowToPlayPage() {
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-10 pt-2">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 pt-2 sm:gap-8">
       <header>
         <p className="eyebrow">Guide</p>
         <h1 className="text-display mt-2 text-4xl sm:text-5xl">How to play</h1>
@@ -44,7 +44,7 @@ export default function HowToPlayPage() {
       <section className="grid gap-4 lg:grid-cols-3">
         {PULSE_DUEL.targets.map((target) => (
           <Panel key={target.kind} className="flex items-center gap-4 px-5 py-4">
-            <span aria-hidden className={`target target--${target.kind} relative !left-0 !top-0 h-10 w-10 shrink-0`}>
+            <span aria-hidden className={`target target--${target.kind} relative !left-0 !top-0 h-10 w-10 shrink-0 !translate-x-0 !translate-y-0 !animate-none`}>
               <span className="target__core" />
             </span>
             <div>
@@ -86,11 +86,11 @@ export default function HowToPlayPage() {
             </li>
             <li className="flex items-center justify-between border-b border-line pb-2">
               <span className="text-muted">Winner reward</span>
-              <span className="numeric text-success">9.00 XLM</span>
+              <span className="numeric text-success">{formatXlm(splitPool(ECONOMY.defaultEntryStroops * 2, ECONOMY.feeBps).payout)} XLM</span>
             </li>
             <li className="flex items-center justify-between">
               <span className="text-muted">Protocol fee</span>
-              <span className="numeric text-dim">10% · 1000 bps</span>
+              <span className="numeric text-dim">{ECONOMY.feeBps / 100}% · {ECONOMY.feeBps} bps</span>
             </li>
           </ul>
           <p className="mt-3 text-xs text-dim">

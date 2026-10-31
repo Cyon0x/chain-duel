@@ -26,21 +26,21 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
       </Link>
 
       <Panel className="flex flex-col gap-6 px-5 py-6 sm:px-7">
-        <div className="flex flex-wrap items-center gap-5">
-          <Avatar name={profile.username} src={profile.avatar} size={72} theme={profile.theme} />
+        <div className="profile-identity">
+          <Avatar name={profile.username} src={profile.avatar} size={56} theme={profile.theme} />
           <div className="min-w-0 flex-1">
             <h1 className="text-display text-3xl">{profile.username}</h1>
             <p className="numeric mt-1 text-sm text-muted">
               {data.walletAddress ? truncateAddress(data.walletAddress, 5) : "managed wallet"} · Rank #{data.rank}
             </p>
           </div>
-          <div className="flex flex-col items-end gap-2">
+          <div className="profile-identity__status">
             <Badge tone="accent">{profile.rating} rating</Badge>
             <span className="text-xs text-dim">Reputation {profile.reputation}</span>
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5">
           <Stat label="Wins" value={profile.wins} tone="success" />
           <Stat label="Losses" value={profile.losses} />
           <Stat label="Win rate" value={`${winRate}%`} />

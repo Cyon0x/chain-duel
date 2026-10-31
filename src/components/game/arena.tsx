@@ -6,6 +6,9 @@ import { PulseDuelSession, type TargetSpec } from "@/lib/game/pulse";
 import { usePreferences } from "@/components/providers";
 import { sound } from "@/lib/sound/audio";
 import type { MatchView, SubmitResponse } from "@/lib/api/views";
+import { formatXlm } from "@/lib/config/game";
+import { Icon } from "@/components/icons";
+import { ArenaOrbits, TargetLegend } from "./target-legend";
 
 interface HitRecordLocal {
   targetId: number;
@@ -315,7 +318,8 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
   const progressOpponent = Math.min(1, opponentScore / Math.max(1, view.maxScore * 0.6));
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="pulse-arena">
+      <h1 className="sr-only">Pulse Duel</h1>
       <ArenaHud
         self={self}
         opponent={opponent}
@@ -328,15 +332,22 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
         progressSelf={progressSelf}
         progressOpponent={progressOpponent}
         isBot={view.game.mode === "bot"}
+        phase={phase}
       />
+
+      <div className="pulse-meta">
+        <span><Icon name="gamepad" size={15} />Pulse Duel{view.game.mode === "bot" ? " · vs computer" : " · 1v1"}</span>
+        <span>{view.game.demo ? "Demo · no stake" : `${formatXlm(view.game.entry_stroops)} XLM entry · ${formatXlm(view.game.entry_stroops * 2)} XLM pool`}</span>
+      </div>
 
       <div
         ref={arenaRef}
-        className={clsx("arena-surface grid-lines h-[58vh] min-h-[340px] w-full sm:h-[62vh]", shake > 0 && "arena-shake")}
+        className={clsx("arena-surface grid-lines pulse-field", shake > 0 && "arena-shake")}
         onPointerDown={handleBackground}
         role="application"
         aria-label="Pulse Duel arena"
       >
+        <ArenaOrbits />
         <div
           ref={barRef}
           className="absolute inset-x-0 top-0 h-0.5 origin-left bg-accent"
@@ -346,7 +357,7 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
         {phase === "countdown" && countdown !== null ? (
           <div className="absolute inset-0 z-20 grid place-items-center bg-bg/45 backdrop-blur-[2px]">
             <div key={countdown} className="animate-rise text-center">
-              <p className="text-display numeric text-[86px] text-accent sm:text-[120px]">{countdown}</p>
+              <p className="pulse-countdown numeric text-accent">{countdown}</p>
               <p className="eyebrow mt-2">Get ready</p>
             </div>
           </div>
@@ -364,7 +375,7 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
                   key={target.id}
                   type="button"
                   aria-label={`${target.kind} target, ${target.points} points`}
-                  className={`target target--${target.kind} focus-ring animate-rise`}
+                  className={`target target--${target.kind} focus-ring`}
                   style={{
                     left: `${target.x * 100}%`,
                     top: `${target.y * 100}%`,
@@ -376,8 +387,10 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
                     event.preventDefault();
                     handleTarget(target);
                   }}
+                  onClick={(event) => { if (event.detail === 0) handleTarget(target); }}
                 >
                   <span className="target__core" />
+                  <span className="target__symbol"><Icon name={target.kind === "red" ? "close" : target.kind === "gold" ? "star" : "bolt"} size={17} /></span>
                 </button>
               );
             })
@@ -406,6 +419,8 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
         ) : null}
       </div>
 
+      <TargetLegend className="pulse-legend" />
+
       <p aria-live="polite" className="sr-only">
         Score {selfScore}. Combo {combo}.
       </p>
@@ -433,6 +448,7 @@ function ArenaHud({
   progressSelf,
   progressOpponent,
   isBot,
+  phase,
 }: {
   self: MatchView["players"][number];
   opponent: MatchView["players"][number];
@@ -445,50 +461,38 @@ function ArenaHud({
   progressSelf: number;
   progressOpponent: number;
   isBot: boolean;
+  phase: Phase;
 }) {
   const seconds = Math.ceil(timeLeftMs / 1000);
   const urgent = timeLeftMs <= 10_000;
   return (
-    <div className="panel-flat overflow-hidden">
-      <div className="flex items-stretch divide-x divide-line">
-        <PlayerReadout name={self?.username ?? "You"} score={selfScore} accent="self" />
-        <div className="flex w-[92px] shrink-0 flex-col items-center justify-center gap-1 px-3 py-3 sm:w-[132px]">
-          <p className={clsx("numeric text-2xl font-bold sm:text-3xl", urgent ? "text-danger" : "text-ink")}>
+    <div className="arena-hud">
+      <div className="arena-hud__players">
+        <PlayerReadout name={self?.username ?? "You"} score={selfScore} accent="self" progress={progressSelf} />
+        <div className="arena-hud__clock">
+          <span className="arena-hud__phase">{phase === "playing" ? "Live duel" : phase === "countdown" ? "Get ready" : phase === "submitting" ? "Verifying" : "Finished"}</span>
+          <p className={clsx("numeric", urgent ? "text-danger" : "text-ink")} aria-label={`${Math.max(0, seconds)} seconds remaining`}>
             {String(Math.max(0, seconds)).padStart(2, "0")}
           </p>
-          <p className="eyebrow hidden sm:block">Seconds</p>
+          <span className="arena-hud__seconds">seconds</span>
         </div>
         <PlayerReadout
           name={isBot ? `${opponent?.username ?? "Computer"} · CPU` : opponent?.username ?? "Opponent"}
           score={opponentScore}
           accent="opponent"
           alignRight
+          progress={progressOpponent}
         />
       </div>
-      <div className="grid grid-cols-2 gap-px bg-line">
-        <div className="bg-bg-elevated px-3 py-2">
-          <div className="h-1 w-full overflow-hidden rounded-full bg-surface-strong">
-            <div className="h-full rounded-full bg-accent transition-[width] duration-200" style={{ width: `${progressSelf * 100}%` }} />
-          </div>
-        </div>
-        <div className="bg-bg-elevated px-3 py-2">
-          <div className="h-1 w-full overflow-hidden rounded-full bg-surface-strong">
-            <div
-              className="ml-auto h-full rounded-full bg-danger/70 transition-[width] duration-200"
-              style={{ width: `${progressOpponent * 100}%` }}
-            />
-          </div>
-        </div>
-      </div>
-      <div className="flex items-center justify-between gap-3 border-t border-line px-3 py-2">
-        <span className="flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-dim">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent" />
-          Combo {combo}
+      <div className="arena-hud__combo">
+        <span className="inline-flex items-center gap-2">
+          <Icon name="bolt" size={14} />
+          Combo <strong className="numeric text-ink">{combo}</strong>
         </span>
-        <span className={clsx("numeric text-sm font-semibold", multiplier > 1 ? "text-accent" : "text-muted")}>
+        <span className={clsx("numeric", multiplier > 1 ? "text-accent" : "text-muted")}>
           {multiplier.toFixed(1)}× multiplier
         </span>
-        <span className="hidden text-[11px] uppercase tracking-[0.16em] text-dim sm:block">
+        <span className="arena-hud__duration">
           {Math.round(durationMs / 1000)}s duel
         </span>
       </div>
@@ -501,18 +505,21 @@ function PlayerReadout({
   score,
   accent,
   alignRight,
+  progress,
 }: {
   name: string;
   score: number;
   accent: "self" | "opponent";
   alignRight?: boolean;
+  progress: number;
 }) {
   return (
-    <div className={clsx("flex-1 px-3 py-3", alignRight && "text-right")}>
-      <p className="truncate text-[11px] uppercase tracking-[0.16em] text-dim">{name}</p>
-      <p className={clsx("numeric mt-1 text-2xl font-semibold sm:text-3xl", accent === "self" ? "text-accent" : "text-ink")}>
+    <div className={clsx("player-readout", alignRight && "player-readout--opponent")}>
+      <p className="player-readout__name" title={name}><span aria-hidden />{name}</p>
+      <p className={clsx("player-readout__score numeric", accent === "self" ? "text-accent" : "text-gold")}>
         {score.toLocaleString("en-US")}
       </p>
+      <div className="player-readout__track" aria-hidden><div style={{ width: `${progress * 100}%` }} /></div>
     </div>
   );
 }

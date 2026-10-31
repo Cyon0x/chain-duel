@@ -23,7 +23,7 @@ export default async function LeaderboardPage() {
 
       {rows.length ? (
         <Panel className="overflow-hidden p-0">
-          <div className="hidden grid-cols-[64px_1.6fr_repeat(5,minmax(0,1fr))] gap-2 border-b border-line px-5 py-3 text-[11px] uppercase tracking-[0.14em] text-dim lg:grid">
+          <div className="hidden grid-cols-[64px_1.6fr_repeat(5,minmax(0,1fr))] gap-2 border-b border-line px-5 py-3 text-xs uppercase tracking-[0.14em] text-dim lg:grid">
             <span>Rank</span>
             <span>Player</span>
             <span className="text-right">Rating</span>
@@ -54,7 +54,7 @@ export default async function LeaderboardPage() {
                       <Avatar name={row.username} src={row.avatar} size={34} theme={row.theme} />
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-medium">{row.username}</span>
-                        <span className="block text-[11px] text-dim lg:hidden">
+                        <span className="block text-xs text-dim lg:hidden">
                           {row.rating} rating · {row.wins}W {row.losses}L
                         </span>
                       </span>
@@ -64,7 +64,7 @@ export default async function LeaderboardPage() {
                     <span className="numeric hidden text-right text-sm lg:block">{row.losses}</span>
                     <span className="numeric hidden text-right text-sm lg:block">{winRate}%</span>
                     <span className="numeric hidden text-right text-sm lg:block">
-                      {row.current_streak > 0 ? `${row.current_streak}🔥` : row.current_streak}
+                      {row.current_streak > 0 ? `${row.current_streak}` : row.current_streak}
                     </span>
                   </Link>
                 </li>

@@ -73,10 +73,10 @@ export function MatchResult({ view, selfUserId, onPlayAgain }: ResultProps) {
   const title = won ? "WINNER" : botWon ? "COMPUTER WINS" : isDraw ? "DRAW" : "DEFEAT";
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
       <Panel
         className={clsx(
-          "relative overflow-hidden px-6 py-10 text-center",
+          "relative overflow-hidden px-4 py-6 text-center sm:px-6 sm:py-8",
           won ? "accent-glow" : undefined,
         )}
       >
@@ -100,7 +100,7 @@ export function MatchResult({ view, selfUserId, onPlayAgain }: ResultProps) {
         <p className="eyebrow">{game.demo ? "Demo duel" : "Pulse Duel"}</p>
         <h1
           className={clsx(
-            "text-display mt-3 text-5xl sm:text-6xl",
+            "match-result-title text-display mt-3",
             won ? "text-accent" : isDraw ? "text-ink" : "text-danger",
           )}
         >
@@ -111,23 +111,23 @@ export function MatchResult({ view, selfUserId, onPlayAgain }: ResultProps) {
           {game.mode === "bot" ? " · VS COMPUTER" : ""}
         </p>
 
-        <div className="mx-auto mt-8 grid max-w-md grid-cols-[1fr_auto_1fr] items-center gap-4">
+        <div className="match-result__scores">
           <div>
             <p className="eyebrow">You</p>
-            <p className="numeric mt-1 text-4xl font-semibold text-accent">{displayScore.toLocaleString("en-US")}</p>
+            <p className="numeric mt-1 font-semibold text-accent">{displayScore.toLocaleString("en-US")}</p>
           </div>
           <span className="text-dim">—</span>
           <div>
             <p className="eyebrow">Opponent</p>
-            <p className="numeric mt-1 text-4xl font-semibold">{displayOpponent.toLocaleString("en-US")}</p>
+            <p className="numeric mt-1 font-semibold text-gold">{displayOpponent.toLocaleString("en-US")}</p>
           </div>
         </div>
       </Panel>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Panel className="px-4 py-3.5">
           <p className="eyebrow">Prize pool</p>
-          <p className="numeric mt-2 text-xl font-semibold">{xlm(pool)} XLM</p>
+          <p className="numeric mt-2 text-xl font-semibold">{game.demo ? "No stake" : `${xlm(pool)} XLM`}</p>
         </Panel>
         <Panel className="px-4 py-3.5">
           <p className="eyebrow">Your reward</p>
@@ -188,11 +188,11 @@ export function MatchResult({ view, selfUserId, onPlayAgain }: ResultProps) {
         ) : null}
         <div className="flex flex-wrap gap-2">
           {onPlayAgain ? (
-            <Button onClick={onPlayAgain} variant="secondary">
+            <Button onClick={onPlayAgain}>
               Play again
             </Button>
           ) : (
-            <ButtonLink href="/play" variant="secondary">
+            <ButtonLink href="/play">
               Play again
             </ButtonLink>
           )}

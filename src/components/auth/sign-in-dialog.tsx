@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui";
+import { Icon } from "@/components/icons";
 import { SignInPanel } from "./sign-in-panel";
 import type { AuthProviders } from "./types";
 
@@ -22,6 +23,8 @@ export function SignInDialog({
   variant?: "primary" | "secondary" | "ghost";
 }) {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const headingId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -30,16 +33,18 @@ export function SignInDialog({
     };
     document.addEventListener("keydown", onKey);
     const previous = document.body.style.overflow;
+    const trigger = triggerRef.current;
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = previous;
+      trigger?.focus({ preventScroll: true });
     };
   }, [open]);
 
   return (
     <>
-      <Button size={size} variant={variant} onClick={() => setOpen(true)}>
+      <Button ref={triggerRef} size={size} variant={variant} aria-haspopup="dialog" onClick={() => setOpen(true)}>
         {label}
       </Button>
       {/*
@@ -50,12 +55,12 @@ export function SignInDialog({
         `open` can only become true from a client-side click, so `document` is
         always available here and no mount guard is needed.
       */}
-      {open ? createPortal(<SignInOverlay providers={providers} onClose={() => setOpen(false)} />, document.body) : null}
+      {open ? createPortal(<SignInOverlay headingId={headingId} providers={providers} onClose={() => setOpen(false)} />, document.body) : null}
     </>
   );
 }
 
-function SignInOverlay({ providers, onClose }: { providers: AuthProviders; onClose: () => void }) {
+function SignInOverlay({ providers, onClose, headingId }: { providers: AuthProviders; onClose: () => void; headingId: string }) {
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -66,31 +71,39 @@ function SignInOverlay({ providers, onClose }: { providers: AuthProviders; onClo
 
   return (
     <div
-      className="fixed inset-0 z-[100] overflow-y-auto overscroll-contain bg-bg/80 backdrop-blur-md"
+      className="sign-in-overlay fixed inset-0 z-[100] overflow-y-auto overscroll-contain bg-bg/80 backdrop-blur-md"
       onClick={onClose}
       role="presentation"
     >
       <div
-        className="flex min-h-full items-center justify-center p-4 sm:p-6"
+        className="sign-in-overlay__position flex min-h-full items-center justify-center p-3 sm:p-6"
       >
         <div
           ref={panelRef}
           role="dialog"
           aria-modal="true"
-          aria-labelledby="sign-in-heading"
+          aria-labelledby={headingId}
           tabIndex={-1}
           onClick={(event) => event.stopPropagation()}
-          className="animate-rise panel relative my-auto w-full max-w-[420px] px-5 py-6 outline-none sm:px-7 sm:py-8"
+          className="sign-in-dialog panel relative my-auto w-full max-w-[420px] px-4 py-5 outline-none sm:px-6 sm:py-6"
+          onKeyDown={(event) => {
+            if (event.key !== "Tab") return;
+            const items = Array.from(panelRef.current?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), [tabindex="0"]') ?? []).filter((node) => node.getClientRects().length > 0);
+            const first = items[0];
+            const last = items.at(-1);
+            if (event.shiftKey && (document.activeElement === first || document.activeElement === panelRef.current)) { event.preventDefault(); last?.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+          }}
         >
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="focus-ring absolute right-4 top-4 z-10 grid h-8 w-8 place-items-center rounded-full text-muted transition-colors hover:bg-surface hover:text-ink"
+            className="focus-ring absolute right-2 top-2 z-10 grid h-11 w-11 place-items-center rounded-xl text-muted transition-colors hover:bg-surface hover:text-ink"
           >
-            <span aria-hidden>×</span>
+            <Icon name="close" size={18} />
           </button>
-          <SignInPanel providers={providers} onDone={onClose} />
+          <SignInPanel providers={providers} onDone={onClose} headingId={headingId} />
         </div>
       </div>
     </div>

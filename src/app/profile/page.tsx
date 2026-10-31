@@ -25,8 +25,8 @@ export default async function ProfilePage() {
   return (
     <div className="flex flex-col gap-7 pt-2">
       <Panel className="flex flex-col gap-6 px-5 py-6 sm:px-7">
-        <div className="flex flex-wrap items-center gap-5">
-          <Avatar name={profile.username} src={profile.avatar} size={76} theme={profile.theme} />
+        <div className="profile-identity">
+          <Avatar name={profile.username} src={profile.avatar} size={56} theme={profile.theme} />
           <div className="min-w-0 flex-1">
             <p className="eyebrow">Your profile</p>
             <h1 className="text-display mt-1 text-3xl">{profile.username}</h1>
@@ -34,7 +34,7 @@ export default async function ProfilePage() {
               Rank #{data.rank} · reputation {profile.reputation} · {profile.human_games} human duels
             </p>
           </div>
-          <div className="flex flex-col items-end gap-2">
+          <div className="profile-identity__status">
             <Badge tone="accent">{profile.rating} rating</Badge>
             <ButtonLink href="/settings" size="sm" variant="secondary">
               Edit settings
@@ -42,7 +42,7 @@ export default async function ProfilePage() {
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6">
           <Stat label="Wins" value={profile.wins} tone="success" />
           <Stat label="Losses" value={profile.losses} />
           <Stat label="Win rate" value={`${winRate}%`} />

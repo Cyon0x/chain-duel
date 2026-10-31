@@ -41,12 +41,12 @@ export default async function TransactionsPage() {
                   href={txExplorerUrl(tx.tx_hash) ?? "#"}
                   target="_blank"
                   rel="noreferrer"
-                  className="focus-ring numeric -mt-1 truncate px-1 text-[11px] text-dim hover:text-accent"
+                  className="focus-ring numeric -mt-1 truncate px-1 text-xs text-dim hover:text-accent"
                 >
                   {tx.tx_hash}
                 </a>
               ) : null}
-              {tx.error ? <p className="px-1 text-[11px] text-danger">{tx.error}</p> : null}
+              {tx.error ? <p className="px-1 text-xs text-danger">{tx.error}</p> : null}
             </div>
           ))}
         </div>

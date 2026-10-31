@@ -31,12 +31,16 @@ export function SignInPanel({
   initialError,
   heading = "Sign in to continue",
   subheading = "Connect a Stellar wallet to stake and settle, or use a managed account.",
+  headingId,
+  headingAs: Heading = "h2",
 }: {
   providers: AuthProviders;
   onDone?: () => void;
   initialError?: string | null;
   heading?: string;
   subheading?: string;
+  headingId?: string;
+  headingAs?: "h1" | "h2";
 }) {
   const router = useRouter();
   const [wallets, setWallets] = useState<WalletOption[] | null>(null);
@@ -78,10 +82,10 @@ export function SignInPanel({
         <Image src={brandMark} alt="" aria-hidden quality={92} sizes="32px" className="h-8 w-auto" />
         <p className="eyebrow">Chain Duel</p>
       </div>
-      <h2 className="text-display mt-3 text-2xl">{heading}</h2>
+      <Heading id={headingId} className="text-display mt-3 text-2xl">{heading}</Heading>
       <p className="mt-1.5 text-sm text-muted">{subheading}</p>
 
-      <div className="mt-6 flex flex-col gap-3">
+      <div className="mt-4 flex flex-col gap-2">
         <p className="eyebrow text-dim">Stellar wallets</p>
         {wallets === null ? (
           <div className="flex flex-col gap-2" aria-hidden>
@@ -106,7 +110,7 @@ export function SignInPanel({
                       onClick={() => signIn(wallet.id)}
                       disabled={disabled}
                       className={clsx(
-                        "focus-ring flex w-full items-center gap-3 rounded-2xl border border-line bg-surface px-3.5 py-3 text-left transition-all duration-150",
+                        "focus-ring flex w-full items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5 text-left transition-colors duration-150",
                         "hover:border-accent/60 hover:bg-surface-strong",
                         disabled && "cursor-not-allowed opacity-45",
                       )}
@@ -114,23 +118,23 @@ export function SignInPanel({
                       <WalletMark id={wallet.id} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold">{wallet.name}</span>
-                        <span className="block truncate text-[11px] text-dim">{wallet.hint}</span>
+                        <span className="block truncate text-xs text-dim">{wallet.hint}</span>
                       </span>
                       {isPending ? <Spinner /> : <span aria-hidden className="text-dim">→</span>}
                     </button>
                   ) : (
-                    <div className="flex items-center gap-3 rounded-2xl border border-line/60 bg-surface/50 px-3.5 py-3">
+                    <div className="flex items-center gap-3 rounded-xl border border-line/60 bg-surface/50 px-3 py-2.5">
                       <WalletMark id={wallet.id} muted />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium text-muted">{wallet.name}</span>
-                        <span className="block truncate text-[11px] text-dim">Not detected in this browser</span>
+                        <span className="block truncate text-xs text-dim">Not detected in this browser</span>
                       </span>
                       {wallet.url ? (
                         <a
                           href={wallet.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="focus-ring rounded-lg px-2 py-1 text-[11px] font-semibold text-accent hover:underline"
+                          className="focus-ring rounded-lg px-2 py-1 text-xs font-semibold text-accent hover:underline"
                         >
                           Install
                         </a>
@@ -156,9 +160,9 @@ export function SignInPanel({
         </p>
       ) : null}
 
-      <div className="my-5 flex items-center gap-3">
+      <div className="my-4 flex items-center gap-3">
         <span className="hairline flex-1" />
-        <span className="text-[11px] uppercase tracking-[0.2em] text-dim">or</span>
+        <span className="text-xs uppercase tracking-[0.2em] text-dim">or</span>
         <span className="hairline flex-1" />
       </div>
 
@@ -171,7 +175,7 @@ export function SignInPanel({
           mark={<span aria-hidden className="text-base font-bold">𝕏</span>}
         />
         {!providers.google || !providers.x ? (
-          <p className="text-center text-[11px] leading-relaxed text-dim">
+          <p className="text-center text-xs leading-relaxed text-dim">
             {providers.google
               ? "X sign-in is not enabled on this deployment yet."
               : providers.x
@@ -184,7 +188,7 @@ export function SignInPanel({
       {providers.demoMode ? (
         <div className="mt-4">
           {!busy ? (
-            <p className="mb-2 text-center text-[11px] text-dim">
+            <p className="mb-2 text-center text-xs text-dim">
               No stake, no wallet needed. Demo results never touch Testnet balances or rating.
             </p>
           ) : null}
@@ -200,14 +204,14 @@ export function SignInPanel({
         </p>
       ) : null}
 
-      <p className="mt-5 text-center text-[11px] leading-relaxed text-dim">
+      <p className="mt-5 text-center text-xs leading-relaxed text-dim">
         Your signature proves you own the wallet. Chain Duel never asks for a secret key.
       </p>
       {busy ? (
         <button
           type="button"
           onClick={reset}
-          className="focus-ring mx-auto mt-2 block text-[11px] text-dim underline-offset-2 hover:underline"
+          className="focus-ring mx-auto mt-2 block text-xs text-dim underline-offset-2 hover:underline"
         >
           Cancel
         </button>

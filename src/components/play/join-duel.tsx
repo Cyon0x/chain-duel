@@ -118,7 +118,7 @@ export function JoinDuelPanel({
       )}
 
       <p className="text-center text-xs text-dim">
-        Your entry is escrowed until the duel settles. If the duel is cancelled, your entry is refunded.
+        {demo ? "Demo duel · no funds are staked or transferred." : "Your entry is escrowed until the duel settles. If the duel is cancelled, your entry is refunded."}
       </p>
     </Panel>
   );

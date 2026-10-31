@@ -1,0 +1,236 @@
+{
+  "viewports": [
+    {
+      "name": "practice-paused",
+      "viewport": 390,
+      "content": 390
+    },
+    {
+      "name": "auth-390",
+      "viewport": 390,
+      "content": 390
+    },
+    {
+      "name": "identity-profile-320",
+      "viewport": 320,
+      "content": 320
+    },
+    {
+      "name": "identity-dashboard-320",
+      "viewport": 320,
+      "content": 320
+    },
+    {
+      "name": "identity-players-rival_mvwj6wgexxxx-320",
+      "viewport": 320,
+      "content": 320
+    },
+    {
+      "name": "identity-profile-375",
+      "viewport": 375,
+      "content": 375
+    },
+    {
+      "name": "identity-dashboard-375",
+      "viewport": 375,
+      "content": 375
+    },
+    {
+      "name": "identity-players-rival_mvwj6wgexxxx-375",
+      "viewport": 375,
+      "content": 375
+    },
+    {
+      "name": "identity-profile-390",
+      "viewport": 390,
+      "content": 390
+    },
+    {
+      "name": "identity-dashboard-390",
+      "viewport": 390,
+      "content": 390
+    },
+    {
+      "name": "identity-players-rival_mvwj6wgexxxx-390",
+      "viewport": 390,
+      "content": 390
+    },
+    {
+      "name": "identity-profile-430",
+      "viewport": 430,
+      "content": 430
+    },
+    {
+      "name": "identity-dashboard-430",
+      "viewport": 430,
+      "content": 430
+    },
+    {
+      "name": "identity-players-rival_mvwj6wgexxxx-430",
+      "viewport": 430,
+      "content": 430
+    },
+    {
+      "name": "identity-profile-768",
+      "viewport": 768,
+      "content": 768
+    },
+    {
+      "name": "identity-dashboard-768",
+      "viewport": 768,
+      "content": 768
+    },
+    {
+      "name": "identity-players-rival_mvwj6wgexxxx-768",
+      "viewport": 768,
+      "content": 768
+    },
+    {
+      "name": "identity-profile-1440",
+      "viewport": 1440,
+      "content": 1440
+    },
+    {
+      "name": "identity-dashboard-1440",
+      "viewport": 1440,
+      "content": 1440
+    },
+    {
+      "name": "identity-players-rival_mvwj6wgexxxx-1440",
+      "viewport": 1440,
+      "content": 1440
+    },
+    {
+      "name": "identity-profile-1920",
+      "viewport": 1920,
+      "content": 1920
+    },
+    {
+      "name": "identity-dashboard-1920",
+      "viewport": 1920,
+      "content": 1920
+    },
+    {
+      "name": "identity-players-rival_mvwj6wgexxxx-1920",
+      "viewport": 1920,
+      "content": 1920
+    },
+    {
+      "name": "queue-searching",
+      "viewport": 390,
+      "content": 390
+    },
+    {
+      "name": "private-invite",
+      "viewport": 390,
+      "content": 390
+    },
+    {
+      "name": "private-join",
+      "viewport": 375,
+      "content": 375
+    },
+    {
+      "name": "lobby-390",
+      "viewport": 390,
+      "content": 390
+    },
+    {
+      "name": "arena-320",
+      "viewport": 320,
+      "content": 320
+    },
+    {
+      "name": "arena-375",
+      "viewport": 375,
+      "content": 375
+    },
+    {
+      "name": "arena-390",
+      "viewport": 390,
+      "content": 390
+    },
+    {
+      "name": "arena-430",
+      "viewport": 430,
+      "content": 430
+    },
+    {
+      "name": "arena-768",
+      "viewport": 768,
+      "content": 768
+    },
+    {
+      "name": "arena-1440",
+      "viewport": 1440,
+      "content": 1440
+    },
+    {
+      "name": "arena-1920",
+      "viewport": 1920,
+      "content": 1920
+    },
+    {
+      "name": "result-320",
+      "viewport": 320,
+      "content": 320
+    },
+    {
+      "name": "result-375",
+      "viewport": 375,
+      "content": 375
+    },
+    {
+      "name": "result-390",
+      "viewport": 390,
+      "content": 390
+    },
+    {
+      "name": "result-430",
+      "viewport": 430,
+      "content": 430
+    },
+    {
+      "name": "result-768",
+      "viewport": 768,
+      "content": 768
+    },
+    {
+      "name": "result-1440",
+      "viewport": 1440,
+      "content": 1440
+    },
+    {
+      "name": "result-1920",
+      "viewport": 1920,
+      "content": 1920
+    }
+  ],
+  "checks": [
+    "Practice target scoring and pause/resume",
+    "Sign-in providers, modal focus trap, Escape, and focus restoration",
+    "Demo sign-in and onboarding through real UI handlers",
+    "18-character profile names and separate status/actions at all requested sizes",
+    "Custom stake validation and keyboard preset selection",
+    "Real demo queue join and cancellation",
+    "Private invitation link/QR, join, lobby, and synchronized countdown",
+    "Live HUD captured at all requested sizes",
+    "Full 60-second multiplayer game, target input, verified scores, settlement and result",
+    "Play again, account navigation, sound preference and sign-out"
+  ],
+  "errors": [],
+  "finalMatch": {
+    "id": "gam_78159a0a-20fd-4406-b7fe-4bd27d519d32",
+    "winner": "usr_8d2d1840-3163-4213-895a-ced0d0331412",
+    "players": [
+      {
+        "username": "qa_mvwj6wgexxxxxxx",
+        "score": 2614
+      },
+      {
+        "username": "rival_mvwj6wgexxxx",
+        "score": 2564
+      }
+    ]
+  }
+}

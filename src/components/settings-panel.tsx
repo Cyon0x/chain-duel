@@ -55,7 +55,7 @@ export function SettingsPanel({
           </div>
           {saving ? <Badge tone="neutral">Saving</Badge> : null}
         </div>
-        <div className="grid gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {THEMES.map((id) => (
             <button
               key={id}
@@ -69,7 +69,7 @@ export function SettingsPanel({
             >
               <span aria-hidden className="h-6 w-6 rounded-full" style={{ background: THEME_DEFINITIONS[id].accent }} />
               <span className="text-sm font-medium">{THEME_DEFINITIONS[id].name}</span>
-              <span className="text-[11px] text-dim">{THEME_DEFINITIONS[id].tagline}</span>
+              <span className="text-xs text-dim">{THEME_DEFINITIONS[id].tagline}</span>
             </button>
           ))}
         </div>
@@ -176,11 +176,12 @@ function Toggle({
       <button
         type="button"
         role="switch"
+        aria-label={label}
         aria-checked={value}
         disabled={disabled}
         onClick={onChange}
         className={clsx(
-          "focus-ring relative h-6 w-11 shrink-0 rounded-full border transition-colors",
+          "focus-ring relative h-11 w-11 shrink-0 rounded-full border transition-colors",
           value && !disabled ? "border-accent bg-accent-soft" : "border-line-strong bg-surface",
           disabled && "cursor-not-allowed opacity-40",
         )}
@@ -188,7 +189,7 @@ function Toggle({
         <span
           aria-hidden
           className={clsx(
-            "absolute top-0.5 h-4 w-4 rounded-full transition-all",
+            "absolute top-3 h-4 w-4 rounded-full transition-all",
             value ? "left-[22px] bg-accent" : "left-0.5 bg-muted",
           )}
         />

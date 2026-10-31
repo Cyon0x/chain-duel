@@ -79,7 +79,7 @@ export function TreasuryPanel({ dashboard }: { dashboard: TreasuryDashboard }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
         <Metric label="Contract balance" value={`${xlm(snapshot.contractBalanceStroops)} XLM`} />
         <Metric label="Bot liquidity" value={`${xlm(snapshot.botLiquidityStroops)} XLM`} tone="accent" />
         <Metric label="Accrued fees" value={`${xlm(snapshot.accruedFeesStroops)} XLM`} tone="success" />
@@ -238,7 +238,7 @@ function Metric({ label, value, tone }: { label: string; value: string; tone?: "
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-line bg-surface px-3 py-2">
-      <p className="text-[10px] uppercase tracking-[0.14em] text-dim">{label}</p>
+      <p className="text-xs uppercase tracking-[0.14em] text-dim">{label}</p>
       <p className="numeric mt-1 truncate text-xs text-muted">{value}</p>
     </div>
   );

@@ -3,23 +3,24 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { forwardRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from "react";
+import { Icon } from "./icons";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 type ButtonSize = "sm" | "md" | "lg";
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    "bg-accent text-accent-ink hover:brightness-110 shadow-[0_14px_40px_-18px_var(--accent-glow)] border border-transparent",
+    "button--primary bg-accent text-accent-ink hover:brightness-110 border border-accent/60",
   secondary:
-    "bg-surface-strong text-ink border border-line-strong hover:border-accent hover:bg-surface",
+    "button--secondary bg-surface-strong text-ink border border-line-strong hover:border-accent hover:bg-surface",
   ghost: "bg-transparent text-muted border border-transparent hover:text-ink hover:bg-surface",
   danger: "bg-danger/15 text-danger border border-danger/40 hover:bg-danger/25",
 };
 
 const SIZES: Record<ButtonSize, string> = {
-  sm: "h-9 px-3.5 text-[13px] rounded-xl",
-  md: "h-11 px-5 text-sm rounded-2xl",
-  lg: "h-14 px-7 text-base rounded-2xl",
+  sm: "min-h-10 px-3 text-[13px] rounded-[10px]",
+  md: "min-h-11 px-4 text-sm rounded-xl",
+  lg: "min-h-12 px-5 text-sm rounded-xl",
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -37,7 +38,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       disabled={disabled || loading}
       className={clsx(
-        "focus-ring inline-flex select-none items-center justify-center gap-2 font-semibold tracking-tight transition-all duration-150",
+        "button focus-ring inline-flex select-none items-center justify-center gap-2 font-semibold tracking-tight transition-[background-color,border-color,color,transform,filter] duration-150",
         "active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50",
         VARIANTS[variant],
         SIZES[size],
@@ -68,7 +69,7 @@ export function ButtonLink({
     <Link
       href={href}
       className={clsx(
-        "focus-ring inline-flex select-none items-center justify-center gap-2 font-semibold tracking-tight transition-all duration-150 active:translate-y-[1px]",
+        "button focus-ring inline-flex select-none items-center justify-center gap-2 font-semibold tracking-tight transition-[background-color,border-color,color,transform,filter] duration-150 active:translate-y-[1px]",
         VARIANTS[variant],
         SIZES[size],
         className,
@@ -85,7 +86,7 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
       <input
         ref={ref}
         className={clsx(
-          "focus-ring h-11 w-full rounded-2xl border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-dim",
+          "input-control focus-ring h-11 w-full min-w-0 rounded-xl border border-line-strong bg-surface px-3.5 text-sm text-ink placeholder:text-dim",
           "transition-colors focus:border-accent",
           className,
         )}
@@ -116,7 +117,7 @@ export function Panel({
   className?: string;
   as?: "div" | "section" | "article" | "aside";
 }) {
-  return <Tag className={clsx("panel p-5", className)}>{children}</Tag>;
+  return <Tag className={clsx("panel panel-content min-w-0", className)}>{children}</Tag>;
 }
 
 export function Badge({
@@ -139,7 +140,7 @@ export function Badge({
   return (
     <span
       className={clsx(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]",
+        "badge inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold tracking-[0.04em]",
         tones[tone],
         className,
       )}
@@ -167,9 +168,9 @@ export function Stat({
     danger: "text-danger",
   } as const;
   return (
-    <div className="panel-flat px-4 py-3.5">
+    <div className="panel-flat min-w-0 px-3 py-3 sm:px-4">
       <p className="eyebrow">{label}</p>
-      <p className={clsx("numeric mt-2 text-2xl font-semibold", tones[tone])}>{value}</p>
+      <p className={clsx("numeric mt-1.5 text-xl font-semibold sm:text-2xl", tones[tone])}>{value}</p>
       {hint ? <p className="mt-1 text-xs text-dim">{hint}</p> : null}
     </div>
   );
@@ -187,10 +188,8 @@ export function EmptyState({
   icon?: string;
 }) {
   return (
-    <div className="panel-flat flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
-      <span aria-hidden className="text-2xl text-accent/70">
-        {icon}
-      </span>
+    <div className="empty-state panel-flat flex flex-col items-center justify-center gap-3 px-5 py-8 text-center sm:py-10">
+      <Icon name={icon === "⚠" ? "alert" : "target"} size={28} className="text-accent/70" />
       <h3 className="text-base font-semibold tracking-tight">{title}</h3>
       <p className="max-w-sm text-sm text-muted">{description}</p>
       {action}
@@ -213,7 +212,7 @@ export function SkeletonRows({ rows = 3 }: { rows?: number }) {
       {Array.from({ length: rows }).map((_, index) => (
         <div
           key={index}
-          className="h-14 animate-pulse rounded-2xl border border-line bg-surface"
+          className="h-12 animate-pulse rounded-xl border border-line bg-surface"
           style={{ animationDelay: `${index * 90}ms` }}
         />
       ))}
@@ -280,8 +279,8 @@ export function SectionHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-4 flex items-end justify-between gap-4">
-      <div>
+    <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <div className="min-w-0">
         <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
         {subtitle ? <p className="mt-1 text-sm text-muted">{subtitle}</p> : null}
       </div>

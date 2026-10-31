@@ -1,0 +1,86 @@
+.home { display: flex; flex-direction: column; gap: 32px; }
+.world { position: relative; isolation: isolate; overflow: hidden; border: 1px solid var(--border-strong); border-radius: 22px; background: var(--bg); box-shadow: inset 0 1px 0 rgba(235, 245, 255, .08); }
+.art { z-index: -2; object-fit: cover; object-position: 50% 60%; opacity: .85; }
+.scrim { position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(3, 10, 22, .8) 0%, rgba(3, 10, 22, .8) 48%, rgba(3, 10, 22, .38)), linear-gradient(0deg, rgba(3, 10, 22, .9), transparent 42%); }
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.02fr); align-items: center; gap: 24px 46px; padding: 46px 46px 32px; }
+.copy { min-width: 0; }
+.season { display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px; border: 1px solid var(--border-strong); border-radius: 20px; background: rgba(9, 20, 37, .92); font-size: 12px; color: var(--accent); letter-spacing: .045em; }
+.seasonDot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.brand { display: block; width: min(100%, 420px); height: auto; margin: 22px 0 18px; }
+.headline { margin: 0; font-family: var(--font-arcade), system-ui, sans-serif; font-weight: 600; font-size: clamp(1.75rem, 2.5vw, 2.25rem); line-height: 1.13; letter-spacing: -.025em; color: var(--text); }
+.description { max-width: 420px; margin-top: 12px; font-size: 16px; line-height: 1.55; color: var(--text-muted); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 23px; }
+.preview { min-width: 0; grid-column: 2; grid-row: 1 / 3; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-column: 1; gap: 0; margin-top: 0; padding-block: 12px; border-block: 1px solid var(--border-strong); background: rgba(6, 16, 31, .9); }
+.stat { position: relative; min-width: 0; padding: 0 12px; }
+.stat + .stat { border-left: 1px solid var(--border-strong); }
+.statLabel { display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 12px; line-height: 1.25; }
+.statLabel svg { flex-shrink: 0; color: var(--accent); }
+.statValue { display: block; margin-top: 7px; font-family: var(--font-arcade), system-ui, sans-serif; font-size: 25px; line-height: 1.2; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.statValue small { font-size: 14px; color: var(--text-muted); }
+.economy { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 0 46px; padding: 16px 0 18px; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 12px; }
+.economy span { display: inline-flex; align-items: center; gap: 6px; }
+.economy a { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; color: var(--text-muted); }
+.sectionHeading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+.sectionHeading h2 { font-family: var(--font-arcade), system-ui, sans-serif; font-size: 23px; font-weight: 600; letter-spacing: -.025em; }
+.sectionHeading p { color: var(--text-dim); font-size: 14px; }
+.flow { padding-top: 4px; }
+.flowSteps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
+.flowStep { display: flex; align-items: flex-start; gap: 12px; }
+.stepNumber { display: grid; place-items: center; width: 28px; height: 28px; flex-shrink: 0; border: 1px solid var(--border-strong); border-radius: 50%; color: var(--accent); font-family: var(--font-arcade), system-ui, sans-serif; font-size: 12px; }
+.flowStep h3 { font-size: 16px; font-weight: 600; }
+.flowStep p { margin-top: 5px; max-width: 330px; font-size: 14px; line-height: 1.5; color: var(--text-muted); }
+
+@media (min-width: 1600px) { .hero { gap: 30px 50px; padding-block: 52px 40px; } }
+@media (min-width: 768px) and (max-width: 1023px) {
+  .hero { padding: 28px; gap: 22px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .brand { margin-top: 20px; }
+  .headline { font-size: 27px; }
+  .description { font-size: 14px; }
+  .actions { display: grid; grid-template-columns: 1fr; }
+  .actions a { padding-inline: 12px; }
+  .stats { grid-column: 1 / -1; }
+  .preview { grid-row: 1; }
+  .stat { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .statValue { margin: 0; font-size: 23px; }
+  .economy { margin-inline: 28px; }
+}
+@media (max-width: 767px) {
+  .home { gap: 26px; }
+  .world { border-radius: 17px; }
+  .art { object-position: 55% 50%; opacity: .75; }
+  .scrim { background: linear-gradient(0deg, rgba(3, 10, 22, .96), rgba(3, 10, 22, .66) 65%, rgba(3, 10, 22, .52)); }
+  .hero { grid-template-columns: minmax(0, 1fr); padding: 18px 14px 16px; gap: 16px; }
+  .season { padding: 4px 9px; font-size: 12px; letter-spacing: .025em; }
+  .brand { width: min(250px, 85%); margin: 16px auto 10px; }
+  .headline { text-align: center; font-size: clamp(24px, 6.6vw, 29px); }
+  .description { margin: 9px auto 0; max-width: 340px; text-align: center; font-size: 14px; line-height: 1.5; }
+  .actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 9px; margin-top: 17px; }
+  .actions a { min-height: 46px; padding-inline: 8px; font-size: 13px; gap: 6px; }
+  .actions svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .stats { grid-column: 1; grid-row: 2; padding-block: 10px; }
+  .stat { padding-inline: 8px; }
+  .statLabel { gap: 4px; font-size: 12px; }
+  .statLabel svg { display: none; }
+  .statValue { margin-top: 6px; font-size: 22px; }
+  .statValue small { font-size: 12px; }
+  .preview { grid-column: 1; grid-row: 3; }
+  .economy { margin-inline: 14px; padding-block: 10px 12px; gap: 3px; font-size: 12px; }
+  .economy a { min-height: 36px; }
+  .sectionHeading h2 { font-size: 21px; }
+  .sectionHeading p { font-size: 13px; }
+  .flowSteps { grid-template-columns: 1fr; gap: 18px; }
+  .flowStep h3 { font-size: 15px; }
+  .flowStep p { font-size: 13px; }
+}
+@media (max-width: 359px) {
+  .hero { padding-inline: 11px; gap: 13px; }
+  .brand { width: 218px; margin-block: 12px 9px; }
+  .description { font-size: 13px; }
+  .actions a { font-size: 12px; gap: 4px; }
+  .stat { padding-inline: 7px; }
+  .statLabel { font-size: 12px; }
+  .statValue { font-size: 20px; }
+  .economy { margin-inline: 11px; }
+}
+@media (forced-colors: active) { .art, .scrim { display: none; } .world, .stat, .season { background: Canvas; border-color: CanvasText; } }

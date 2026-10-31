@@ -21,8 +21,8 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col gap-8 pt-2">
       <Panel className="flex flex-col gap-6 px-5 py-6 sm:px-7">
-        <div className="flex flex-wrap items-center gap-5">
-          <Avatar name={profile.username} src={profile.avatar} size={64} theme={profile.theme} />
+        <div className="profile-identity">
+          <Avatar name={profile.username} src={profile.avatar} size={56} theme={profile.theme} />
           <div className="min-w-0 flex-1">
             <p className="eyebrow">Duelist</p>
             <h1 className="text-display mt-1 text-3xl">{profile.username}</h1>
@@ -30,13 +30,13 @@ export default async function DashboardPage() {
               Rank #{data.rank} · {data.wallet ? shortWallet(data.wallet.address) : "managed wallet"}
             </p>
           </div>
-          <div className="flex flex-col items-end gap-2">
+          <div className="profile-identity__status">
             <Badge tone="accent">{profile.rating} rating</Badge>
             <span className="text-xs text-dim">Reputation {profile.reputation}</span>
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
           <div className="panel-flat px-4 py-3.5">
             <p className="eyebrow">XLM balance</p>
             <p className="numeric mt-2 text-2xl font-semibold text-accent">

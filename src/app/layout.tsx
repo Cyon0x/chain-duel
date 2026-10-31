@@ -1,4 +1,5 @@
 import Image from "next/image";
+import localFont from "next/font/local";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { GameCursor } from "@/components/game-cursor";
@@ -10,6 +11,23 @@ import { appUrl, demoModeEnabled, integrationStatus, isProduction } from "@/lib/
 import { publicStellarConfig } from "@/lib/config/stellar";
 import { isThemeId } from "@/lib/config/themes";
 import brandMark from "@/assets/brand/chain-duel-mark.png";
+
+const uiFont = localFont({
+  src: [
+    { path: "../../public/fonts/barlow-latin-400.woff2", weight: "400", style: "normal" },
+    { path: "../../public/fonts/barlow-latin-600.woff2", weight: "600", style: "normal" },
+  ],
+  variable: "--font-ui",
+  display: "swap",
+  adjustFontFallback: "Arial",
+});
+const arcadeFont = localFont({
+  src: "../../public/fonts/chakra-petch-latin-600.woff2",
+  weight: "600",
+  variable: "--font-arcade",
+  display: "swap",
+  adjustFontFallback: "Arial",
+});
 
 const TITLE = "Chain Duel — Compete. React. Duel.";
 const DESCRIPTION =
@@ -31,10 +49,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#05070c",
+  themeColor: "#040914",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -50,8 +68,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const storageWarning = isProduction() && !persistence.available;
 
   return (
-    <html lang="en" data-theme={theme} suppressHydrationWarning>
+    <html lang="en" data-theme={theme} className={`${uiFont.variable} ${arcadeFont.variable}`} suppressHydrationWarning>
       <body>
+        <a href="#main-content" className="skip-link">Skip to content</a>
         <PreferencesProvider initialTheme={theme}>
           <SessionProvider
             value={{
@@ -86,9 +105,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </p>
               </div>
             ) : null}
-            <main className="mx-auto w-full max-w-7xl px-4 pb-24 pt-6 sm:px-6">{children}</main>
-            <footer className="border-t border-line px-4 py-8 sm:px-6">
-              <div className="mx-auto flex max-w-7xl flex-col gap-3 text-xs text-dim sm:flex-row sm:items-center sm:justify-between">
+            <main id="main-content" tabIndex={-1} className="site-main">{children}</main>
+            <footer className="site-footer">
+              <div className="site-footer__inner">
                 <div className="flex items-center gap-2.5">
                   <Image
                     src={brandMark}
@@ -102,7 +121,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     Chain Duel runs on {network.label}. Testnet assets carry no real-world value.
                   </p>
                 </div>
-                <nav className="flex flex-wrap gap-4" aria-label="Legal">
+                <nav className="site-footer__links" aria-label="Legal">
                   <a className="hover:text-muted" href="/how-to-play">How to Play</a>
                   <a className="hover:text-muted" href="/rules">Game Rules</a>
                   <a className="hover:text-muted" href="/terms">Terms</a>
