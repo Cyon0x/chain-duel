@@ -1,0 +1,72 @@
+[
+  {
+    "w": 390,
+    "fails": [],
+    "warns": [
+      "Running text under 15px: 14px \"A 60-second 1v1 arcade game. S\"; 14px \"The ranking starts with comple\"; 13px \"Join the online queue, invite \"",
+      "Boxes nested inside boxes x5. Group with space and alignment before containers."
+    ],
+    "facts": {
+      "fonts": {
+        "uiFont": "88%",
+        "arcadeFont": "12%"
+      },
+      "sizes": [
+        25.74,
+        22,
+        21,
+        20,
+        18,
+        17,
+        15,
+        14,
+        13,
+        12
+      ],
+      "body": 13.2,
+      "hues": [
+        180,
+        210
+      ],
+      "boxes": 16,
+      "cardGrids": 0,
+      "defaultIcons": 0
+    }
+  },
+  {
+    "w": 1440,
+    "fails": [],
+    "warns": [
+      "Running text under 15px: 14px \"The ranking starts with comple\"; 14px \"Join the online queue, invite \"; 14px \"Entries are held in the Soroba\"",
+      "Boxes nested inside boxes x6. Group with space and alignment before containers."
+    ],
+    "facts": {
+      "fonts": {
+        "uiFont": "89%",
+        "arcadeFont": "11%"
+      },
+      "sizes": [
+        36,
+        25,
+        23,
+        21,
+        19,
+        18,
+        16,
+        15,
+        14,
+        13,
+        12
+      ],
+      "body": 14.1,
+      "hues": [
+        180,
+        210
+      ],
+      "boxes": 15,
+      "cardGrids": 0,
+      "defaultIcons": 0,
+      "focusStops": 30
+    }
+  }
+]

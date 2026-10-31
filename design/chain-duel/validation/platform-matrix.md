@@ -20,4 +20,4 @@ metrics use compatible stand-ins, so this is browser/emulation evidence.
 | Expanded text | 1280×800 / 1 | Chrome |
 | Expanded text, phone | 390×844 / 2 | Chrome |
 
-Individual captures: `/private/tmp/chain-duel-audit/matrix-shipping/`.
+Individual captures: `/private/tmp/chain-duel-audit/matrix-focus-final/`.

@@ -70,6 +70,21 @@ try {
   await page.goto(base, { waitUntil:"networkidle" });
   const positive = page.locator('.target--blue, .target--gold');
   await positive.first().waitFor();
+  await page.keyboard.press("Tab");
+  const focusVisible = await page.evaluate(() => {
+    const targets = [...document.querySelectorAll(".target")];
+    const positions = targets.map(target => [target.style.left,target.style.top]);
+    targets.forEach(target => { target.style.left = "50%"; target.style.top = "50%"; });
+    const target = targets[0];
+    target.focus();
+    const rect = target.getBoundingClientRect();
+    const top = document.elementFromPoint(rect.x + rect.width / 2,rect.y + rect.height / 2);
+    const visible = target.matches(":focus-visible") && (top === target || target.contains(top));
+    targets.forEach((target,index) => { [target.style.left,target.style.top] = positions[index]; });
+    return visible;
+  });
+  assert(focusVisible, "Focused practice target is covered by an overlapping target");
+  check("Keyboard focus stays visible when practice targets overlap");
   await positive.first().dispatchEvent("pointerdown", { bubbles:true });
   await page.waitForFunction(() => /Practice score [1-9]/.test(document.body.textContent));
   await page.getByRole("button", { name:"Pause practice preview" }).click();

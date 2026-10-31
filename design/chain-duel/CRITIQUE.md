@@ -35,7 +35,7 @@ maximum combo, then seat as tiebreakers. Its winner remains authoritative.
 
 ## Scan warnings and deliberate decisions
 
-- The loaded homepage scan reports six or seven nested boxes. These include the
+- The loaded homepage scan reports four to ten nested boxes, depending on data. These include the
   playable field, navigation controls and real player rows inside two discovery
   panels. They group separate interactions; statistics no longer use nested cards.
 - Production scan reports 13–14px running text in short hero/help paragraphs. This
@@ -84,3 +84,8 @@ reported profile/result assertions but did not visually reload those captures.
 **Fixed after the last round, not rescored:** the phone target scoring legend
 moves above the field so it clears the floating bottom navigation. Final
 production scan, screenshots and platform matrix verify this layout correction.
+
+The first deployed scan caught a randomly overlapping practice target covering
+another target during the keyboard walk. Focused targets now rise above sibling
+targets, retaining their schedules, scoring and input handlers. This final
+accessibility correction is verified before delivery and is not rescored.

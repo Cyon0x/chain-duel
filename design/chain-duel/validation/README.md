@@ -18,3 +18,8 @@ are explained in the critique. Platform evidence is in `platform-matrix.md`.
 Extensive seven-size route/gameplay captures remain under
 `/private/tmp/chain-duel-audit/`. See the parent audit for the preservation review
 and verification limits.
+
+`focus-browser-report.json` adds the target-overlap keyboard regression and a
+second complete production-build gameplay/account run. `focus-scan.json` verifies
+the corrected keyboard walk has no failures. The matrix summary includes this
+last focus-layer correction.

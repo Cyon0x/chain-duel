@@ -330,6 +330,7 @@ button:not(:disabled), a, summary { touch-action: manipulation; }
   border: 1px solid rgba(255, 255, 255, 0.55);
   animation: target-enter 160ms var(--ease-out) both;
 }
+.target:focus-visible { z-index: 6; }
 
 @keyframes target-enter {
   from { opacity: 0.4; transform: translate(-50%, -50%) scale(0.72); }

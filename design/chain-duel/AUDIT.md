@@ -46,6 +46,10 @@ Presentation corrections above do not authorize or simulate any wallet transacti
 ## Verification
 
 - TypeScript and ESLint pass; production build passes.
+- A deployed keyboard walk exposed a random target overlap; focused targets now
+  rise above their siblings without changing timing, input or scoring. The
+  browser regression temporarily overlaps targets, checks keyboard visibility,
+  and restores their positions before continuing the real preview flow.
 - Vitest: 157 passing tests; 14 tests in six opt-in live suites skipped in the
   ordinary run. Coverage includes engine/scoring, bots, rating/outcomes, wallet
   authentication, OAuth, security, stakes, invites, queue, escrow handoffs and API
