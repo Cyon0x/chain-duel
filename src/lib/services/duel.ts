@@ -20,7 +20,7 @@ import {
   updateInviteStatus,
 } from "../db/repositories/duel";
 import { findProfile, findUserById, primaryWallet } from "../db/repositories/identity";
-import { createTransaction, findTransactionForGame } from "../db/repositories/economy";
+import { createTransaction, findTransaction, findTransactionForGame } from "../db/repositories/economy";
 import type { GameMode, GameRow, InviteRow } from "../db/types";
 import {
   DUEL_JOIN_WINDOW_MS,
@@ -34,7 +34,9 @@ import { secureSeed, secureToken } from "../game/rng";
 import { DEFAULT_BOT } from "../config/game";
 import { botAvailability } from "./treasury";
 import { escrowUnavailableError } from "./errors";
-import { onChainEscrowAvailable, messageOf } from "./escrow";
+import { onChainEscrowAvailable, messageOf, gameEscrowContractId } from "./escrow";
+import { contractId, stellarNetwork } from "../config/stellar";
+import { validateEscrowTransaction } from "../stellar/escrow-validation";
 import { getOnChainGame, serverCancelGame, serverClaimRefund } from "../stellar/contract";
 import { latestLedger } from "../stellar/server";
 import { signerForUser } from "../wallet/signer";
@@ -111,6 +113,7 @@ export async function createDuel(input: CreateDuelInput): Promise<DuelCreation> 
     escrowState: input.demo ? "offchain" : "none",
     demo: input.demo,
     contractGameId,
+    escrowContractId: input.demo ? null : contractId(),
   });
 
   const wallet = await primaryWallet(database, input.userId);
@@ -315,7 +318,7 @@ export async function joinDuel(input: {
     // the contract has no game to match against. Surface that as a plain
     // message instead of a raw simulation failure.
     try {
-      const onChain = await getOnChainGame(game.contract_game_id);
+      const onChain = await getOnChainGame(game.contract_game_id, await gameEscrowContractId(game.id));
       if (!onChain) {
         throw Object.assign(
           new Error("The duel creator has not locked their entry yet. Try again in a moment."),
@@ -382,6 +385,22 @@ export async function confirmWalletEscrow(input: {
   const player = players.find((entry) => entry.user_id === input.userId);
   if (!player) throw Object.assign(new Error("You are not part of this duel."), { code: "forbidden" });
 
+  const transaction = await findTransaction(database, input.transactionId);
+  if (!transaction || transaction.user_id !== input.userId || transaction.game_id !== game.id || transaction.kind !== "entry" || transaction.demo || transaction.amount_stroops !== game.entry_stroops || !transaction.address || !game.contract_game_id) {
+    throw Object.assign(new Error("That transaction does not belong to this duel entry."), { code: "invalid_escrow_transaction" });
+  }
+  if (transaction.status === "confirmed" && transaction.tx_hash) return advanceEscrowState(game, input.userId, transaction.tx_hash);
+  validateEscrowTransaction({
+    signedXdr: input.signedXdr,
+    networkPassphrase: stellarNetwork().networkPassphrase,
+    contractId: await gameEscrowContractId(game.id),
+    address: transaction.address,
+    gameIdHex: game.contract_game_id,
+    role: game.creator_id === input.userId ? "creator" : "joiner",
+    mode: game.mode === "bot" ? 1 : 0,
+    entryStroops: game.entry_stroops,
+  });
+
   const { submitWalletSigned } = await import("./escrow");
   const result = await submitWalletSigned({
     transactionId: input.transactionId,
@@ -425,8 +444,8 @@ export async function cancelDuel(input: {
       // window has elapsed, using claim_refund.
       const result =
         game.status === "waiting"
-          ? await serverCancelGame(game.contract_game_id)
-          : await serverClaimRefund(game.contract_game_id);
+          ? await serverCancelGame(game.contract_game_id, await gameEscrowContractId(game.id))
+          : await serverClaimRefund(game.contract_game_id, await gameEscrowContractId(game.id));
       await createTransaction(database, {
         userId: game.creator_id,
         gameId: game.id,
@@ -470,7 +489,7 @@ export async function expireStaleDuels(limit = 25): Promise<{ refunded: number }
     // The on-chain expiry includes headroom on top of the database window, so
     // skip games the contract will not refund yet; the next run picks them up.
     if (!game.demo && game.contract_game_id && onChainEscrowAvailable() && game.escrow_state === "onchain" && ledger !== null) {
-      const onChain = await getOnChainGame(game.contract_game_id).catch(() => null);
+      const onChain = await getOnChainGame(game.contract_game_id, await gameEscrowContractId(game.id)).catch(() => null);
       if (onChain && ledger < onChain.expiryLedger) continue;
     }
     const claimed = await transitionGame(database, game.id, ["waiting", "joined"], "expired");
@@ -479,7 +498,7 @@ export async function expireStaleDuels(limit = 25): Promise<{ refunded: number }
     if (invite) await updateInviteStatus(database, invite.id, "expired");
     if (!game.demo && game.contract_game_id && onChainEscrowAvailable() && game.escrow_state === "onchain") {
       try {
-        const result = await serverClaimRefund(game.contract_game_id);
+        const result = await serverClaimRefund(game.contract_game_id, await gameEscrowContractId(game.id));
         await createTransaction(database, {
           userId: game.creator_id,
           gameId: game.id,

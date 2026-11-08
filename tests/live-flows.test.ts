@@ -133,7 +133,7 @@ async function playMatch(input: {
 }
 
 describe.runIf(LIVE)("live multi-player flows", () => {
-  it("matches two queued players and settles the duel on chain", { timeout: 300_000 }, async () => {
+  it("matches two queued players at 500 XLM and settles the duel on the stake escrow", { timeout: 300_000 }, async () => {
     const alpha = await createPlayer("q1");
     const beta = await createPlayer("q2");
     await friendbot(alpha.address);
@@ -142,7 +142,7 @@ describe.runIf(LIVE)("live multi-player flows", () => {
     const first = await api<{ status: string; queueId: string | null }>("/api/matchmaking", {
       method: "POST",
       cookie: alpha.cookie,
-      body: { entryXlm: 5 },
+      body: { entryXlm: 500 },
     });
     expect(first.status, first.raw).toBe(200);
     expect(first.body.status).toBe("searching");
@@ -150,7 +150,7 @@ describe.runIf(LIVE)("live multi-player flows", () => {
     const second = await api<{ status: string; gameId: string | null }>("/api/matchmaking", {
       method: "POST",
       cookie: beta.cookie,
-      body: { entryXlm: 5 },
+      body: { entryXlm: 500 },
     });
     expect(second.status, second.raw).toBe(200);
 
@@ -170,12 +170,16 @@ describe.runIf(LIVE)("live multi-player flows", () => {
 
     await playMatch({ gameId: gameId as string, creator: alpha, joiner: beta, creatorHits: 40, joinerHits: 5 });
 
-    const settled = await api<{ game: { status: string; settle_tx_hash: string | null } }>(
+    const settled = await api<{ game: { status: string; settle_tx_hash: string | null; entry_stroops: number; pool_stroops: number; payout_stroops: number; fee_stroops: number } }>(
       `/api/matches/${gameId}`,
       { cookie: alpha.cookie },
     );
     expect(settled.body.game.status).toBe("settled");
     expect(settled.body.game.settle_tx_hash).toMatch(/^[0-9a-f]{64}$/);
+    expect(settled.body.game.entry_stroops).toBe(5_000_000_000);
+    expect(settled.body.game.pool_stroops).toBe(10_000_000_000);
+    expect(settled.body.game.payout_stroops).toBe(9_000_000_000);
+    expect(settled.body.game.fee_stroops).toBe(1_000_000_000);
   });
 
   it("delivers a targeted challenge, accepts it, and completes the invitation", { timeout: 300_000 }, async () => {
@@ -187,7 +191,7 @@ describe.runIf(LIVE)("live multi-player flows", () => {
     const challenge = await api<{ game: { id: string }; invite: { id: string; status: string } }>("/api/duels", {
       method: "POST",
       cookie: alpha.cookie,
-      body: { mode: "pvp", entryXlm: 5, invitedUsername: beta.username },
+      body: { mode: "pvp", entryXlm: 25, invitedUsername: beta.username },
     });
     expect(challenge.status, challenge.raw).toBe(200);
     const gameId = challenge.body.game.id;
@@ -256,7 +260,7 @@ describe.runIf(LIVE)("live multi-player flows", () => {
     const created = await api<{ game: { id: string } }>("/api/duels", {
       method: "POST",
       cookie: alpha.cookie,
-      body: { mode: "private", entryXlm: 5 },
+      body: { mode: "private", entryXlm: 25 },
     });
     expect(created.status, created.raw).toBe(200);
     const gameId = created.body.game.id;

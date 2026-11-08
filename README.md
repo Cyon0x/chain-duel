@@ -42,21 +42,20 @@ It is a game with a wallet, not a dashboard with a game attached.
 | | |
 | --- | --- |
 | Network | Stellar Testnet (`Test SDF Network ; September 2015`) |
-| Escrow contract | `CBBDWEWBBQVQXNYUJ4FA6C2CXXUVDAJSNUOVPZNKTQWK5P2EON7KEGMZ` |
+| Escrow contract (new entries) | `CD3EW4ENWDYGOGQGBJ7G2NU2YV4MLGSQW7CEIBZOYR2NQ4NJ7ZIOZ6FA` |
 | XLM token (SAC) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 | Admin / treasury wallet | `GCQKVXWIQHVGUOUHZR2O6YBWBNNPKIYH5AWQHXHF3EYRHM73WIWVSK7K` |
-| Explorer | https://stellar.expert/explorer/testnet/contract/CBBDWEWBBQVQXNYUJ4FA6C2CXXUVDAJSNUOVPZNKTQWK5P2EON7KEGMZ |
+| Explorer | https://stellar.expert/explorer/testnet/contract/CD3EW4ENWDYGOGQGBJ7G2NU2YV4MLGSQW7CEIBZOYR2NQ4NJ7ZIOZ6FA |
 
 The contract is live, the bot treasury is funded with real Testnet XLM, and a full
 escrow → settlement → payout cycle has been executed on-chain (see [Testing](#testing)).
 
 > Testnet XLM has no real-world value. Do not treat this deployment as real-money.
 
-> **Contract revision note.** The deployed instance above was built from the revision in which
-> `admin` and `treasury` were a single address. Current `main` splits them (see
-> [docs/stellar.md](docs/stellar.md)): `admin` settles games, `treasury` is the sole withdrawal
-> authority and destination. The split only takes effect on the next `npm run stellar:deploy`; the
-> live deployment behaves identically because its `admin` and `treasury` are the same wallet.
+> **Stake revision.** New games use the 25–10,000 XLM escrow above. Historical games
+> retain their original escrow, `CBBDWEWBBQVQXNYUJ4FA6C2CXXUVDAJSNUOVPZNKTQWK5P2EON7KEGMZ`,
+> for joins, settlement and refunds. Both environment IDs are preserved; see
+> [docs/stake-system.md](docs/stake-system.md) for the rollout and verification.
 
 ---
 
@@ -80,14 +79,16 @@ escrow → settlement → payout cycle has been executed on-chain (see [Testing]
 
 | | |
 | --- | --- |
-| Entry (each side) | 5 XLM |
-| Prize pool | 10 XLM |
+| Entry (each side, default) | 50 XLM |
+| Prize pool (default) | 100 XLM |
 | Protocol fee | 10% (1000 BPS, hard ceiling 30%) |
-| Winner reward | 9 XLM |
-| Protocol | 1 XLM |
+| Winner reward (default) | 90 XLM |
+| Protocol (default) | 10 XLM |
 
-Ranges: entry 1–250 XLM (`max_entry` 250 XLM and `max_payout` 500 XLM on-chain). Computer
-matches stay capped at 25 XLM by the treasury rails.
+Entries are 25–10,000 XLM **per player, per game**, including computer games when treasury liquidity permits.
+Presets: 50, 100, 200, 500, 1,000, 2,000, 5,000 and 10,000 XLM. Custom entries support
+up to seven decimal places. The maximum two-player pool is 20,000 XLM (18,000 to the
+winner and 2,000 protocol fee at 10%). See [stake rollout](docs/stake-system.md).
 
 ### Reading the result
 
@@ -310,9 +311,9 @@ Safety rails (`src/lib/config/game.ts` + `set_limits`):
 | Limit | Default |
 | --- | --- |
 | `MIN_TREASURY_BALANCE` | 100 XLM |
-| `MAX_BOT_ENTRY` | 25 XLM |
-| `MAX_PAYOUT` | 250 XLM |
-| `DAILY_BOT_LIABILITY` | 1000 XLM |
+| `MAX_BOT_ENTRY` | 10,000 XLM |
+| `MAX_PAYOUT` | 20,000 XLM |
+| `DAILY_BOT_LIABILITY` | 10,000 XLM |
 
 The treasury can never go negative: the contract checks available liquidity before a bot game and
 rejects the test suite's unauthorized withdrawals (`to=admin` only).
@@ -464,7 +465,7 @@ What is covered:
 - **Contract** — create/join/cancel/refund/start/settle, fee math, winner payout, bot settlement,
   treasury accounting, admin and unauthorized withdrawal, duplicate settlement, invalid/expired
   game, wrong player, wrong amount, and the balance invariant across a full bot match.
-- **Live (opt-in)** — a real 1v1 duel (5 + 5 XLM escrowed, settled, winner paid, hash in
+- **Live (opt-in)** — a real 1v1 duel (25 + 25 XLM escrowed, settled, winner paid, hash in
   history); random matchmaking pairing two queued accounts into one duel; a targeted challenge
   through the invite inbox (including a premature accept that is refused cleanly and an
   unauthorised accept that is rejected); a creator cancel with an on-chain refund; and a bot
@@ -504,5 +505,5 @@ Full threat model and mitigations: [docs/security.md](docs/security.md).
   is by design and is visible on-chain and in `/admin/treasury`.
 - Matchmaking is intentionally simple (game type + entry + availability). Ranked matchmaking and
   tournaments are future work.
-- The live contract instance was deployed before `admin`/`treasury` were split into separate
-  roles; see the contract revision note above. Both roles are the same Testnet wallet today.
+- Admin and treasury have separate roles in the contract; both use the same configured
+  Testnet wallet in this deployment.

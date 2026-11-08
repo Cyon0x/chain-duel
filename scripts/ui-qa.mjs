@@ -143,10 +143,10 @@ try {
   await page.getByLabel("Custom amount").focus();
   await page.waitForFunction(() => [...document.querySelectorAll("button")].some(button => button.textContent.trim() === "Find random player" && button.disabled));
   assert(await page.getByRole("button",{ name:"Find random player",exact:true }).isDisabled());
-  await page.getByLabel("Custom amount").fill("7.125");
+  await page.getByLabel("Custom amount").fill("75.125");
   await page.waitForFunction(() => [...document.querySelectorAll("button")].some(button => button.textContent.trim() === "Find random player" && !button.disabled));
   assert(await page.getByRole("button",{ name:"Find random player",exact:true }).isEnabled());
-  await page.getByLabel("Custom amount").fill("251");
+  await page.getByLabel("Custom amount").fill("10001");
   await page.waitForFunction(() => [...document.querySelectorAll("button")].some(button => button.textContent.trim() === "Find random player" && button.disabled));
   assert(await page.getByRole("button",{ name:"Find random player",exact:true }).isDisabled());
   await page.getByRole("radio").first().focus(); await page.keyboard.press("ArrowRight");
@@ -224,6 +224,7 @@ try {
   await page.getByRole("switch",{ name:"Sound & music" }).click();
   await page.waitForFunction(() => localStorage.getItem("cd.sound") === "off");
   await page.reload({ waitUntil:"networkidle" });
+  await page.waitForFunction(() => document.querySelector('[role="switch"][aria-label="Sound & music"]')?.getAttribute("aria-checked") === "false");
   assert(await page.getByRole("switch",{ name:"Sound & music" }).getAttribute("aria-checked") === "false", "Sound preference not persisted");
   await page.getByRole("button",{ name:"Disconnect & sign out" }).click();
   await page.waitForURL(base + "/");

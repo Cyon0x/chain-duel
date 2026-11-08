@@ -36,7 +36,7 @@ export function StakePicker({
   min?: number;
 }) {
   const presetAmounts = options.map((option) => option.xlm);
-  const [customText, setCustomText] = useState("");
+  const [customText, setCustomText] = useState(presetAmounts.includes(value) ? "" : String(value));
   const [customMode, setCustomMode] = useState(!presetAmounts.includes(value));
   const customId = useId();
   const errorId = `${customId}-error`;
@@ -116,12 +116,12 @@ export function StakePicker({
               onClick={() => selectPreset(option.xlm)}
               title={disabled ? `Maximum stake is ${formatXlm(maxStroops)} XLM` : undefined}
               className={clsx(
-                "focus-ring min-h-16 rounded-xl border px-2 py-2 text-center transition-colors",
+                "focus-ring min-h-16 rounded-xl border px-2 py-2 text-center transition-colors max-[359px]:px-1",
                 selected ? "border-accent bg-accent-soft" : "border-line bg-surface hover:border-line-strong",
                 disabled && "cursor-not-allowed opacity-40",
               )}
             >
-              <span className="numeric block text-lg font-semibold">{option.xlm}</span>
+              <span className="numeric block text-base font-semibold max-[359px]:text-sm sm:text-lg">{formatXlm(xlmToStroops(option.xlm))}</span>
               <span className="block text-xs text-dim">XLM</span>
             </button>
           );
@@ -145,8 +145,8 @@ export function StakePicker({
             autoComplete="off"
             placeholder="Enter XLM amount"
             aria-invalid={Boolean(customError)}
-            aria-describedby={customError ? errorId : undefined}
-            className="numeric h-full w-full min-w-0 bg-transparent text-sm text-ink outline-none placeholder:text-dim"
+            aria-describedby={errorId}
+            className="stake-custom-input numeric h-full w-full min-w-0 border border-transparent bg-transparent text-base text-ink outline-none placeholder:text-dim"
             value={customText}
             onChange={(event) => updateCustom(event.target.value)}
             onFocus={() => updateCustom(customText)}
@@ -158,7 +158,7 @@ export function StakePicker({
             {customError}
           </p>
         ) : (
-          <p className="text-xs text-dim">
+          <p id={errorId} className="text-xs text-dim">
             Between {formatXlm(minStroops)} and {formatXlm(maxStroops)} XLM · up to 7 decimal places.
           </p>
         )}

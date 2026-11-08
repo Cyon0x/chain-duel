@@ -6,7 +6,7 @@
  * it — the submission is then dropped and never appears in a ledger. These
  * checks pin the re-stamping behaviour without touching the network.
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   Account,
   BASE_FEE,
@@ -17,9 +17,27 @@ import {
   TransactionBuilder,
   Asset,
 } from "@stellar/stellar-sdk";
-import { refreshTimebounds } from "@/lib/stellar/server";
+import { latestLedger, refreshTimebounds } from "@/lib/stellar/server";
 
 const PASSPHRASE = "Test SDF Network ; September 2015";
+
+describe("ledger sequence compatibility", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it("reads the sequence without decoding unsupported ledger header extensions", async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ result: { sequence: 123456, headerXdr: "unsupported-header-extension", metadataXdr: "unsupported-metadata" } })));
+    vi.stubGlobal("fetch", fetcher);
+    expect(await latestLedger()).toBe(123456);
+    expect(JSON.parse(fetcher.mock.calls[0][1].body).method).toBe("getLatestLedger");
+  });
+  it.each([{}, { result: { sequence: 0 } }, { result: { sequence: 1.5 } }, { result: { sequence: "123" } }, { error: { code: -32603 } }])("rejects an invalid sequence response %j", async (payload) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(payload))));
+    await expect(latestLedger()).rejects.toThrow(/invalid ledger sequence/);
+  });
+  it("rejects unsuccessful RPC responses", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("unavailable", { status: 503 })));
+    await expect(latestLedger()).rejects.toThrow(/current Stellar ledger/);
+  });
+});
 
 function assembledLike(windowSeconds: number) {
   const source = Keypair.random().publicKey();

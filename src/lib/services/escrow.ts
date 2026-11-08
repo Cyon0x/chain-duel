@@ -2,7 +2,8 @@ import "server-only";
 import { db } from "../db";
 import { createTransaction, updateTransaction, listTransactionsForUser } from "../db/repositories/economy";
 import type { GameRow, TransactionKind, TransactionRow } from "../db/types";
-import { explorerTxUrl } from "../config/stellar";
+import { explorerTxUrl, legacyContractId } from "../config/stellar";
+import { findGameEscrowContract } from "../db/repositories/duel";
 import {
   StellarIntegrationError,
   invokeWithKeypair,
@@ -27,7 +28,8 @@ import {
   serverSettleGame,
   serverStartGame,
 } from "../stellar/contract";
-import { stroopsToXlm } from "../config/game";
+import { ECONOMY, stroopsToXlm } from "../config/game";
+import { ChainDuelError } from "./errors";
 
 export type EscrowHandoff =
   | { mode: "offchain"; confirmed: true; transactionId: string }
@@ -42,6 +44,13 @@ export type EscrowHandoff =
 
 export function onChainEscrowAvailable(): boolean {
   return contractConfigured() && settlementPublicKey() !== null;
+}
+
+/** New games are bound at creation; unbound historical games use their original escrow. */
+export async function gameEscrowContractId(gameId: string): Promise<string> {
+  const id = await findGameEscrowContract(await db(), gameId) ?? legacyContractId();
+  if (!id) throw new StellarIntegrationError("This game's escrow contract is unavailable.", "not_configured");
+  return id;
 }
 
 /** Ledger-based expiry, ~5s per ledger with headroom for slow confirms. */
@@ -113,6 +122,11 @@ export async function lockEntry(input: {
   keypair?: Keypair | null;
 }): Promise<EscrowHandoff> {
   const demo = Boolean(input.game.demo);
+  // Revalidate persisted new-game entries at the signing boundary, even if
+  // creation was valid. Legacy obligations retain their original escrow rules.
+  if (!demo && await findGameEscrowContract(await db(), input.game.id)) {
+    validateEntryStroops(input.game.entry_stroops);
+  }
   const transaction = await newTransaction({
     userId: input.userId,
     gameId: input.game.id,
@@ -139,6 +153,7 @@ export async function lockEntry(input: {
       await updateTransaction(database, transaction.id, { status: "signing" });
       const expiryLedger = await ledgerForTimestamp(input.game.expires_at);
       const result = await invokeWithKeypair({
+        escrowContractId: await gameEscrowContractId(input.game.id),
         keypair: input.keypair,
         method: "create_game",
         args: createGameArgs({
@@ -159,6 +174,7 @@ export async function lockEntry(input: {
 
   const expiryLedger = await ledgerForTimestamp(input.game.expires_at);
   const prepared = await prepareCreateGame({
+    escrowContractId: await gameEscrowContractId(input.game.id),
     creator: input.address,
     gameIdHex: input.game.contract_game_id,
     mode: input.game.mode === "bot" ? MODE.bot : MODE.pvp,
@@ -184,6 +200,9 @@ export async function lockJoin(input: {
   keypair?: Keypair | null;
 }): Promise<EscrowHandoff> {
   const demo = Boolean(input.game.demo);
+  if (!demo && await findGameEscrowContract(await db(), input.game.id)) {
+    validateEntryStroops(input.game.entry_stroops);
+  }
   const transaction = await newTransaction({
     userId: input.userId,
     gameId: input.game.id,
@@ -209,6 +228,7 @@ export async function lockJoin(input: {
     try {
       await updateTransaction(database, transaction.id, { status: "signing" });
       const result = await invokeWithKeypair({
+        escrowContractId: await gameEscrowContractId(input.game.id),
         keypair: input.keypair,
         method: "join_game",
         args: joinGameArgs({ player: input.address, gameIdHex: input.game.contract_game_id }),
@@ -222,6 +242,7 @@ export async function lockJoin(input: {
   }
 
   const prepared = await prepareJoinGame({
+    escrowContractId: await gameEscrowContractId(input.game.id),
     player: input.address,
     gameIdHex: input.game.contract_game_id,
   });
@@ -270,7 +291,7 @@ export interface SettlementOutcome {
 /** Starts the duel on chain so the escrow is provably locked as ACTIVE. */
 export async function beginOnChainGame(game: GameRow): Promise<string | null> {
   if (game.demo || !game.contract_game_id || !onChainEscrowAvailable()) return null;
-  const result = await serverStartGame(game.contract_game_id);
+  const result = await serverStartGame(game.contract_game_id, await gameEscrowContractId(game.id));
   return result.hash;
 }
 
@@ -288,6 +309,7 @@ export async function settleOnChain(input: {
   // written once, inside the settlement transaction, so one chain settlement
   // can never produce duplicate or misattributed history entries.
   const result = await serverSettleGame({
+    escrowContractId: await gameEscrowContractId(input.game.id),
     gameIdHex: input.game.contract_game_id,
     winner: input.winnerAddress,
     playerOneScore: input.playerOneScore,
@@ -393,6 +415,12 @@ export async function listUserTransactions(userId: string, limit = 40): Promise<
 export function messageOf(error: unknown): string {
   if (error instanceof Error) return error.message;
   return String(error);
+}
+
+function validateEntryStroops(amount: number): void {
+  if (!Number.isSafeInteger(amount) || amount < ECONOMY.minEntryStroops || amount > ECONOMY.maxEntryStroops) {
+    throw new ChainDuelError("Entry must be between 25 and 10,000 XLM per player.", "invalid_entry");
+  }
 }
 
 export function formatStroops(stroops: number): string {

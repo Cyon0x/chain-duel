@@ -93,24 +93,27 @@ export interface EconomyConfig {
 }
 
 export const ECONOMY: EconomyConfig = {
-  defaultEntryStroops: xlmToStroops(5),
-  minEntryStroops: xlmToStroops(1),
-  maxEntryStroops: xlmToStroops(250),
+  defaultEntryStroops: xlmToStroops(50),
+  minEntryStroops: xlmToStroops(25),
+  maxEntryStroops: xlmToStroops(10_000),
   feeBps: 1000,
   demoEntryStroops: 0,
 };
 
 /**
  * Stake presets offered across every duel mode. `ECONOMY.minEntryStroops` and
- * `ECONOMY.maxEntryStroops` stay the authoritative bounds; an individual mode
- * may apply a tighter cap (bot matches are underwritten by the treasury and
- * stay limited to `TREASURY_LIMITS.maxBotEntryStroops`).
+ * `ECONOMY.maxEntryStroops` bound each player's entry, never the combined pool.
+ * Computer matches also require enough matching treasury liquidity.
  */
 export const STAKE_PRESETS: { xlm: number; label: string }[] = [
-  { xlm: 5, label: "Standard" },
-  { xlm: 25, label: "Contender" },
-  { xlm: 50, label: "High stakes" },
-  { xlm: 250, label: "Whale" },
+  { xlm: 50, label: "50 XLM" },
+  { xlm: 100, label: "100 XLM" },
+  { xlm: 200, label: "200 XLM" },
+  { xlm: 500, label: "500 XLM" },
+  { xlm: 1_000, label: "1,000 XLM" },
+  { xlm: 2_000, label: "2,000 XLM" },
+  { xlm: 5_000, label: "5,000 XLM" },
+  { xlm: 10_000, label: "10,000 XLM" },
 ];
 
 export const STAKE_PRESETS_XLM: number[] = STAKE_PRESETS.map((preset) => preset.xlm);
@@ -132,25 +135,29 @@ export interface StakeParseOptions {
  * amounts so the client and the API enforce exactly the same rules.
  */
 export function parseStakeXlm(value: unknown, opts: StakeParseOptions = {}): StakeParseResult {
-  const min = opts.minStroops ?? ECONOMY.minEntryStroops;
-  const max = opts.maxStroops ?? ECONOMY.maxEntryStroops;
+  const min = Math.max(opts.minStroops ?? ECONOMY.minEntryStroops, ECONOMY.minEntryStroops);
+  const max = Math.min(opts.maxStroops ?? ECONOMY.maxEntryStroops, ECONOMY.maxEntryStroops);
 
   if (value === null || value === undefined) return { ok: false, error: "Enter a stake amount." };
-  const text = typeof value === "string" ? value.trim() : value;
+  if (typeof value !== "string" && typeof value !== "number") {
+    return { ok: false, error: "Enter a valid number." };
+  }
+  const text = String(value).trim();
   if (text === "") return { ok: false, error: "Enter a stake amount." };
 
-  const xlm = typeof text === "number" ? text : Number(text);
-  if (!Number.isFinite(xlm)) return { ok: false, error: "Enter a valid number." };
-
-  if (xlm === 0 && opts.demo) return { ok: true, stroops: 0, xlm: 0 };
-  if (xlm <= 0) return { ok: false, error: "Stake must be greater than zero." };
-
-  const stroops = Math.round(xlm * STROOPS_PER_XLM);
-  if (Math.abs(stroops / STROOPS_PER_XLM - xlm) > 1e-9) {
+  const decimal = /^(\d+)(?:\.(\d*))?$/.exec(text);
+  if (!decimal) return { ok: false, error: "Enter a valid number." };
+  const fraction = decimal[2] ?? "";
+  if (fraction.length > XLM_DECIMALS) {
     return { ok: false, error: `XLM supports at most ${XLM_DECIMALS} decimal places.` };
   }
-  if (stroops < min) return { ok: false, error: `Minimum stake is ${formatXlm(min)} XLM.` };
-  if (stroops > max) return { ok: false, error: `Maximum stake is ${formatXlm(max)} XLM.` };
+  // Parse decimal text exactly: rounding must never admit an amount outside
+  // the limits or silently change the amount a player authorized.
+  const exact = BigInt(decimal[1]) * BigInt(STROOPS_PER_XLM) + BigInt(fraction.padEnd(XLM_DECIMALS, "0"));
+  if (exact === 0n && opts.demo) return { ok: true, stroops: 0, xlm: 0 };
+  if (exact < BigInt(min)) return { ok: false, error: `Minimum stake is ${formatXlm(min)} XLM.` };
+  if (exact > BigInt(max)) return { ok: false, error: `Maximum stake is ${formatXlm(max)} XLM.` };
+  const stroops = Number(exact);
   return { ok: true, stroops, xlm: stroopsToXlm(stroops) };
 }
 
@@ -163,9 +170,9 @@ export interface TreasuryLimits {
 
 export const TREASURY_LIMITS: TreasuryLimits = {
   minTreasuryBalanceStroops: xlmToStroops(100),
-  maxBotEntryStroops: xlmToStroops(25),
-  maxPayoutStroops: xlmToStroops(250),
-  dailyBotLiabilityStroops: xlmToStroops(1000),
+  maxBotEntryStroops: ECONOMY.maxEntryStroops,
+  maxPayoutStroops: ECONOMY.maxEntryStroops * 2,
+  dailyBotLiabilityStroops: ECONOMY.maxEntryStroops,
 };
 
 export interface BotProfile {

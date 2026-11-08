@@ -55,8 +55,8 @@ and tests that enforce them.
   `require_admin()` in the contract.
 - Withdrawal destination is hard-bound to the treasury wallet: there is no destination parameter
   to tamper with.
-- Limits: `MIN_TREASURY_BALANCE` 100 XLM, `MAX_BOT_ENTRY` 25 XLM, `MAX_PAYOUT` 250 XLM,
-  `DAILY_BOT_LIABILITY` 1000 XLM. Exceeding them disables bot matches instead of risking a
+- Limits: `MIN_TREASURY_BALANCE` 100 XLM, `MAX_BOT_ENTRY` 10,000 XLM, `MAX_PAYOUT` 20,000 XLM,
+  `DAILY_BOT_LIABILITY` 10,000 XLM. Exceeding them disables bot matches instead of risking a
   negative treasury.
 - Every treasury withdrawal, deposit, config change and pause is written to `admin_actions` /
   `treasury_transactions` with the admin wallet, action, timestamp and transaction id.

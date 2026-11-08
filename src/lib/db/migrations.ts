@@ -331,4 +331,12 @@ export const MIGRATIONS: string[] = [
   -- which a single 250 XLM payout already crosses. Safe to re-run.
   {{WIDEN_STROOPS}}
   `,
+  `
+  -- Bind new games to their escrow. Existing games keep using the original
+  -- environment contract; no history or locked funds are migrated.
+  CREATE TABLE IF NOT EXISTS game_escrow_contracts (
+    game_id TEXT PRIMARY KEY,
+    contract_id TEXT NOT NULL
+  );
+  `,
 ];

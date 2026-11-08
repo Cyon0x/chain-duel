@@ -75,10 +75,19 @@ export function stellarNetwork(): StellarNetworkConfig {
 }
 
 export function contractId(): string | null {
-  const id = rawEnv().CHAIN_DUEL_CONTRACT_ID?.trim();
+  return checkedContractId(rawEnv().CHAIN_DUEL_STAKE_CONTRACT_ID?.trim() || rawEnv().CHAIN_DUEL_CONTRACT_ID);
+}
+
+/** Original escrow remains available for games created before the stake rollout. */
+export function legacyContractId(): string | null {
+  return checkedContractId(rawEnv().CHAIN_DUEL_CONTRACT_ID);
+}
+
+function checkedContractId(value: string | undefined): string | null {
+  const id = value?.trim();
   if (!id) return null;
   if (!/^C[A-Z0-9]{55}$/.test(id)) {
-    throw new Error(`CHAIN_DUEL_CONTRACT_ID is not a valid Soroban contract id: ${id}`);
+    throw new Error("The configured Soroban contract id is invalid.");
   }
   return id;
 }

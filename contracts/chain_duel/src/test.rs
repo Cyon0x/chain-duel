@@ -8,7 +8,7 @@ use soroban_sdk::{
 /// constants change, the TypeScript client must change with them.
 #[test]
 fn abi_constants_match_the_typescript_client() {
-    let env = Env::default();
+    let env = test_env();
     assert_eq!(MODE_PVP, 0);
     assert_eq!(MODE_BOT, 1);
     assert_eq!(STATUS_WAITING, 0);
@@ -30,9 +30,68 @@ fn abi_constants_match_the_typescript_client() {
     assert_eq!(status, ScVal::U32(2));
 }
 
+fn test_env() -> Env {
+    let mut env = Env::default();
+    env.set_config(soroban_sdk::testutils::EnvTestConfig { capture_snapshot_at_drop: false });
+    env
+}
+
 const XLM: i128 = 10_000_000;
-const ENTRY: i128 = 5 * XLM;
+const ENTRY: i128 = 25 * XLM;
 const FEE_BPS: u32 = 1_000;
+
+#[test]
+fn every_entry_boundary_and_preset_escrows_and_settles_exactly() {
+    for (index, entry) in [25 * XLM, 50 * XLM, 100 * XLM, 200 * XLM, 500 * XLM, 1_000 * XLM, 2_000 * XLM, 5_000 * XLM, 10_000 * XLM, 125 * XLM + 1_234_567].iter().enumerate() {
+        let (env, contract, token, admin, p1, p2) = world();
+        let client = ChainDuelClient::new(&env, &contract);
+        let asset_admin = token::StellarAssetClient::new(&env, &token);
+        asset_admin.mint(&p1, &(20_000 * XLM));
+        asset_admin.mint(&p2, &(20_000 * XLM));
+        asset_admin.mint(&admin, &(20_000 * XLM));
+        let balances = token::Client::new(&env, &token);
+        let before = balances.balance(&p1);
+        let id = game_id(&env, index as u8);
+        let created = client.create_game(&p1, &id, &MODE_PVP, entry, &500);
+        assert_eq!(created.entry_amount, *entry);
+        assert_eq!(balances.balance(&p1), before - entry);
+        let joined = client.join_game(&p2, &id);
+        assert_eq!(joined.escrow, entry * 2);
+        client.start_game(&id);
+        let settled = client.settle_game(&id, &p1, &90, &10, &result_hash(&env));
+        assert_eq!(settled.fee, entry * 2 / 10);
+        assert_eq!(settled.payout, entry * 2 - settled.fee);
+        assert_eq!(balances.balance(&p1), before - entry + settled.payout);
+        assert_eq!(client.get_locked_escrow(), 0);
+        assert_eq!(balances.balance(&contract), settled.fee);
+
+        // The computer contributes exactly the same entry and can settle the maximum.
+        client.fund_bot_pool(&admin, entry);
+        let bot_id = game_id(&env, 100 + index as u8);
+        let bot = client.create_game(&p1, &bot_id, &MODE_BOT, entry, &500);
+        assert_eq!(bot.bot_stake, *entry);
+        assert_eq!(bot.escrow, entry * 2);
+        client.start_game(&bot_id);
+        let settled_bot = client.settle_game(&bot_id, &p1, &90, &10, &result_hash(&env));
+        assert_eq!(settled_bot.payout, settled.payout);
+    }
+}
+
+#[test]
+fn hard_entry_limits_cannot_be_relaxed_by_admin_configuration() {
+    let (env, contract, token, _admin, p1, _p2) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    client.set_limits(&(MAX_ENTRY * 10), &(MAX_ENTRY * 20), &0);
+    let balances = token::Client::new(&env, &token);
+    let before = balances.balance(&p1);
+    for (index, entry) in [0, -1, MIN_ENTRY - 1, MAX_ENTRY + 1].iter().enumerate() {
+        for mode in [MODE_PVP, MODE_BOT] {
+            assert!(client.try_create_game(&p1, &game_id(&env, index as u8), &mode, entry, &500).is_err());
+            assert_eq!(balances.balance(&p1), before);
+            assert_eq!(client.get_locked_escrow(), 0);
+        }
+    }
+}
 
 fn game_id(env: &Env, seed: u8) -> BytesN<32> {
     BytesN::from_array(env, &[seed; 32])
@@ -44,7 +103,7 @@ fn result_hash(env: &Env) -> BytesN<32> {
 
 /// Registers the token + contract and funds the players. Auth is mocked.
 fn world() -> (Env, Address, Address, Address, Address, Address) {
-    let env = Env::default();
+    let env = test_env();
     env.mock_all_auths();
     env.ledger().with_mut(|l| l.sequence_number = 100);
 
@@ -66,8 +125,8 @@ fn world() -> (Env, Address, Address, Address, Address, Address) {
             admin.clone(),
             token.clone(),
             FEE_BPS,
-            100 * XLM,
-            1_000 * XLM,
+            MAX_ENTRY,
+            2 * MAX_ENTRY,
             10 * XLM,
         ),
     );
@@ -100,7 +159,7 @@ fn pvp_create_join_settle_pays_winner_and_accrues_fee() {
     assert_eq!(game.status, STATUS_WAITING);
     assert_eq!(game.escrow, ENTRY);
     assert_eq!(asset.balance(&contract), ENTRY);
-    assert_eq!(asset.balance(&p1), 995 * XLM);
+    assert_eq!(asset.balance(&p1), 975 * XLM);
 
     let joined = client.join_game(&p2, &game_id(&env, 1));
     assert_eq!(joined.status, STATUS_JOINED);
@@ -114,20 +173,20 @@ fn pvp_create_join_settle_pays_winner_and_accrues_fee() {
     assert_eq!(settled.status, STATUS_SETTLED);
     assert_eq!(settled.winner, Some(p1.clone()));
 
-    // 10 XLM pool, 10% fee => 9 XLM to the winner, 1 XLM protocol revenue.
-    assert_eq!(settled.payout, 9 * XLM);
-    assert_eq!(settled.fee, XLM);
-    assert_eq!(asset.balance(&p1), 1_004 * XLM);
-    assert_eq!(asset.balance(&p2), 995 * XLM);
-    assert_eq!(client.get_accrued_fees(), XLM);
+    // 50 XLM pool, 10% fee => 45 XLM to the winner, 5 XLM protocol revenue.
+    assert_eq!(settled.payout, 45 * XLM);
+    assert_eq!(settled.fee, 5 * XLM);
+    assert_eq!(asset.balance(&p1), 1_020 * XLM);
+    assert_eq!(asset.balance(&p2), 975 * XLM);
+    assert_eq!(client.get_accrued_fees(), 5 * XLM);
     assert_eq!(client.get_locked_escrow(), 0);
-    assert_eq!(asset.balance(&contract), XLM);
+    assert_eq!(asset.balance(&contract), 5 * XLM);
 
     let stats = client.get_stats();
     assert_eq!(stats.games_created, 1);
     assert_eq!(stats.games_settled, 1);
-    assert_eq!(stats.fees_collected, XLM);
-    assert_eq!(stats.payout_total, 9 * XLM);
+    assert_eq!(stats.fees_collected, 5 * XLM);
+    assert_eq!(stats.payout_total, 45 * XLM);
 }
 
 #[test]
@@ -166,7 +225,7 @@ fn wrong_amount_and_unknown_game_are_rejected() {
         .try_create_game(&p1, &game_id(&env, 4), &MODE_PVP, &0, &500)
         .is_err());
     assert!(client
-        .try_create_game(&p1, &game_id(&env, 5), &MODE_PVP, &(1_000 * XLM), &500)
+        .try_create_game(&p1, &game_id(&env, 5), &MODE_PVP, &(10_001 * XLM), &500)
         .is_err());
     assert!(client.try_get_game(&game_id(&env, 250)).is_err());
     assert!(client
@@ -232,9 +291,9 @@ fn bot_win_settles_into_the_protocol_treasury() {
     assert_eq!(client.get_bot_liquidity(), 50 * XLM);
 
     client.create_game(&p1, &game_id(&env, 20), &MODE_BOT, &ENTRY, &500);
-    assert_eq!(client.get_bot_liquidity(), 45 * XLM);
-    // 45 XLM of idle bot liquidity + 10 XLM of live escrow are both inside the contract.
-    assert_eq!(asset.balance(&contract), 55 * XLM);
+    assert_eq!(client.get_bot_liquidity(), 25 * XLM);
+    // 25 XLM of idle bot liquidity + 50 XLM of live escrow are both inside the contract.
+    assert_eq!(asset.balance(&contract), 75 * XLM);
     assert_eq!(
         asset.balance(&contract),
         client.get_bot_liquidity() + client.get_locked_escrow() + client.get_accrued_fees()
@@ -243,10 +302,10 @@ fn bot_win_settles_into_the_protocol_treasury() {
 
     let settled = client.settle_game(&game_id(&env, 20), &admin, &40, &90, &result_hash(&env));
     assert_eq!(settled.status, STATUS_SETTLED);
-    assert_eq!(settled.payout, 9 * XLM);
-    // Protocol staked 5, won the 9 XLM pot back, and owns the 1 XLM fee.
-    assert_eq!(client.get_accrued_fees(), XLM);
-    assert_eq!(asset.balance(&p1), 995 * XLM);
+    assert_eq!(settled.payout, 45 * XLM);
+    // Protocol staked 25, won the 45 XLM pot back, and owns the 5 XLM fee.
+    assert_eq!(client.get_accrued_fees(), 5 * XLM);
+    assert_eq!(asset.balance(&p1), 975 * XLM);
     assert_eq!(client.get_stats().bot_wins, 1);
     assert_eq!(client.get_stats().player_wins, 0);
 }
@@ -262,11 +321,11 @@ fn player_win_is_funded_from_bot_liquidity() {
     client.start_game(&game_id(&env, 21));
     client.settle_game(&game_id(&env, 21), &p1, &95, &60, &result_hash(&env));
 
-    assert_eq!(asset.balance(&p1), 1_004 * XLM);
+    assert_eq!(asset.balance(&p1), 1_020 * XLM);
     assert_eq!(client.get_stats().player_wins, 1);
-    assert_eq!(client.get_stats().bot_payouts, 9 * XLM);
-    assert_eq!(client.get_bot_liquidity(), 45 * XLM);
-    assert_eq!(client.get_accrued_fees(), XLM);
+    assert_eq!(client.get_stats().bot_payouts, 45 * XLM);
+    assert_eq!(client.get_bot_liquidity(), 25 * XLM);
+    assert_eq!(client.get_accrued_fees(), 5 * XLM);
 }
 
 #[test]
@@ -282,21 +341,21 @@ fn bot_game_cancel_returns_liquidity_to_the_pool() {
     let (env, contract, token, admin, p1, _p2) = world();
     let client = ChainDuelClient::new(&env, &contract);
     let asset = token::Client::new(&env, &token);
-    fund_bot_pool(&env, &client, &admin, 20 * XLM);
+    fund_bot_pool(&env, &client, &admin, 100 * XLM);
 
     client.create_game(&p1, &game_id(&env, 23), &MODE_BOT, &ENTRY, &500);
-    assert_eq!(client.get_bot_liquidity(), 15 * XLM);
+    assert_eq!(client.get_bot_liquidity(), 75 * XLM);
     client.cancel_game(&p1, &game_id(&env, 23));
-    assert_eq!(client.get_bot_liquidity(), 20 * XLM);
+    assert_eq!(client.get_bot_liquidity(), 100 * XLM);
     assert_eq!(asset.balance(&p1), 1_000 * XLM);
-    assert_eq!(asset.balance(&contract), 20 * XLM);
+    assert_eq!(asset.balance(&contract), 100 * XLM);
 }
 
 // ---------------------------------------------------------------- treasury
 
 #[test]
 fn only_the_developer_wallet_can_withdraw_treasury() {
-    let env = Env::default();
+    let env = test_env();
     env.mock_all_auths();
     env.ledger().with_mut(|l| l.sequence_number = 100);
     let admin = Address::generate(&env);
@@ -330,13 +389,13 @@ fn only_the_developer_wallet_can_withdraw_treasury() {
     client.join_game(&admin, &game_id(&env, 30));
     client.start_game(&game_id(&env, 30));
     client.settle_game(&game_id(&env, 30), &player, &90, &10, &result_hash(&env));
-    assert_eq!(client.get_accrued_fees(), XLM);
+    assert_eq!(client.get_accrued_fees(), 5 * XLM);
 
-    let remaining = client.withdraw_treasury(&XLM);
+    let remaining = client.withdraw_treasury(&(5 * XLM));
     assert_eq!(remaining, 0);
     let asset = token::Client::new(&env, &token);
-    // 1000 minted - 20 bot liquidity funded - 5 entry staked in the duel + 1 XLM withdrawn fee.
-    assert_eq!(asset.balance(&admin), 976 * XLM);
+    // 1000 minted - 20 bot liquidity funded - 25 entry staked + 5 XLM withdrawn fee.
+    assert_eq!(asset.balance(&admin), 960 * XLM);
     assert!(client.try_withdraw_treasury(&XLM).is_err());
 }
 
@@ -345,7 +404,7 @@ fn only_the_developer_wallet_can_withdraw_treasury() {
 /// developer wallet can, and the funds can only land back at that wallet.
 #[test]
 fn withdrawal_requires_the_designated_developer_wallet_not_the_settler() {
-    let env = Env::default();
+    let env = test_env();
     env.mock_all_auths();
     env.ledger().with_mut(|l| l.sequence_number = 100);
     let settler = Address::generate(&env);
@@ -366,21 +425,21 @@ fn withdrawal_requires_the_designated_developer_wallet_not_the_settler() {
     assert_eq!(config.admin, settler);
     assert_eq!(config.treasury, developer);
 
-    // Accrue a 1 XLM protocol fee from a settled duel.
+    // Accrue a 5 XLM protocol fee from a settled duel.
     client.create_game(&player, &game_id(&env, 40), &MODE_PVP, &ENTRY, &500);
     client.join_game(&developer, &game_id(&env, 40));
     client.start_game(&game_id(&env, 40));
     client.settle_game(&game_id(&env, 40), &player, &90, &10, &result_hash(&env));
-    assert_eq!(client.get_accrued_fees(), XLM);
+    assert_eq!(client.get_accrued_fees(), 5 * XLM);
 
     // Only the developer wallet authorises the withdrawal...
-    assert_eq!(client.withdraw_treasury(&XLM), 0);
+    assert_eq!(client.withdraw_treasury(&(5 * XLM)), 0);
     let auths = env.auths();
     assert_eq!(auths.len(), 1);
     assert_eq!(auths[0].0, developer);
-    // 100 minted - 5 entry staked + 1 XLM of accrued fees withdrawn.
+    // 100 minted - 25 entry staked + 5 XLM of accrued fees withdrawn.
     let asset = token::Client::new(&env, &token);
-    assert_eq!(asset.balance(&developer), 96 * XLM);
+    assert_eq!(asset.balance(&developer), 80 * XLM);
 
     // ...and with real auth required, the settler and a stranger both fail.
     env.mock_auths(&[]);
@@ -475,7 +534,7 @@ fn contract_balance_invariant_holds_across_a_full_bot_match() {
     let (env, contract, token, admin, p1, _p2) = world();
     let client = ChainDuelClient::new(&env, &contract);
     let asset = token::Client::new(&env, &token);
-    client.fund_bot_pool(&admin, &(100 * XLM));
+    client.fund_bot_pool(&admin, &(500 * XLM));
 
     for seed in 40..48u8 {
         client.create_game(&p1, &game_id(&env, seed), &MODE_BOT, &ENTRY, &9_000);

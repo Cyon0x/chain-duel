@@ -294,7 +294,7 @@ describe("computer duels", () => {
 
   it("refuses a staked computer duel when the contract is not configured", async () => {
     await expect(
-      createDuel({ userId: bob, mode: "bot", entryStroops: ENTRY, demo: false }),
+      createDuel({ userId: bob, mode: "bot", entryStroops: 250_000_000, demo: false }),
     ).rejects.toThrow(/contract|escrow|unavailable/i);
   });
 
@@ -308,7 +308,7 @@ describe("computer duels", () => {
 describe("staked duels refuse to fake the blockchain", () => {
   it("will not create a staked duel without on-chain escrow", async () => {
     await expect(
-      createDuel({ userId: alice, mode: "private", entryStroops: ENTRY, demo: false }),
+      createDuel({ userId: alice, mode: "private", entryStroops: 250_000_000, demo: false }),
     ).rejects.toThrow(/escrow/i);
   });
 

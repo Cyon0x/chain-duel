@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 import { buildTargetSchedule, scoreMatch } from "@/lib/game/pulse";
 import type { HitRecord } from "@/lib/game/pulse";
 import { formatXlm, xlmToStroops } from "@/lib/config/game";
+import { Account, Asset, Contract, Keypair, Networks, Operation, TransactionBuilder, nativeToScVal, rpc, scValToNative } from "@stellar/stellar-sdk";
 
 const BASE = process.env.CHAIN_DUEL_LIVE_URL ?? "http://localhost:4310";
 const LIVE = process.env.CHAIN_DUEL_LIVE === "1";
@@ -63,6 +64,19 @@ async function friendbot(address: string): Promise<void> {
   if (!response.ok && !/already/i.test(text)) throw new Error(`friendbot failed: ${text.slice(0, 200)}`);
 }
 
+/** Friendbot gives exactly 10,000 XLM; a maximum entry also needs account reserves and fees. */
+async function topUpReserve(address: string) {
+  const donor = Keypair.random();
+  await friendbot(donor.publicKey());
+  const response = await fetch(`https://horizon-testnet.stellar.org/accounts/${donor.publicKey()}`);
+  const account = await response.json() as { sequence: string };
+  const payment = new TransactionBuilder(new Account(donor.publicKey(), account.sequence), { fee: "100", networkPassphrase: Networks.TESTNET })
+    .addOperation(Operation.payment({ destination: address, asset: Asset.native(), amount: "100" })).setTimeout(60).build();
+  payment.sign(donor);
+  const sent = await fetch("https://horizon-testnet.stellar.org/transactions", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ tx: payment.toXDR() }) });
+  expect(sent.ok, await sent.text()).toBe(true);
+}
+
 interface GameView {
   id: string;
   code: string;
@@ -73,6 +87,7 @@ interface GameView {
   fee_stroops: number;
   settle_tx_hash: string | null;
   winner_id: string | null;
+  contract_game_id: string;
 }
 
 async function playAndSettle(gameId: string, creator: { cookie: string }, joiner: { cookie: string }) {
@@ -118,6 +133,10 @@ async function runStakedDuel(entryXlm: number, tag: string) {
   const beta = await createPlayer(`${tag}b`);
   await friendbot(alpha.address);
   await friendbot(beta.address);
+  if (entryXlm === 10_000) {
+    await topUpReserve(alpha.address);
+    await topUpReserve(beta.address);
+  }
 
   const created = await api<{ game: GameView }>("/api/duels", {
     method: "POST",
@@ -164,6 +183,24 @@ async function runStakedDuel(entryXlm: number, tag: string) {
   const settled = await api<{ game: GameView }>(`/api/matches/${gameId}`, { cookie: alpha.cookie });
   expect(settled.body.game.status).toBe("settled");
   expect(settled.body.game.settle_tx_hash).toMatch(/^[0-9a-f]{64}$/);
+  // Read the deployed contract independently of the application's database.
+  if (process.env.CHAIN_DUEL_LIVE_CONTRACT_ID) {
+    const server = new rpc.Server("https://soroban-testnet.stellar.org");
+    const account = await server.getAccount(alpha.address);
+    const read = new TransactionBuilder(account, { fee: "100", networkPassphrase: Networks.TESTNET })
+      .addOperation(new Contract(process.env.CHAIN_DUEL_LIVE_CONTRACT_ID).call("get_game", nativeToScVal(Buffer.from(settled.body.game.contract_game_id, "hex"), { type: "bytes" }))).setTimeout(60).build();
+    const result = await server.simulateTransaction(read);
+    expect(rpc.Api.isSimulationError(result), "Independent on-chain game read must succeed").toBe(false);
+    if (rpc.Api.isSimulationSuccess(result) && result.result) {
+      const game = scValToNative(result.result.retval) as { entry_amount: bigint; escrow: bigint; payout: bigint; fee: bigint; status: number };
+      expect(game.entry_amount).toBe(BigInt(xlmToStroops(entryXlm)));
+      expect(game.escrow).toBe(BigInt(xlmToStroops(entryXlm) * 2));
+      expect(game.payout).toBe(BigInt(settled.body.game.payout_stroops));
+      expect(game.fee).toBe(BigInt(settled.body.game.fee_stroops));
+      expect(game.status).toBe(4);
+    }
+  }
+  console.log(JSON.stringify({ entryXlm, poolStroops: settled.body.game.pool_stroops, payoutStroops: settled.body.game.payout_stroops, feeStroops: settled.body.game.fee_stroops, settleTxHash: settled.body.game.settle_tx_hash }));
   return { alpha, settled: settled.body.game };
 }
 
@@ -173,7 +210,7 @@ describe.runIf(LIVE)("live staking", () => {
     const tooBig = await api<{ code: string }>("/api/duels", {
       method: "POST",
       cookie: player.cookie,
-      body: { mode: "private", entryXlm: 251 },
+      body: { mode: "private", entryXlm: 10001 },
     });
     expect(tooBig.status).toBe(400);
     expect(tooBig.body.code).toBe("invalid_entry");
@@ -189,13 +226,13 @@ describe.runIf(LIVE)("live staking", () => {
     const tooPrecise = await api<{ code: string }>("/api/duels", {
       method: "POST",
       cookie: player.cookie,
-      body: { mode: "private", entryXlm: 5.00000001 },
+      body: { mode: "private", entryXlm: 25.00000001 },
     });
     expect(tooPrecise.status).toBe(400);
     expect(tooPrecise.body.code).toBe("invalid_entry");
   });
 
-  it("escrows a 25 XLM preset and settles a 45 / 5 split", { timeout: 300_000 }, async () => {
+  it("escrows a 25 XLM minimum and settles a 45 / 5 split", { timeout: 300_000 }, async () => {
     const { settled } = await runStakedDuel(25, "p25");
     expect(settled.entry_stroops).toBe(xlmToStroops(25));
     expect(settled.pool_stroops).toBe(xlmToStroops(50));
@@ -205,12 +242,12 @@ describe.runIf(LIVE)("live staking", () => {
     expect(formatXlm(settled.fee_stroops)).toBe("5");
   });
 
-  it("escrows a custom 12.5 XLM stake with exact stroop precision", { timeout: 300_000 }, async () => {
-    const { settled } = await runStakedDuel(12.5, "pc");
-    expect(settled.entry_stroops).toBe(xlmToStroops(12.5));
-    expect(settled.pool_stroops).toBe(xlmToStroops(25));
-    expect(settled.payout_stroops).toBe(xlmToStroops(22.5));
-    expect(settled.fee_stroops).toBe(xlmToStroops(2.5));
+  it("escrows a custom 125.5 XLM stake with exact stroop precision", { timeout: 300_000 }, async () => {
+    const { settled } = await runStakedDuel(125.5, "pc");
+    expect(settled.entry_stroops).toBe(xlmToStroops(125.5));
+    expect(settled.pool_stroops).toBe(xlmToStroops(251));
+    expect(settled.payout_stroops).toBe(xlmToStroops(225.9));
+    expect(settled.fee_stroops).toBe(xlmToStroops(25.1));
   });
 
   it("records the actual stake in the player's transaction history", { timeout: 300_000 }, async () => {
@@ -222,5 +259,13 @@ describe.runIf(LIVE)("live staking", () => {
     const entry = transactions.body.transactions.find((row) => row.kind === "entry" && row.game_id === settled.id);
     expect(entry, JSON.stringify(transactions.body)).toBeTruthy();
     expect(entry?.amount_stroops).toBe(xlmToStroops(50));
+  });
+
+  it("escrows 10,000 XLM from each player and settles the full 20,000 XLM pool", { timeout: 300_000 }, async () => {
+    const { settled } = await runStakedDuel(10_000, "max");
+    expect(settled.entry_stroops).toBe(xlmToStroops(10_000));
+    expect(settled.pool_stroops).toBe(xlmToStroops(20_000));
+    expect(settled.payout_stroops).toBe(xlmToStroops(18_000));
+    expect(settled.fee_stroops).toBe(xlmToStroops(2_000));
   });
 });

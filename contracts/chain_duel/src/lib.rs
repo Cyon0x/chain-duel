@@ -15,6 +15,9 @@ use soroban_sdk::{
 pub const BPS_DENOMINATOR: i128 = 10_000;
 pub const DEFAULT_FEE_BPS: u32 = 1_000; // 10%
 pub const MAX_FEE_BPS: u32 = 3_000; // 30% hard ceiling
+/// Entry bounds apply to one player, not the combined escrow.
+pub const MIN_ENTRY: i128 = 25 * 10_000_000;
+pub const MAX_ENTRY: i128 = 10_000 * 10_000_000;
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
@@ -364,7 +367,7 @@ impl ChainDuel {
         if config.paused {
             panic_with_error!(&env, Error::Paused);
         }
-        if entry_amount <= 0 || entry_amount > config.max_entry {
+        if entry_amount < MIN_ENTRY || entry_amount > MAX_ENTRY || entry_amount > config.max_entry {
             panic_with_error!(&env, Error::InvalidAmount);
         }
         if env.storage().persistent().has(&DataKey::Game(id.clone())) {

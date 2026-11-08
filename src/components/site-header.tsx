@@ -12,6 +12,7 @@ import { SoundToggle } from "./sound-toggle";
 import { THEME_DEFINITIONS, THEMES } from "@/lib/config/themes";
 import type { AuthProviders } from "./auth/types";
 import brandMark from "@/assets/brand/chain-duel-mark.png";
+import { SwapAnnouncement } from "./swap-announcement";
 
 // Keep the existing wallet kit off the shared layout's initial bundle.
 const SignInDialog = dynamic(() => import("./auth/sign-in-dialog").then((mod) => mod.SignInDialog), {
@@ -30,6 +31,7 @@ const NAV: { href: string; label: string; icon: IconName }[] = [
   { href: "/profile", label: "Profile", icon: "user" },
   { href: "/how-to-play", label: "How to Play", icon: "book" },
   { href: "/transactions", label: "Transactions", icon: "transactions" },
+  { href: "/swap", label: "Swap", icon: "swap" },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -86,6 +88,17 @@ export function SiteHeader({ networkLabel, isTestnet, providers }: {
   const { theme, setTheme, play } = usePreferences();
   const [menuOpen, setMenuOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
+  const [swapOpen, setSwapOpen] = useState(false);
+  const swapTriggerRef = useRef<HTMLButtonElement | null>(null);
+  function closeSwap() {
+    setSwapOpen(false);
+    // Mobile navigation closes when the announcement opens, so its button
+    // may no longer be mounted. Restore focus to the menu trigger in that case.
+    requestAnimationFrame(() => {
+      const trigger = swapTriggerRef.current;
+      (trigger?.isConnected ? trigger : navigationTriggerRef.current)?.focus({ preventScroll: true });
+    });
+  }
   const { containerRef: navigationRef, triggerRef: navigationTriggerRef } = useDismiss(menuOpen, () => setMenuOpen(false));
   const { containerRef: themeRef, triggerRef: themeTriggerRef } = useDismiss(themeOpen, () => setThemeOpen(false));
   const onMatch = pathname.startsWith("/match/");
@@ -101,9 +114,15 @@ export function SiteHeader({ networkLabel, isTestnet, providers }: {
 
           <nav className="desktop-navigation" aria-label="Main navigation">
             {NAV.map(({ href, label, icon }) => (
+              href === "/swap" ? (
+                <button key={href} type="button" className="nav-link focus-ring" aria-haspopup="dialog" onClick={(event) => { swapTriggerRef.current = event.currentTarget; setSwapOpen(true); }}>
+                  <Icon name={icon} size={16} />{label}
+                </button>
+              ) : (
               <Link key={href} href={href} className="nav-link focus-ring" data-active={isActive(pathname, href)} aria-current={isActive(pathname, href) ? "page" : undefined}>
                 <Icon name={icon} size={16} />{label}
               </Link>
+              )
             ))}
           </nav>
 
@@ -139,9 +158,15 @@ export function SiteHeader({ networkLabel, isTestnet, providers }: {
             <div id="mobile-navigation" className="mobile-drawer">
               <nav aria-label="More navigation">
                 {NAV.map(({ href, label, icon }) => (
+                  href === "/swap" ? (
+                    <button key={href} type="button" className="nav-link focus-ring" aria-haspopup="dialog" onClick={(event) => { swapTriggerRef.current = event.currentTarget; setMenuOpen(false); setSwapOpen(true); }}>
+                      <Icon name={icon} size={18} />{label}
+                    </button>
+                  ) : (
                   <Link key={href} href={href} className="nav-link focus-ring" data-active={isActive(pathname, href)} aria-current={isActive(pathname, href) ? "page" : undefined} onClick={() => setMenuOpen(false)}>
                     <Icon name={icon} size={18} />{label}
                   </Link>
+                  )
                 ))}
               </nav>
               <div className="mobile-drawer__preferences">
@@ -170,6 +195,7 @@ export function SiteHeader({ networkLabel, isTestnet, providers }: {
           ) : null}
         </div>
       </header>
+      {swapOpen ? <SwapAnnouncement onClose={closeSwap} /> : null}
 
       {!onMatch ? (
         <nav className="mobile-tabbar" aria-label="Quick navigation">

@@ -149,13 +149,13 @@ function decodeConfig(raw: unknown): OnChainConfig | null {
   };
 }
 
-export async function getOnChainGame(gameIdHex: string): Promise<OnChainGame | null> {
-  const raw = await readContractState("get_game", [scv.bytes32(gameIdHex)]);
+export async function getOnChainGame(gameIdHex: string, escrowContractId?: string): Promise<OnChainGame | null> {
+  const raw = await readContractState("get_game", [scv.bytes32(gameIdHex)], escrowContractId);
   return decodeGame(raw);
 }
 
-export async function getOnChainConfig(): Promise<OnChainConfig | null> {
-  const raw = await readContractState("get_config", []);
+export async function getOnChainConfig(escrowContractId?: string): Promise<OnChainConfig | null> {
+  const raw = await readContractState("get_config", [], escrowContractId);
   return decodeConfig(raw);
 }
 
@@ -237,6 +237,7 @@ export function settleGameArgs(input: {
 
 /** Builds an unsigned invocation for the player's own wallet to sign. */
 export async function prepareCreateGame(input: {
+  escrowContractId?: string;
   creator: string;
   gameIdHex: string;
   mode: ContractMode;
@@ -247,14 +248,16 @@ export async function prepareCreateGame(input: {
     publicKey: input.creator,
     method: "create_game",
     args: createGameArgs(input),
+    escrowContractId: input.escrowContractId,
   });
 }
 
-export async function prepareJoinGame(input: { player: string; gameIdHex: string }) {
+export async function prepareJoinGame(input: { player: string; gameIdHex: string; escrowContractId?: string }) {
   return prepareInvocation({
     publicKey: input.player,
     method: "join_game",
     args: joinGameArgs(input),
+    escrowContractId: input.escrowContractId,
   });
 }
 
@@ -284,29 +287,31 @@ export async function prepareFundBotPool(input: { from: string; amountStroops: n
 
 // Server-signed (settlement authority) operations.
 
-export async function serverStartGame(gameIdHex: string) {
-  return invokeWithServerKey({ method: "start_game", args: [scv.bytes32(gameIdHex)] });
+export async function serverStartGame(gameIdHex: string, escrowContractId?: string) {
+  return invokeWithServerKey({ method: "start_game", args: [scv.bytes32(gameIdHex)], escrowContractId });
 }
 
 export async function serverSettleGame(input: {
+  escrowContractId?: string;
   gameIdHex: string;
   winner: string;
   playerOneScore: number;
   playerTwoScore: number;
   resultHashHex: string;
 }) {
-  return invokeWithServerKey({ method: "settle_game", args: settleGameArgs(input) });
+  return invokeWithServerKey({ method: "settle_game", args: settleGameArgs(input), escrowContractId: input.escrowContractId });
 }
 
-export async function serverCancelGame(gameIdHex: string) {
+export async function serverCancelGame(gameIdHex: string, escrowContractId?: string) {
   return invokeWithServerKey({
     method: "cancel_game",
     args: [scv.address(getSettlementAddress()), scv.bytes32(gameIdHex)],
+    escrowContractId,
   });
 }
 
-export async function serverClaimRefund(gameIdHex: string) {
-  return invokeWithServerKey({ method: "claim_refund", args: [scv.bytes32(gameIdHex)] });
+export async function serverClaimRefund(gameIdHex: string, escrowContractId?: string) {
+  return invokeWithServerKey({ method: "claim_refund", args: [scv.bytes32(gameIdHex)], escrowContractId });
 }
 
 export async function serverWithdrawTreasury(amountStroops: number) {

@@ -19,6 +19,7 @@ import type { GameRow, GameStatus, QueueRow } from "../db/types";
 import { ECONOMY, PULSE_DUEL, QUEUE_TTL_MS, inviteCode } from "../config/game";
 import { secureSeed } from "../game/rng";
 import { randomContractGameId } from "../auth/stellar";
+import { contractId } from "../config/stellar";
 import { onChainEscrowAvailable } from "./escrow";
 import { escrowUnavailableError, ChainDuelError } from "./errors";
 
@@ -55,7 +56,6 @@ export async function joinQueue(input: {
   entryStroops: number;
   demo: boolean;
 }): Promise<QueueSnapshot> {
-  if (!input.demo && !onChainEscrowAvailable()) throw escrowUnavailableError();
   if (!input.demo) {
     if (
       !Number.isInteger(input.entryStroops) ||
@@ -65,6 +65,7 @@ export async function joinQueue(input: {
       throw new ChainDuelError("That entry is outside the allowed range.", "invalid_entry");
     }
   }
+  if (!input.demo && !onChainEscrowAvailable()) throw escrowUnavailableError();
 
   const database = await db();
   const existing = await findActiveQueueEntry(database, input.userId);
@@ -211,6 +212,7 @@ async function tryPair(userId: string, entry: QueueRow): Promise<QueueSnapshot |
     escrowState: entry.demo === 1 ? "offchain" : "none",
     demo: entry.demo === 1,
     contractGameId: entry.demo === 1 ? null : randomContractGameId(),
+    escrowContractId: entry.demo === 1 ? null : contractId(),
   });
 
   const claimedMine = await claimQueueEntry(database, entry.id, game.id);

@@ -14,7 +14,7 @@ import { ECONOMY, splitPool } from "@/lib/config/game";
 
 const BASE = process.env.CHAIN_DUEL_LIVE_URL ?? "http://localhost:4310";
 const LIVE = process.env.CHAIN_DUEL_LIVE === "1";
-const ENTRY = 5 * 10_000_000;
+const ENTRY = 25 * 10_000_000;
 
 function envFile(): Record<string, string> {
   try {
@@ -241,7 +241,7 @@ describe.runIf(LIVE)("bot settlement treasury accounting", () => {
     const created = await api<{ game: { id: string } }>("/api/duels", {
       method: "POST",
       cookie: player.cookie,
-      body: { mode: "bot", entryXlm: 5 },
+      body: { mode: "bot", entryXlm: 25 },
     });
     expect(created.status, created.raw).toBe(200);
     const gameId = created.body.game.id;

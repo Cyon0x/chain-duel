@@ -163,8 +163,8 @@ export interface PreparedInvocation {
   contractId: string;
 }
 
-function contractCall(method: string, args: xdr.ScVal[]) {
-  const contract = new Contract(requireContractId());
+function contractCall(method: string, args: xdr.ScVal[], escrowContractId?: string) {
+  const contract = new Contract(escrowContractId ?? requireContractId());
   return contract.call(method, ...args);
 }
 
@@ -173,6 +173,7 @@ function contractCall(method: string, args: xdr.ScVal[]) {
  * The transaction is returned unsigned (XDR) for the wallet to sign.
  */
 export async function prepareInvocation(input: {
+  escrowContractId?: string;
   publicKey: string;
   method: string;
   args: xdr.ScVal[];
@@ -184,7 +185,7 @@ export async function prepareInvocation(input: {
     fee: BASE_FEE,
     networkPassphrase: net.networkPassphrase,
   })
-    .addOperation(contractCall(input.method, input.args))
+    .addOperation(contractCall(input.method, input.args, input.escrowContractId))
     .setTimeout(SUBMIT_WINDOW_SECONDS)
     .build();
 
@@ -201,7 +202,7 @@ export async function prepareInvocation(input: {
     xdr: prepared.toXDR(),
     hash: Buffer.from(prepared.hash()).toString("hex"),
     method: input.method,
-    contractId: requireContractId(),
+    contractId: input.escrowContractId ?? requireContractId(),
   };
 }
 
@@ -284,6 +285,7 @@ export async function submitSignedXdr(xdrBase64: string): Promise<SubmittedTrans
  * and the operation is rebuilt before a signed submission.
  */
 export async function invokeWithKeypair(input: {
+  escrowContractId?: string;
   keypair: Keypair;
   method: string;
   args: xdr.ScVal[];
@@ -295,7 +297,7 @@ export async function invokeWithKeypair(input: {
     fee: BASE_FEE,
     networkPassphrase: net.networkPassphrase,
   })
-    .addOperation(contractCall(input.method, input.args))
+    .addOperation(contractCall(input.method, input.args, input.escrowContractId))
     .setTimeout(SUBMIT_WINDOW_SECONDS)
     .build();
 
@@ -316,7 +318,7 @@ export async function invokeWithKeypair(input: {
     );
   }
 
-  const validUntil = (await server.getLatestLedger()).sequence + 200;
+  const validUntil = (await latestLedger()) + 200;
   const auth = await Promise.all(
     (simulation.result?.auth ?? []).map((entry) =>
       authorizeEntry(entry, input.keypair, validUntil, net.networkPassphrase),
@@ -341,6 +343,7 @@ export async function invokeWithKeypair(input: {
 }
 
 export async function invokeWithServerKey(input: {
+  escrowContractId?: string;
   method: string;
   args: xdr.ScVal[];
   signer?: Keypair;
@@ -349,13 +352,14 @@ export async function invokeWithServerKey(input: {
     keypair: input.signer ?? settlementKeypair(),
     method: input.method,
     args: input.args,
+    escrowContractId: input.escrowContractId,
   });
 }
 
 // ------------------------------------------------------------------- reads
 
-export async function readContractState(method: string, args: xdr.ScVal[] = []): Promise<unknown> {
-  const contract = new Contract(requireContractId());
+export async function readContractState(method: string, args: xdr.ScVal[] = [], escrowContractId?: string): Promise<unknown> {
+  const contract = new Contract(escrowContractId ?? requireContractId());
   const server = rpcServer();
   const net = stellarNetwork();
   const source = settlementPublicKey() ?? rawEnv().ADMIN_WALLET_ADDRESS ?? null;
@@ -423,6 +427,21 @@ export async function fundWithFriendbot(address: string): Promise<boolean> {
 }
 
 export async function latestLedger(): Promise<number> {
-  const result = await rpcServer().getLatestLedger();
-  return result.sequence;
+  // We need only the sequence for expiry/auth. SDK 17.2 eagerly decodes the
+  // entire ledger header, whose new Testnet SCP extension is not supported by
+  // its XDR schema. The RPC's numeric sequence is independent of that header.
+  const response = await fetch(stellarNetwork().rpcUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: "chain-duel-ledger", method: "getLatestLedger" }),
+    signal: AbortSignal.timeout(15_000),
+    cache: "no-store",
+  });
+  if (!response.ok) throw new StellarIntegrationError("Could not read the current Stellar ledger.", "simulation_failed");
+  const payload = await response.json() as { result?: { sequence?: number }; error?: unknown };
+  const sequence = payload.result?.sequence;
+  if (payload.error || !Number.isSafeInteger(sequence) || !sequence || sequence < 1) {
+    throw new StellarIntegrationError("Stellar RPC returned an invalid ledger sequence.", "simulation_failed");
+  }
+  return sequence;
 }

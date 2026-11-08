@@ -25,6 +25,9 @@ export async function botAvailability(entryStroops: number): Promise<BotAvailabi
     dailyLiabilityStroops: 0,
     maxDailyLiabilityStroops: limits.dailyBotLiabilityStroops,
   };
+  if (!Number.isSafeInteger(entryStroops) || entryStroops < ECONOMY.minEntryStroops || entryStroops > ECONOMY.maxEntryStroops) {
+    return { ...base, available: false, reason: "Entry must be between 25 and 10,000 XLM per player." };
+  }
 
   if (!onChainEscrowAvailable()) {
     return { ...base, available: false, reason: "Computer matches need the escrow contract to be configured." };
@@ -40,12 +43,12 @@ export async function botAvailability(entryStroops: number): Promise<BotAvailabi
   if (!snapshot.botEnabled) {
     return { ...base, available: false, reason: "Computer matches are temporarily unavailable." };
   }
-  if (entryStroops > limits.maxBotEntryStroops) {
+  if (entryStroops > Math.min(limits.maxBotEntryStroops, snapshot.maxEntryStroops)) {
     return { ...base, available: false, reason: "That entry is above the computer-match limit." };
   }
 
   const potentialPayout = splitPool(entryStroops * 2, ECONOMY.feeBps).payout;
-  if (potentialPayout > limits.maxPayoutStroops) {
+  if (potentialPayout > Math.min(limits.maxPayoutStroops, snapshot.maxPayoutStroops)) {
     return { ...base, available: false, reason: "That entry exceeds the maximum payout limit." };
   }
 

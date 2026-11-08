@@ -84,7 +84,7 @@ independently.
 
 ### Invariants enforced on-chain
 
-- `entry_amount > 0` and `<= max_entry`; `fee_bps <= 3000`.
+- `25 XLM <= entry_amount <= 10,000 XLM` per player and `<= max_entry`; `fee_bps <= 3000`.
 - A game id can be created once.
 - Joining requires `WAITING`, a different address, and an unexpired window.
 - Settlement requires the winner to be one of the two players (or the treasury for a bot game),
@@ -99,8 +99,8 @@ independently.
 | Setting | Default | Changeable |
 | --- | --- | --- |
 | `fee_bps` | 1000 (10%) | `set_fee_bps` (admin, ≤ 3000) |
-| `max_entry` | 250 XLM | `set_limits` (admin) |
-| `max_payout` | 500 XLM | `set_limits` (admin) |
+| `max_entry` | 10,000 XLM | `set_limits` (admin) |
+| `max_payout` | 20,000 XLM | `set_limits` (admin) |
 | `min_treasury_balance` | 100 XLM | `set_limits` (admin) |
 | `paused` | false | `set_paused` (admin) |
 

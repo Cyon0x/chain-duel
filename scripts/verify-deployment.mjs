@@ -7,7 +7,7 @@ import { execFileSync } from "node:child_process";
 import { ROOT, loadEnvFile, stellarBin } from "./lib.mjs";
 
 const env = { ...loadEnvFile(), ...process.env };
-const contractId = env.CHAIN_DUEL_CONTRACT_ID;
+const contractId = env.CHAIN_DUEL_STAKE_CONTRACT_ID || env.CHAIN_DUEL_CONTRACT_ID;
 const secret = env.CHAIN_DUEL_ADMIN_SECRET ?? env.SETTLEMENT_SECRET_KEY;
 
 if (!contractId) {
@@ -20,12 +20,11 @@ function invoke(method, extra = []) {
     "contract", "invoke",
     "--id", contractId,
     "--network", env.STELLAR_NETWORK ?? "testnet",
-    ...(secret ? ["--source-account", secret] : []),
     "--",
     method,
     ...extra,
   ];
-  return execFileSync(stellarBin(), args, { cwd: ROOT, encoding: "utf8" }).trim();
+  return execFileSync(stellarBin(), args, { cwd: ROOT, encoding: "utf8", env: { ...process.env, ...(secret ? { STELLAR_ACCOUNT: secret } : {}) } }).trim();
 }
 
 console.log(`Chain Duel contract ${contractId}`);

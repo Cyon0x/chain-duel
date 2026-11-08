@@ -26,7 +26,7 @@ import { buildTargetSchedule, theoreticalMaxScore, type TargetSpec } from "../ga
 import { verifySubmission, type SubmissionPayload } from "../game/verify";
 import { PulseBot } from "../game/bot";
 import { DEFAULT_BOT } from "../config/game";
-import { beginOnChainGame, settleOnChain, messageOf } from "./escrow";
+import { beginOnChainGame, settleOnChain, messageOf, gameEscrowContractId } from "./escrow";
 import { recordBotTreasuryMovement } from "./treasury";
 import { ChainDuelError } from "./errors";
 
@@ -365,7 +365,7 @@ export async function settleMatch(gameId: string): Promise<GameRow> {
   let settlementTxHash: string | null = game.settle_tx_hash ?? null;
   if (!game.demo && game.contract_game_id && !settlementTxHash) {
     const contract = await import("../stellar/contract");
-    const treasury = await contract.getOnChainConfig();
+    const treasury = await contract.getOnChainConfig(await gameEscrowContractId(game.id));
     const payoutAddress = winnerIsBot ? treasury?.treasury ?? null : winnerAddress;
     if (!payoutAddress) {
       await updateGame(database, game.id, { status: "active", settlement_status: "failed" });

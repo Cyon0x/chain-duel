@@ -80,11 +80,11 @@ describe.runIf(LIVE)("live duel against Testnet escrow", () => {
     await friendbot(alpha.address);
     await friendbot(beta.address);
 
-    // Creator locks 5 XLM of real Testnet XLM into the contract.
+    // Creator locks 25 XLM of real Testnet XLM into the contract.
     const created = await api<{ game: { id: string; code: string; contract_game_id: string } }>("/api/duels", {
       method: "POST",
       cookie: alpha.cookie,
-      body: { mode: "private", entryXlm: 5 },
+      body: { mode: "private", entryXlm: 25 },
     });
     expect(created.status, JSON.stringify(created.body)).toBe(200);
     const gameId = created.body.game.id;
@@ -174,7 +174,7 @@ describe.runIf(LIVE)("live duel against Testnet escrow", () => {
     const created = await api<{ game: { id: string } }>("/api/duels", {
       method: "POST",
       cookie: player.cookie,
-      body: { mode: "bot", entryXlm: 5 },
+      body: { mode: "bot", entryXlm: 25 },
     });
     expect(created.status, JSON.stringify(created.body)).toBe(200);
     const gameId = created.body.game.id;

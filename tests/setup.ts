@@ -12,6 +12,7 @@ process.env.DEMO_MODE_ENABLED = "true";
 // Deliberately no CHAIN_DUEL_CONTRACT_ID: escrow-dependent paths must degrade
 // honestly, and tests assert that behaviour.
 delete process.env.CHAIN_DUEL_CONTRACT_ID;
+delete process.env.CHAIN_DUEL_STAKE_CONTRACT_ID;
 delete process.env.SETTLEMENT_SECRET_KEY;
 delete process.env.TREASURY_SECRET_KEY;
 delete process.env.DATABASE_URL;

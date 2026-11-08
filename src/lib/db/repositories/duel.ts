@@ -54,38 +54,51 @@ export async function createGame(
     escrowState: string;
     demo: boolean;
     contractGameId?: string | null;
+    escrowContractId?: string | null;
   },
 ): Promise<GameRow> {
   const id = input.id ?? newId("gam");
-  await db.execute(
-    `INSERT INTO games (id, code, game_type, mode, status, visibility, creator_id, entry_stroops, pool_stroops,
-       fee_bps, seed, duration_ms, escrow_state, demo, created_at, expires_at, contract_game_id)
-     VALUES (?, ?, 'pulse_duel', ?, 'waiting', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      id,
-      input.code,
-      input.mode,
-      input.visibility,
-      input.creatorId,
-      input.entryStroops,
-      input.escrowState === "onchain" ? input.entryStroops : 0,
-      input.feeBps,
-      input.seed,
-      input.durationMs,
-      input.escrowState,
-      input.demo ? 1 : 0,
-      nowIso(),
-      input.expiresAt,
-      input.contractGameId ?? null,
-    ],
-  );
-  const game = await findGameById(db, id);
-  if (!game) throw new Error("Failed to create game");
-  return game;
+  const insert = async (target: SqlDriver): Promise<GameRow> => {
+    await target.execute(
+      `INSERT INTO games (id, code, game_type, mode, status, visibility, creator_id, entry_stroops, pool_stroops,
+         fee_bps, seed, duration_ms, escrow_state, demo, created_at, expires_at, contract_game_id)
+       VALUES (?, ?, 'pulse_duel', ?, 'waiting', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        input.code,
+        input.mode,
+        input.visibility,
+        input.creatorId,
+        input.entryStroops,
+        input.escrowState === "onchain" ? input.entryStroops : 0,
+        input.feeBps,
+        input.seed,
+        input.durationMs,
+        input.escrowState,
+        input.demo ? 1 : 0,
+        nowIso(),
+        input.expiresAt,
+        input.contractGameId ?? null,
+      ],
+    );
+    if (input.escrowContractId) {
+      await target.execute("INSERT INTO game_escrow_contracts (game_id, contract_id) VALUES (?, ?)", [id, input.escrowContractId]);
+    }
+    const game = await findGameById(target, id);
+    if (!game) throw new Error("Failed to create game");
+    return game;
+  };
+  // A failed binding must not leave a new game looking like a legacy duel.
+  return input.escrowContractId ? db.transaction(insert) : insert(db);
 }
 
 export async function findGameById(db: SqlDriver, id: string): Promise<GameRow | null> {
   return db.one<GameRow>("SELECT * FROM games WHERE id = ?", [id]);
+}
+
+export async function findGameEscrowContract(db: SqlDriver, gameId: string): Promise<string | null> {
+  const row = await db.one<{ contract_id: string }>("SELECT contract_id FROM game_escrow_contracts WHERE game_id = ?", [gameId]);
+  return row?.contract_id ?? null;
 }
 
 export async function findGameByCode(db: SqlDriver, code: string): Promise<GameRow | null> {

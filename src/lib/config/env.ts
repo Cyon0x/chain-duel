@@ -23,6 +23,7 @@ const rawSchema = z.object({
   STELLAR_HORIZON_URL: z.string().optional(),
   STELLAR_NETWORK_PASSPHRASE: z.string().optional(),
   CHAIN_DUEL_CONTRACT_ID: z.string().optional(),
+  CHAIN_DUEL_STAKE_CONTRACT_ID: z.string().optional(),
   CHAIN_DUEL_TOKEN_ID: z.string().optional(),
 
   ADMIN_WALLET_ADDRESS: z.string().optional(),
@@ -85,7 +86,7 @@ export function integrationStatus() {
   return {
     google: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
     x: Boolean(env.X_CLIENT_ID && env.X_CLIENT_SECRET),
-    contract: Boolean(env.CHAIN_DUEL_CONTRACT_ID),
+    contract: Boolean(env.CHAIN_DUEL_STAKE_CONTRACT_ID || env.CHAIN_DUEL_CONTRACT_ID),
     settlementKey: Boolean(env.SETTLEMENT_SECRET_KEY || env.TREASURY_SECRET_KEY),
     adminWallet: Boolean(env.ADMIN_WALLET_ADDRESS),
     database: Boolean(env.DATABASE_URL),

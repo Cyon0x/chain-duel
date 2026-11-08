@@ -10,7 +10,7 @@ import { ROOT, loadEnvFile, stellarBin } from "./lib.mjs";
 
 const env = { ...loadEnvFile(), ...process.env };
 const secret = env.CHAIN_DUEL_ADMIN_SECRET ?? env.SETTLEMENT_SECRET_KEY;
-const contractId = env.CHAIN_DUEL_CONTRACT_ID;
+const contractId = env.CHAIN_DUEL_STAKE_CONTRACT_ID || env.CHAIN_DUEL_CONTRACT_ID;
 const xlm = Number(process.argv[2] ?? "0");
 
 if (!secret || !contractId) {
@@ -28,14 +28,13 @@ const output = execFileSync(
   [
     "contract", "invoke",
     "--id", contractId,
-    "--source-account", secret,
     "--network", env.STELLAR_NETWORK ?? "testnet",
     "--",
     "fund_bot_pool",
     "--from", (await import("@stellar/stellar-sdk")).Keypair.fromSecret(secret).publicKey(),
     "--amount", stroops,
   ],
-  { cwd: ROOT, encoding: "utf8" },
+  { cwd: ROOT, encoding: "utf8", env: { ...process.env, STELLAR_ACCOUNT: secret } },
 );
 console.log(output);
 console.log(`\n✓ Funded the bot treasury with ${xlm} XLM`);
