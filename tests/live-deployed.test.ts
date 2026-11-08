@@ -82,14 +82,14 @@ describe.runIf(LIVE)("deployed Chain Duel", () => {
     expect(before.status).toBe(200);
 
     // The bot payload must never disclose the configured win probability.
-    const bot = await api("/api/bot?entryStroops=50000000", { cookie });
+    const bot = await api("/api/bot?entryStroops=500000000", { cookie });
     expect(bot.status, bot.raw).toBe(200);
     expect(bot.raw).not.toMatch(/win.?probability|0\.8\b/i);
 
     const created = await api<{ game: { id: string } }>("/api/duels", {
       method: "POST",
       cookie,
-      body: { mode: "bot", entryXlm: 5, demo: true },
+      body: { mode: "bot", entryXlm: 0, demo: true },
     });
     expect(created.status, created.raw).toBe(200);
     const gameId = created.body.game.id;

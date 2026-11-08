@@ -80,3 +80,21 @@ The final build also settled a 500 XLM-per-player random match with a
 1,000 XLM pool, 900 XLM payout and 100 XLM fee on the replacement escrow.
 Live tests use funded disposable Testnet wallets. External
 wallet extensions and physical-device rendering require manual verification.
+
+### Production verification
+
+The existing Vercel project at `https://chain-duel.vercel.app` reports healthy
+Postgres persistence and Testnet escrow. Desktop/mobile checks passed for all
+eight presets, custom input, invalid direct API requests and Swap controls.
+The deployed demo lifecycle, profiles, transaction history and leaderboard passed.
+
+The production stake suite passed four checks. The maximum game's client
+response timed out after settlement; a separate database/contract/RPC check
+confirmed its successful settlement at ledger **5628696**, including exact
+10,000 XLM entries, 20,000 XLM escrow, 18,000 XLM payout and 2,000 XLM fee:
+
+`e9dc1c9a55504fd55e3c6953429f570ada48a7bfaedbfb19246c556d4356a388`
+
+This receipt verification resolves the transaction outcome; it does not count
+the interrupted client test as a passing suite. The demo smoke fixture now
+uses the zero-stake request emitted by the existing demo UI.
