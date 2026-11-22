@@ -80,6 +80,8 @@ async function ensureCircleUser(userId: string, appId: string) {
 }
 export async function listOwnedArcWallets(circleUserId: string): Promise<Wallet[]> {
   const config = arcConfig();
+  // Circle's list-wallets API accepts at most 50 records per page.
+  const pageSize = 50;
   const wallets: Wallet[] = [];
   let pageAfter: string | undefined;
   const seen = new Set<string>();
@@ -87,7 +89,7 @@ export async function listOwnedArcWallets(circleUserId: string): Promise<Wallet[
     const response = await circleClient().listWallets({
       userId: circleUserId,
       blockchain: config.circle,
-      pageSize: 100,
+      pageSize,
       pageAfter,
     });
     const page = response.data?.wallets ?? [];
@@ -105,7 +107,7 @@ export async function listOwnedArcWallets(circleUserId: string): Promise<Wallet[
         );
       wallets.push(wallet);
     }
-    if (page.length < 100) return wallets;
+    if (page.length < pageSize) return wallets;
     const cursor = page.at(-1)?.id;
     if (!cursor || seen.has(cursor))
       throw new ChainDuelError(

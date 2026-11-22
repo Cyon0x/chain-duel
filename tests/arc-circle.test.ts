@@ -16,6 +16,7 @@ import {
   reconcileArcWallet,
   circleIdentity,
   associatedArcWallet,
+  listOwnedArcWallets,
 } from "@/lib/arc/circle";
 describe("Circle user-controlled provisioning", () => {
   beforeEach(() => {
@@ -28,7 +29,10 @@ describe("Circle user-controlled provisioning", () => {
     mock.createUserToken.mockResolvedValue({
       data: { userToken: "unit-test-token", encryptionKey: "unit-test-encryption" },
     });
-    mock.listWallets.mockResolvedValue({ data: { wallets: [] } });
+    mock.listWallets.mockImplementation(async ({ pageSize }) => {
+      if (pageSize > 50) throw Object.assign(new Error("API parameter invalid"), { status: 400, code: 2 });
+      return { data: { wallets: [] } };
+    });
     mock.createUserPinWithWallets.mockResolvedValue({ data: { challengeId: "test-challenge" } });
     mock.createWallet.mockResolvedValue({ data: { challengeId: "test-wallet-challenge" } });
     mock.getUserChallenge.mockResolvedValue({ data: { challenge: { status: "PENDING" } } });
@@ -117,5 +121,30 @@ describe("Circle user-controlled provisioning", () => {
     await provisionArcWallet(userId);
     expect(mock.createWallet).toHaveBeenCalledTimes(1);
     expect(mock.createUserPinWithWallets).not.toHaveBeenCalled();
+  });
+  it("uses Circle's supported page size and verifies wallets beyond the first page", async () => {
+    const { userId } = await account();
+    const circleUserId = circleIdentity(userId, "unit-test-app");
+    const wallets = Array.from({ length: 51 }, (_, index) => ({
+      id: `wallet-${index}`,
+      address: `0x${(index + 1).toString(16).padStart(40, "0")}`,
+      blockchain: "ARC-TESTNET",
+      userId: circleUserId,
+      custodyType: "ENDUSER",
+      state: "LIVE",
+    }));
+    mock.listWallets.mockImplementation(async ({ pageSize, pageAfter }) => {
+      if (pageSize > 50) throw Object.assign(new Error("API parameter invalid"), { status: 400, code: 2 });
+      const offset = pageAfter ? wallets.findIndex((wallet) => wallet.id === pageAfter) + 1 : 0;
+      return { data: { wallets: wallets.slice(offset, offset + pageSize) } };
+    });
+    expect(await listOwnedArcWallets(circleUserId)).toEqual(wallets);
+    expect(mock.listWallets).toHaveBeenCalledTimes(2);
+    expect(mock.listWallets.mock.calls[1][0]).toMatchObject({
+      userId: circleUserId,
+      blockchain: "ARC-TESTNET",
+      pageSize: 50,
+      pageAfter: "wallet-49",
+    });
   });
 });
