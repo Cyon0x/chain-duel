@@ -1,0 +1,68 @@
+{
+  "sourceSha256": "4cde6bc395152b2d060222655f137b066386767835b4ef246d31ee8892338c86",
+  "creationBytecodeSha256": "2c76903b73f49a2335b08611761be07676363128508a4974e0cb889c889cbcb2",
+  "sourcesSha256": "6af9a7f444ebce41e71a4f32bcd842231183402179f5aef29f584fe74bfd2130",
+  "sources": {
+    "../../node_modules/@openzeppelin/contracts/access/Ownable.sol": "38578bd71c0a909840e67202db527cc6b4e6b437e0f39f0c909da32c1e30cb81",
+    "../../node_modules/@openzeppelin/contracts/access/Ownable2Step.sol": "c75345d7b9feef17ae29f2a800ca2f65f8021cf80436a41d6ec00f57f5180f36",
+    "../../node_modules/@openzeppelin/contracts/interfaces/IERC1363.sol": "9c3a75a925a6dac9e88b03cddc58d42fe3131b0aaaad84408521f3f7af2f991b",
+    "../../node_modules/@openzeppelin/contracts/interfaces/IERC165.sol": "dfb3f56fa928a7c6cae41a7ce2c86b9210fa18d33fa26389099d66a0fa790368",
+    "../../node_modules/@openzeppelin/contracts/interfaces/IERC20.sol": "0158e2d3e0e28bedd99eec13dcf1a8aa3a70a5b7e4bb2ad709609c95fcc740d1",
+    "../../node_modules/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol": "0b7132f17d14d1d84b41b0bb429be62dafdff00fd3470f68724d8018eb07f57a",
+    "../../node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol": "01b6f5c4fa45fd38822b286ecef6daf983d27306dd6362496fa71b3e4600b72c",
+    "../../node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol": "c2394cb2a327f234711da34884947f4aa0f6dd2791d1d6303a0c7acfaf81bca3",
+    "../../node_modules/@openzeppelin/contracts/utils/Context.sol": "847fda5460fee70f56f4200f59b82ae622bb03c79c77e67af010e31b7e2cc5b6",
+    "../../node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol": "9055c2994b37dea1a41b7b7926dcb510f05dbe2540b0aafc5fbee9558fffd0ca",
+    "../../node_modules/@openzeppelin/contracts/utils/ReentrancyGuard.sol": "94e409e8f6e3184236651a6cc2b1a6a3ea0f0a25eb85b71e524ad5791bb2fbc8",
+    "../../node_modules/@openzeppelin/contracts/utils/StorageSlot.sol": "75704538dcb223239280c6726d9a31cf769a7816718517c997fc7d63bdb70778",
+    "src/ChainDuelArc.sol": "4cde6bc395152b2d060222655f137b066386767835b4ef246d31ee8892338c86"
+  },
+  "compiler": "0.8.30",
+  "compilerSettings": {
+    "remappings": [
+      "@openzeppelin/contracts/=../../node_modules/@openzeppelin/contracts/"
+    ],
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "metadata": {
+      "bytecodeHash": "ipfs"
+    },
+    "compilationTarget": {
+      "src/ChainDuelArc.sol": "ChainDuelArc"
+    },
+    "evmVersion": "cancun",
+    "libraries": {}
+  },
+  "network": "arc-mainnet",
+  "chainId": 5042,
+  "token": "0x3600000000000000000000000000000000000000",
+  "tokenDecimals": 6,
+  "constructorArguments": [
+    "0x3600000000000000000000000000000000000000",
+    "0x73cc6BD174543bE6F2Fb40DA7C3C041ceB8c0b1d",
+    "0x73cc6BD174543bE6F2Fb40DA7C3C041ceB8c0b1d",
+    "0x73cc6BD174543bE6F2Fb40DA7C3C041ceB8c0b1d",
+    "0x73cc6BD174543bE6F2Fb40DA7C3C041ceB8c0b1d",
+    "0x73cc6BD174543bE6F2Fb40DA7C3C041ceB8c0b1d",
+    "500000",
+    "1000000000"
+  ],
+  "constructorArgumentsSha256": "88dfae3edf53b3835143e48b0de39da1f61635279324829bba5ddbe730a8e527",
+  "fees": {
+    "winnerBps": 9000,
+    "protocolBps": 500,
+    "ecosystemBps": 500
+  },
+  "preparedAt": "2026-11-22T10:33:51.228Z",
+  "deployer": "0x73cc6BD174543bE6F2Fb40DA7C3C041ceB8c0b1d",
+  "deploymentTransactionHash": "0xf85a02f227beed53a6cef671ba1a78f6624a95c46fe3c9ef56922ccea5a16c18",
+  "status": "confirmed",
+  "contractAddress": "0xc68d4a23433a51d17cf3358ee1281a13b6e58210",
+  "deploymentBlock": "32550241",
+  "confirmedAt": "2026-11-22T10:33:59.069Z",
+  "explorerUrl": "https://explorer.arc.io/address/0xc68d4a23433a51d17cf3358ee1281a13b6e58210",
+  "verificationStatus": "Sourcify exact creation and runtime match",
+  "sourceVerificationUrl": "https://sourcify.dev/#/lookup/5042/0xc68d4a23433a51d17cf3358ee1281a13b6e58210"
+}

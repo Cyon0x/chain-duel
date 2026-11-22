@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import dynamic from "next/dynamic";
-import { Avatar, Button } from "./ui";
+import { Avatar, Button, ButtonLink } from "./ui";
 import { Icon, type IconName } from "./icons";
 import { usePreferences, useSession } from "./providers";
 import { SoundToggle } from "./sound-toggle";
@@ -13,6 +13,8 @@ import { THEME_DEFINITIONS, THEMES } from "@/lib/config/themes";
 import type { AuthProviders } from "./auth/types";
 import brandMark from "@/assets/brand/chain-duel-mark.png";
 import { SwapAnnouncement } from "./swap-announcement";
+import { NetworkSelector } from "./networks/network-selector";
+import { networkHref, useNetwork } from "./networks/network-provider";
 
 // Keep the existing wallet kit off the shared layout's initial bundle.
 const SignInDialog = dynamic(() => import("./auth/sign-in-dialog").then((mod) => mod.SignInDialog), {
@@ -32,6 +34,7 @@ const NAV: { href: string; label: string; icon: IconName }[] = [
   { href: "/how-to-play", label: "How to Play", icon: "book" },
   { href: "/transactions", label: "Transactions", icon: "transactions" },
   { href: "/swap", label: "Swap", icon: "swap" },
+  { href: "/bridge", label: "Bridge", icon: "layers" },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -85,6 +88,7 @@ export function SiteHeader({ networkLabel, isTestnet, providers }: {
 }) {
   const pathname = usePathname();
   const session = useSession();
+  const { selected } = useNetwork();
   const { theme, setTheme, play } = usePreferences();
   const [menuOpen, setMenuOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
@@ -101,7 +105,7 @@ export function SiteHeader({ networkLabel, isTestnet, providers }: {
   }
   const { containerRef: navigationRef, triggerRef: navigationTriggerRef } = useDismiss(menuOpen, () => setMenuOpen(false));
   const { containerRef: themeRef, triggerRef: themeTriggerRef } = useDismiss(themeOpen, () => setThemeOpen(false));
-  const onMatch = pathname.startsWith("/match/");
+  const onMatch = pathname.startsWith("/match/") || pathname.startsWith("/arc/match/");
 
   return (
     <>
@@ -119,7 +123,7 @@ export function SiteHeader({ networkLabel, isTestnet, providers }: {
                   <Icon name={icon} size={16} />{label}
                 </button>
               ) : (
-              <Link key={href} href={href} className="nav-link focus-ring" data-active={isActive(pathname, href)} aria-current={isActive(pathname, href) ? "page" : undefined}>
+              <Link key={href} href={networkHref(href, selected)} className="nav-link focus-ring" data-active={isActive(pathname, networkHref(href, selected))} aria-current={isActive(pathname, networkHref(href, selected)) ? "page" : undefined}>
                 <Icon name={icon} size={16} />{label}
               </Link>
               )
@@ -127,9 +131,7 @@ export function SiteHeader({ networkLabel, isTestnet, providers }: {
           </nav>
 
           <div className="header-controls">
-            <span className="network-chip" title={networkLabel} aria-label={`Network: ${networkLabel}`}>
-              {isTestnet ? networkLabel.replace(/^Stellar\s+/i, "") : networkLabel}
-            </span>
+            <span className="sr-only">{networkLabel}{isTestnet ? " · Testnet" : ""}</span><NetworkSelector />
             <div className="theme-control desktop-control" ref={themeRef}>
               <button ref={themeTriggerRef} type="button" className="theme-trigger focus-ring" aria-label="Change arena theme" aria-expanded={themeOpen} aria-haspopup="menu" aria-controls="theme-menu" onClick={() => { play("ui"); setThemeOpen((value) => !value); }}>
                 <span className="theme-dot" style={{ background: THEME_DEFINITIONS[theme].accent }} aria-hidden />
@@ -148,7 +150,7 @@ export function SiteHeader({ networkLabel, isTestnet, providers }: {
               ) : null}
             </div>
             <div className="desktop-control"><SoundToggle /></div>
-            {session.authenticated ? <AccountMenu /> : <SignInDialog providers={providers} label="Sign in" />}
+            {session.authenticated ? <AccountMenu /> : selected === "arc" ? <ButtonLink href="/arc/login">Sign in</ButtonLink> : <SignInDialog providers={providers} label="Sign in" />}
             <button ref={navigationTriggerRef} type="button" className="menu-trigger focus-ring" aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => { setMenuOpen((value) => !value); setThemeOpen(false); }}>
               <Icon name={menuOpen ? "close" : "menu"} size={19} />
             </button>
@@ -163,7 +165,7 @@ export function SiteHeader({ networkLabel, isTestnet, providers }: {
                       <Icon name={icon} size={18} />{label}
                     </button>
                   ) : (
-                  <Link key={href} href={href} className="nav-link focus-ring" data-active={isActive(pathname, href)} aria-current={isActive(pathname, href) ? "page" : undefined} onClick={() => setMenuOpen(false)}>
+                  <Link key={href} href={networkHref(href, selected)} className="nav-link focus-ring" data-active={isActive(pathname, networkHref(href, selected))} aria-current={isActive(pathname, networkHref(href, selected)) ? "page" : undefined} onClick={() => setMenuOpen(false)}>
                     <Icon name={icon} size={18} />{label}
                   </Link>
                   )
@@ -187,7 +189,7 @@ export function SiteHeader({ networkLabel, isTestnet, providers }: {
               </div>
               {session.authenticated ? (
                 <div className="mobile-drawer__wallet">
-                  <Link href="/wallet" className="focus-ring inline-flex items-center gap-2 py-2" onClick={() => setMenuOpen(false)}><Icon name="wallet" size={16} />{session.walletAddress ? `${session.walletAddress.slice(0, 6)}…${session.walletAddress.slice(-4)}` : "Your wallet"}</Link>
+                  <Link href={networkHref("/wallet", selected)} className="focus-ring inline-flex items-center gap-2 py-2" onClick={() => setMenuOpen(false)}><Icon name="wallet" size={16} />{selected === "arc" ? "Your Arc wallet" : session.walletAddress ? `${session.walletAddress.slice(0, 6)}…${session.walletAddress.slice(-4)}` : "Your wallet"}</Link>
                   <DisconnectButton />
                 </div>
               ) : null}
@@ -200,7 +202,7 @@ export function SiteHeader({ networkLabel, isTestnet, providers }: {
       {!onMatch ? (
         <nav className="mobile-tabbar" aria-label="Quick navigation">
           {NAV.slice(0, 4).map(({ href, label, icon }) => (
-            <Link key={href} href={href} className="focus-ring" data-active={isActive(pathname, href)} aria-current={isActive(pathname, href) ? "page" : undefined} onClick={() => setMenuOpen(false)}>
+            <Link key={href} href={networkHref(href, selected)} className="focus-ring" data-active={isActive(pathname, networkHref(href, selected))} aria-current={isActive(pathname, networkHref(href, selected)) ? "page" : undefined} onClick={() => setMenuOpen(false)}>
               <Icon name={icon} size={20} /><span>{label}</span>
             </Link>
           ))}
@@ -213,6 +215,7 @@ export function SiteHeader({ networkLabel, isTestnet, providers }: {
 function AccountMenu() {
   const session = useSession();
   const pathname = usePathname();
+  const { selected } = useNetwork();
   const [open, setOpen] = useState(false);
   const { containerRef, triggerRef } = useDismiss(open, () => setOpen(false));
   const items: { href: string; label: string; icon: IconName }[] = [
@@ -231,9 +234,9 @@ function AccountMenu() {
       </button>
       {open ? (
         <div id="account-menu" className="header-popover" role="menu" aria-label="Account" onKeyDown={menuKeys}>
-          <div className="account-identity"><strong>{session.username}</strong><p>{session.walletAddress ? `${session.walletAddress.slice(0, 8)}…${session.walletAddress.slice(-6)}` : "Managed wallet"}{session.custody === "managed" ? " · Chain Duel wallet" : " · External wallet"}</p><p>Duel Rating <span className="numeric text-accent">{session.rating}</span></p></div>
+          <div className="account-identity"><strong>{session.username}</strong>{selected === "arc" ? <p>One Chain Duel account · manage USDC in your Arc wallet.</p> : <p>{session.walletAddress ? `${session.walletAddress.slice(0, 8)}…${session.walletAddress.slice(-6)}` : "Managed wallet"}{session.custody === "managed" ? " · Chain Duel wallet" : " · External wallet"}</p>}<p>{selected === "arc" ? "Stellar Duel Rating" : "Duel Rating"} <span className="numeric text-accent">{session.rating}</span></p></div>
           <div className="hairline my-1" />
-          {items.map(({ href, label, icon }) => <Link key={href} href={href} role="menuitem" aria-current={pathname === href ? "page" : undefined} onClick={() => setOpen(false)}><Icon name={icon} size={17} />{label}</Link>)}
+          {items.map(({ href, label, icon }) => <Link key={href} href={networkHref(href, selected)} role="menuitem" aria-current={pathname === networkHref(href, selected) ? "page" : undefined} onClick={() => setOpen(false)}><Icon name={icon} size={17} />{label}</Link>)}
           <div className="hairline my-1" /><div className="p-1"><DisconnectButton /></div>
         </div>
       ) : null}

@@ -5,7 +5,7 @@ import clsx from "clsx";
 import { PulseDuelSession, type TargetSpec } from "@/lib/game/pulse";
 import { usePreferences } from "@/components/providers";
 import { sound } from "@/lib/sound/audio";
-import type { MatchView, SubmitResponse } from "@/lib/api/views";
+import type { SubmitResponse } from "@/lib/api/views";
 import { formatXlm } from "@/lib/config/game";
 import { Icon } from "@/components/icons";
 import { ArenaOrbits, TargetLegend } from "./target-legend";
@@ -26,12 +26,26 @@ interface FloatingMark {
 }
 
 export interface ArenaProps {
-  view: MatchView;
+  view: ArenaView;
   selfUserId: string;
   onFinished: (response: SubmitResponse) => void;
+  apiBase?: string;
+  entryLabel?: string;
 }
 
-export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
+export interface ArenaView {
+  game: { id: string; mode: string; duration_ms: number; demo?: number; entry_stroops?: number };
+  players: { user_id: string | null; seat: number; username: string }[];
+  schedule: TargetSpec[];
+  botScore: number | null;
+  liveScores: Record<string, number>;
+  maxScore: number;
+  serverTimeMs: number;
+  startAtMs: number | null;
+  countdownMs: number;
+}
+
+export function PulseArena({ view, selfUserId, onFinished, apiBase = "/api/matches", entryLabel }: ArenaProps) {
   const { play } = usePreferences();
   const self = view.players.find((player) => player.user_id === selfUserId) ?? view.players[0];
   const opponent = view.players.find((player) => player.user_id !== selfUserId) ?? view.players[1];
@@ -131,7 +145,7 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
     setPhase("submitting");
     const snapshot = session.snapshot();
     try {
-      const response = await fetch(`/api/matches/${view.game.id}/submit`, {
+      const response = await fetch(`${apiBase}/${view.game.id}/submit`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -160,7 +174,7 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
         submittedRef.current = false;
       }, 1_500);
     }
-  }, [addMark, durationMs, onFinished, play, session, self?.seat, view.game.id]);
+  }, [addMark, apiBase, durationMs, onFinished, play, session, self?.seat, view.game.id]);
 
   /* ------------------------------------------------------------------ game loop */
   useEffect(() => {
@@ -229,7 +243,7 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
     const timer = window.setInterval(async () => {
       const snapshot = session.snapshot();
       try {
-        await fetch(`/api/matches/${view.game.id}/progress`, {
+        await fetch(`${apiBase}/${view.game.id}/progress`, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
@@ -245,15 +259,15 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
       }
     }, 2_000);
     return () => window.clearInterval(timer);
-  }, [matchMs, phase, session, view.game.id]);
+  }, [apiBase, matchMs, phase, session, view.game.id]);
 
   useEffect(() => {
     if (phase !== "playing") return;
     const poll = window.setInterval(async () => {
       try {
-        const response = await fetch(`/api/matches/${view.game.id}`, { cache: "no-store" });
+        const response = await fetch(`${apiBase}/${view.game.id}`, { cache: "no-store" });
         if (!response.ok) return;
-        const payload = (await response.json()) as MatchView;
+        const payload = (await response.json()) as ArenaView;
         const seat = opponent?.seat ?? 2;
         const live = payload.botScore ?? payload.liveScores[String(seat)] ?? 0;
         setOpponentScore(live);
@@ -262,7 +276,7 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
       }
     }, 2_000);
     return () => window.clearInterval(poll);
-  }, [opponent?.seat, phase, view.game.id]);
+  }, [apiBase, opponent?.seat, phase, view.game.id]);
 
   /* ------------------------------------------------------------------- input */
   const handleTarget = useCallback(
@@ -337,7 +351,7 @@ export function PulseArena({ view, selfUserId, onFinished }: ArenaProps) {
 
       <div className="pulse-meta">
         <span><Icon name="gamepad" size={15} />Pulse Duel{view.game.mode === "bot" ? " · vs computer" : " · 1v1"}</span>
-        <span>{view.game.demo ? "Demo · no stake" : `${formatXlm(view.game.entry_stroops)} XLM entry · ${formatXlm(view.game.entry_stroops * 2)} XLM pool`}</span>
+        <span>{entryLabel ?? (view.game.demo ? "Demo · no stake" : view.game.entry_stroops === undefined ? "" : `${formatXlm(view.game.entry_stroops)} XLM entry · ${formatXlm(view.game.entry_stroops * 2)} XLM pool`)}</span>
       </div>
 
       <div
@@ -450,8 +464,8 @@ function ArenaHud({
   isBot,
   phase,
 }: {
-  self: MatchView["players"][number];
-  opponent: MatchView["players"][number];
+  self: ArenaView["players"][number];
+  opponent: ArenaView["players"][number];
   selfScore: number;
   opponentScore: number;
   combo: number;

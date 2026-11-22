@@ -1,0 +1,12 @@
+{
+  "sourceSha256": "4cde6bc395152b2d060222655f137b066386767835b4ef246d31ee8892338c86",
+  "creationBytecodeSha256": "2c76903b73f49a2335b08611761be07676363128508a4974e0cb889c889cbcb2",
+  "sourcesSha256": "6af9a7f444ebce41e71a4f32bcd842231183402179f5aef29f584fe74bfd2130",
+  "constructorArgumentsSha256": "88dfae3edf53b3835143e48b0de39da1f61635279324829bba5ddbe730a8e527",
+  "approved": true,
+  "auditReference": "docs/arc-deployments/final-engineering-review.md",
+  "reviewType": "engineering-audit",
+  "independentThirdPartyAudit": false,
+  "deploymentAuthorization": "User explicitly approved the final deployment in this conversation after supplying exact role and stake configuration.",
+  "reviewedAt": "2026-11-22"
+}
