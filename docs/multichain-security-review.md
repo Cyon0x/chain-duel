@@ -38,7 +38,7 @@ and CCTP transfer verification remain separate checks.
 ## Verification evidence
 
 - Application checks: TypeScript, ESLint and optimized Next.js build passed.
-- 252 JavaScript tests passed; 16 opt-in tests skipped in the default run.
+- 259 JavaScript tests passed; 16 opt-in tests skipped in the default run.
 - 23 unchanged Soroban tests passed.
 - 16 Solidity tests passed, including 256 rounding/conservation fuzz cases and
   the approved shared roles and stake limits.
@@ -49,6 +49,11 @@ and CCTP transfer verification remain separate checks.
   reservation and signed outbox. Concurrent games allocate different nonces,
   uncertain submissions reuse signed bytes, and replaced nonces require definitive
   chain evidence. Signature substitution is rejected before transmission.
+- Dedicated Arc Google/X clients use PKCE and isolated callback/cookie namespaces,
+  without changing the existing Stellar clients. Google audience/issuer/nonce
+  verification and X user-context identity checks passed. Live token-endpoint
+  configuration probes did not reject either supplied client; these probes do not
+  establish a completed user login or Circle PIN setup.
 - Browser regression passed the full 60-second Stellar demo multiplayer flow,
   onboarding, invitations, queue cancellation, authoritative scores/results,
   replay and sign-out. This exercises real application handlers with no-stake

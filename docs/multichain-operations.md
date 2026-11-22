@@ -56,6 +56,24 @@ Required environment settings:
 - `CIRCLE_API_KEY`, server-only; live key for Mainnet, test key for Preview/Testnet.
 - `NEXT_PUBLIC_CIRCLE_APP_ID`, the corresponding public Circle application ID.
 - `ARC_NETWORK=mainnet|testnet` and `ARC_WALLETS_ENABLED=true` after real testing.
+- `ARC_GOOGLE_CLIENT_ID` and `ARC_GOOGLE_CLIENT_SECRET` for the dedicated Arc Google client.
+- `ARC_X_CLIENT_ID` and `ARC_X_CLIENT_SECRET` for the corrected Arc X OAuth 2.0 client.
+
+Arc sign-in/sign-up uses `/arc/login`, `/api/arc/auth/google` and `/api/arc/auth/x`.
+Both clients use separate Arc cookie namespaces and PKCE; Google additionally
+verifies its signed identity token audience, issuer and nonce. X uses the access
+token issued by user authorization to verify `/2/users/me`. Existing Stellar
+Google/X clients and callbacks remain unchanged. Both Arc callbacks reuse the
+existing account/session service, preserve managed Stellar wallet creation, and
+automatically initiate idempotent Circle provisioning. New accounts continue
+through the existing profile onboarding; Circle PIN authorization remains separate.
+
+Register the callback URLs on the supplied Google/X clients:
+
+- Production Google: `https://www.chainduel.site/api/arc/auth/google/callback`.
+- Production X: `https://www.chainduel.site/api/arc/auth/x/callback`.
+- Preview Google: `https://chain-duel-multichain-preview.vercel.app/api/arc/auth/google/callback`.
+- Preview X: `https://chain-duel-multichain-preview.vercel.app/api/arc/auth/x/callback`.
 
 The supplied Circle live key was authenticated and its configured App ID verified
 as `b6c707ff-be8a-504b-8651-aaf58983217a`. Preview and Production use Arc Mainnet with

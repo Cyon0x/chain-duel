@@ -95,7 +95,7 @@ export function ArcWalletPanel() {
       <Panel className="arc-card">
         <h2>One account, two ecosystems</h2>
         <p>Sign in with Google or X to set up your Circle-powered Arc wallet.</p>
-        <ButtonLink href="/login?next=/arc/wallet">Sign in</ButtonLink>
+        <ButtonLink href="/arc/login">Sign in</ButtonLink>
       </Panel>
     );
   return (

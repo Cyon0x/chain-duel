@@ -12,6 +12,6 @@ export default async function ArcPage({ params }: { params: Promise<{ path?: str
     notFound();
   if (section === "match" && !path[1]) notFound();
   const session = await getSessionUser();
-  if (section === "match" && !session) redirect(`/login?next=${encodeURIComponent(`/arc/match/${path[1]}`)}`);
+  if (section === "match" && !session) redirect("/arc/login");
   return <ArcSection section={section} id={path[1]} />;
 }

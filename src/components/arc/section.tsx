@@ -137,7 +137,7 @@ export function ArcSection({ section, id }: { section: string; id?: string }) {
             ) : (
               <>
                 <p>Sign in to view your account and both game histories.</p>
-                <ButtonLink href="/login?next=/arc/profile">Sign in</ButtonLink>
+                <ButtonLink href="/arc/login">Sign in</ButtonLink>
               </>
             )}
             <p>
@@ -198,7 +198,7 @@ export function ArcSection({ section, id }: { section: string; id?: string }) {
                 Google and X sign-in connect your profile to both ecosystems. Circle handles Arc wallet
                 authorization and recovery.
               </p>
-              <ButtonLink href="/login?next=/arc/dashboard">Sign in with Google or X</ButtonLink>
+              <ButtonLink href="/arc/login">Sign in with Google or X</ButtonLink>
             </Panel>
           ) : null}
           <ArcGameList games={games} loaded={historyLoaded} authenticated={socialAccount} />

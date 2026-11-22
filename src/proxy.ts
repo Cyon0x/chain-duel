@@ -3,6 +3,11 @@ const SHARED = ["/dashboard", "/wallet", "/transactions", "/profile", "/leaderbo
 const STELLAR_ACTIONS = ["/api/duels", "/api/matchmaking", "/api/matches", "/api/bot", "/api/wallet"];
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  if (request.method === "GET" && path === "/login" && request.cookies.get("cd_ecosystem")?.value === "arc") {
+    const target = request.nextUrl.clone();
+    target.pathname = "/arc/login";
+    return NextResponse.redirect(target);
+  }
   if (
     request.method === "GET" &&
     request.cookies.get("cd_ecosystem")?.value === "arc" &&
@@ -46,6 +51,7 @@ export async function proxy(request: NextRequest) {
 }
 export const config = {
   matcher: [
+    "/login",
     "/dashboard/:path*",
     "/wallet/:path*",
     "/transactions/:path*",

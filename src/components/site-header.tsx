@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import dynamic from "next/dynamic";
-import { Avatar, Button } from "./ui";
+import { Avatar, Button, ButtonLink } from "./ui";
 import { Icon, type IconName } from "./icons";
 import { usePreferences, useSession } from "./providers";
 import { SoundToggle } from "./sound-toggle";
@@ -150,7 +150,7 @@ export function SiteHeader({ networkLabel, isTestnet, providers }: {
               ) : null}
             </div>
             <div className="desktop-control"><SoundToggle /></div>
-            {session.authenticated ? <AccountMenu /> : <SignInDialog providers={providers} label="Sign in" />}
+            {session.authenticated ? <AccountMenu /> : selected === "arc" ? <ButtonLink href="/arc/login">Sign in</ButtonLink> : <SignInDialog providers={providers} label="Sign in" />}
             <button ref={navigationTriggerRef} type="button" className="menu-trigger focus-ring" aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => { setMenuOpen((value) => !value); setThemeOpen(false); }}>
               <Icon name={menuOpen ? "close" : "menu"} size={19} />
             </button>

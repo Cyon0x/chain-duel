@@ -194,7 +194,7 @@ export function BridgePanel({ availability }: { availability: ReturnType<typeof 
             {availability.enabled ? (busy ? "Loading…" : "Review transfer") : "Review transfer · unavailable"}
           </Button>
           {availability.enabled && !data?.signedIn ? (
-            <ButtonLink href="/login?next=/bridge">Sign in to transfer</ButtonLink>
+            <ButtonLink href="/arc/login">Sign in to transfer</ButtonLink>
           ) : null}
           {quote ? (
             <div className="arc-section">
