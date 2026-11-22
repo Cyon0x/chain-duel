@@ -199,7 +199,7 @@ export function BridgePanel({ availability: initialAvailability }: { availabilit
             <ButtonLink href="/arc/login">Sign in to transfer</ButtonLink>
           ) : null}
           {quote ? (
-            <div className="arc-section">
+            <div className="arc-review">
               <h3>Review {quote.amount} USDC</h3>
               <p>
                 Available: {quote.availableBalance ?? "unavailable"} USDC. Circle fee: up to {quote.maxFee}{" "}
@@ -209,7 +209,7 @@ export function BridgePanel({ availability: initialAvailability }: { availabilit
               <p>{quote.finality}</p>
               {!quote.stellar.accountExists ? (
                 <p className="arc-notice">
-                  Fund {quote.stellar.address} with XLM on {quote.stellar.networkName} to activate the account
+                  Fund <span className="arc-contract">{quote.stellar.address}</span> with XLM on {quote.stellar.networkName} to activate the account
                   before continuing.
                 </p>
               ) : !quote.stellar.trustline ? (
@@ -217,7 +217,7 @@ export function BridgePanel({ availability: initialAvailability }: { availabilit
                   A Stellar USDC trustline needs your approval before the source burn.
                 </p>
               ) : null}
-              <p className="arc-address">To: {quote.destinationAddress}</p>
+              <p className="arc-contract">To: {quote.destinationAddress}</p>
               <Button disabled={busy} onClick={() => void run(saveTransfer)}>
                 Continue to transaction approvals
               </Button>
@@ -302,7 +302,7 @@ export function BridgePanel({ availability: initialAvailability }: { availabilit
             </p>
           ) : null}
           {prepared ? (
-            <div className="arc-section">
+            <div className="arc-review">
               <h3>{PHASES[prepared.phase]}</h3>
               <p>
                 Network: {prepared.networkId}. Estimated network fee:{" "}
@@ -311,7 +311,7 @@ export function BridgePanel({ availability: initialAvailability }: { availabilit
                   : "unavailable"}{" "}
                 {prepared.gasSymbol}.
               </p>
-              <p className="arc-address">Contract: {prepared.target}</p>
+              <p className="arc-contract">Contract: {prepared.target}</p>
               {prepared.phase === "source_burn" ? (
                 <p>
                   Burning removes source USDC. Continue with attestation and destination mint to finish this

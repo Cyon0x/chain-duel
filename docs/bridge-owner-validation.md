@@ -20,7 +20,8 @@ Server settings on Preview only:
 - `BRIDGE_ENABLED=false` and `BRIDGE_E2E_VERIFIED=false`.
 
 Quotes, wallet matching and unsigned Stellar preparation read the existing
-managed wallet's public identity. Key decryption and signing still happen only
+managed wallet's public identity and check that its sealed signing record exists.
+Key decryption and signing still happen only
 through the unchanged server signer after the approval step. No signing key,
 PIN, session token or owner user ID is stored in this document.
 
@@ -37,7 +38,7 @@ reviewed and approved: Stellar trustline, Arc USDC allowance, Arc burn and
 Stellar destination mint. Arc signing requires the owner's Circle PIN. Once
 destination settlement is verified, the return direction is tested separately.
 
-Validation passed: 271 application tests, TypeScript, ESLint and production
+Validation passed: 274 application tests, TypeScript, ESLint and production
 build. All 117 protected Stellar files remain unchanged. The owner boundary,
 Production exclusion, upstream configuration requirement, exact cap and saved
 oversized-transfer rejection are regression-tested. This is preparation evidence,
