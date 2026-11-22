@@ -4,6 +4,8 @@ import { defineChain, type Address } from "viem";
 export const ARC_USDC: Address = "0x3600000000000000000000000000000000000000";
 export const USDC_DECIMALS = 6;
 export const ARC_MIN_MAX_FEE = 20_000_000_000n;
+export const ARC_MIN_STAKE_UNITS = 500_000n;
+export const ARC_MAX_STAKE_UNITS = 1_000_000_000n;
 export type ArcNetworkId = "arc-mainnet" | "arc-testnet";
 export const ARC_NETWORKS = {
   "arc-mainnet": {
@@ -56,4 +58,10 @@ export function arcPoolSplit(stake: bigint) {
   const protocol = (pool * 500n) / 10_000n;
   const ecosystem = (pool * 500n) / 10_000n;
   return { pool, protocol, ecosystem, winner: pool - protocol - ecosystem };
+}
+export function parseArcStake(input: string): bigint {
+  const units = parseUsdc(input);
+  if (units < ARC_MIN_STAKE_UNITS || units > ARC_MAX_STAKE_UNITS)
+    throw new Error("Choose a stake from 0.50 to 1,000 USDC.");
+  return units;
 }

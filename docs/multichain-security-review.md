@@ -1,7 +1,9 @@
 # Multi-chain engineering security review
 
-Review date: 2026-11-22. This records implementation checks. The required approved
-financial-contract audit and real Circle/CCTP verification remain outstanding.
+Review date: 2026-11-22. This records implementation checks. The final escrow
+engineering audit and user-approved Mainnet deployment are recorded in
+`arc-deployments`; no independent third-party audit is claimed. Real Circle PIN
+and CCTP transfer verification remain separate checks.
 
 ## Checks completed
 
@@ -36,9 +38,13 @@ financial-contract audit and real Circle/CCTP verification remain outstanding.
 ## Verification evidence
 
 - Application checks: TypeScript, ESLint and optimized Next.js build passed.
-- 247 JavaScript tests passed; 15 opt-in live tests skipped.
+- 248 JavaScript tests passed; 16 opt-in tests skipped in the default run.
 - 23 unchanged Soroban tests passed.
-- 15 Solidity tests passed, including 256 rounding/conservation fuzz cases.
+- 16 Solidity tests passed, including 256 rounding/conservation fuzz cases and
+  the approved shared roles and stake limits.
+- Five funded Stellar Testnet regression flows passed. A real isolated PostgreSQL
+  regression passed after applying Arc migrations and re-running the original
+  migrations, confirming compatibility and preserved user records.
 - Browser regression passed the full 60-second Stellar demo multiplayer flow,
   onboarding, invitations, queue cancellation, authoritative scores/results,
   replay and sign-out. This exercises real application handlers with no-stake
@@ -47,9 +53,11 @@ financial-contract audit and real Circle/CCTP verification remain outstanding.
 
 ## Release limitations
 
-Circle credentials were absent, so live Google/X wallet provisioning, signing,
-recovery, Arc escrow deposits/payouts and both CCTP transfer directions could not
-be verified. They remain disabled by independent activation checks.
+The supplied Circle live key authenticated and matched the supplied App ID.
+Completing live Google/X wallet provisioning, PIN signing, recovery and both CCTP
+transfer directions requires account-owner participation and real flow verification.
+The Arc escrow was deployed with the approved parameters and its creation/runtime
+bytecode verified exactly by Sourcify. Activation status is recorded in the release report.
 
 The escrow requires the configured authority to report the replayed game result.
 Direct on-chain joins can bypass app matchmaking; the backend blocks mismatched

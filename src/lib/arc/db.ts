@@ -76,12 +76,6 @@ export const ARC_SCHEMA = [
   `CREATE INDEX IF NOT EXISTS arc_games_network_status ON arc_games(network_id, status)`,
   `CREATE INDEX IF NOT EXISTS arc_tx_user_network ON arc_transactions(user_id, network_id, created_at)`,
   `CREATE INDEX IF NOT EXISTS arc_queue_matching ON arc_queue(network_id, currency, game_type, mode, stake_units, status)`,
-  `CREATE VIEW IF NOT EXISTS stellar_games_networked AS SELECT g.*,
-    'stellar-' || COALESCE((SELECT w.network FROM wallets w WHERE w.user_id=g.creator_id ORDER BY w.is_primary DESC LIMIT 1),'unknown') AS network_id,
-    'XLM' AS currency, 7 AS token_decimals FROM games g`,
-  `CREATE VIEW IF NOT EXISTS stellar_transactions_networked AS SELECT t.*,
-    'stellar-' || COALESCE((SELECT w.network FROM wallets w WHERE w.user_id=t.user_id ORDER BY w.is_primary DESC LIMIT 1),'unknown') AS network_id,
-    'XLM' AS currency, 7 AS token_decimals FROM transactions t`,
 ];
 const ready = new WeakMap<SqlDriver, Promise<void>>();
 export async function arcDb(): Promise<SqlDriver> {
@@ -90,11 +84,7 @@ export async function arcDb(): Promise<SqlDriver> {
     const migration = database.transaction(async (tx) => {
       if (tx.dialect === "postgres") await tx.execute("SELECT pg_advisory_xact_lock(9210427)");
       for (const statement of ARC_SCHEMA) {
-        const sql =
-          tx.dialect === "postgres"
-            ? statement.replace("CREATE VIEW IF NOT EXISTS", "CREATE OR REPLACE VIEW")
-            : statement;
-        await tx.execute(sql);
+        await tx.execute(statement);
       }
     });
     ready.set(database, migration);

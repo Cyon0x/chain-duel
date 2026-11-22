@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { parseUsdc, formatUsdc, arcPoolSplit, ARC_NETWORKS } from "@/lib/networks/arc";
+import { parseUsdc, parseArcStake, formatUsdc, arcPoolSplit, ARC_NETWORKS } from "@/lib/networks/arc";
 import { arcConfig } from "@/lib/arc/config";
 import { validateArcRequest } from "@/lib/arc/api";
 import { readArcJson } from "@/lib/arc/request";
@@ -39,6 +39,12 @@ describe("Arc financial and network boundaries", () => {
     expect(formatUsdc(50_000_001n)).toBe("50.000001");
     for (const input of ["1e3", "0.0000001", "-1", "NaN", "1.", "1,000", "01"])
       expect(() => parseUsdc(input)).toThrow();
+  });
+  it("enforces the approved 0.50–1,000 USDC stake range exactly", () => {
+    expect(parseArcStake("0.50")).toBe(500000n);
+    expect(parseArcStake("1000")).toBe(1000000000n);
+    for (const input of ["0", "0.499999", "1000.000001", "1001"])
+      expect(() => parseArcStake(input)).toThrow();
   });
   it("conserves every unit across 90/5/5 rounding", () => {
     for (const stake of [1n, 9n, 10n, 999_999n, 50_000_001n, 10_000_000_000n]) {

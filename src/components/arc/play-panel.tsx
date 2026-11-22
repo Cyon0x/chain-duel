@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, ButtonLink, Panel, Spinner } from "../ui";
 import { useNetwork } from "../networks/network-provider";
-import { parseUsdc, formatUsdc, arcPoolSplit } from "@/lib/networks/arc";
+import { parseArcStake, formatUsdc, arcPoolSplit } from "@/lib/networks/arc";
 import { arcFetch, arcBody } from "./client";
 export function ArcPlayPanel() {
   const { arc, socialAccount } = useNetwork();
@@ -17,13 +17,13 @@ export function ArcPlayPanel() {
   const [ticket, setTicket] = useState<{ status: string; gameId: string | null } | null>(null);
   let reward: string | null = null;
   try {
-    reward = formatUsdc(arcPoolSplit(parseUsdc(amount)).winner);
+    reward = formatUsdc(arcPoolSplit(parseArcStake(amount)).winner);
   } catch {}
   async function create() {
     setBusy(true);
     setError(null);
     try {
-      parseUsdc(amount);
+      parseArcStake(amount);
       if (mode === "pvp") {
         const result = await arcFetch<{ status: string; gameId: string | null }>("/api/arc/matchmaking", {
           method: "POST",
@@ -96,13 +96,14 @@ export function ArcPlayPanel() {
           id="arc-stake"
           className="arc-input numeric"
           inputMode="decimal"
+          aria-describedby="arc-stake-limits"
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
         />
-        <p className="text-sm text-muted">
+        <p id="arc-stake-limits" className="text-sm text-muted">
           {reward
             ? `${reward} USDC to the winner. 5% protocol fee and 5% ecosystem fee.`
-            : "Use up to six decimal places."}
+            : "Choose a stake from 0.50 to 1,000 USDC, with up to six decimal places."}
         </p>
         {mode === "private" ? (
           <>

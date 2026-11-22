@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, statSync, mkdirSync, realpathSync } from "node:fs";
+import { readFileSync, writeFileSync, statSync, mkdirSync, realpathSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import {
   createPublicClient,
@@ -8,6 +8,8 @@ import {
   erc20Abi,
   isAddress,
   getAddress,
+  encodeDeployData,
+  keccak256,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { arcBuildManifest } from "./arc-build-manifest.mjs";
@@ -118,20 +120,28 @@ const wallet = createWalletClient({
   chain,
   transport: http(rpcUrl, { retryCount: 0, timeout: 20_000 }),
 });
-const hash = await wallet.deployContract({
-  abi: artifact.abi,
-  bytecode: artifact.bytecode.object,
-  args,
-  maxFeePerGas: 40_000_000_000n,
-  maxPriorityFeePerGas: 1_000_000_000n,
-});
-const pending = {
-  ...report,
-  deployer: account.address,
-  deploymentTransactionHash: hash,
-  status: "submitted",
-};
-writeFileSync(new URL(`deployment-${network}.json`, folder), JSON.stringify(pending, null, 2) + "\n");
+const deploymentFile=new URL(`deployment-${network}.json`,folder);
+const signedFile=`${file}.deployment-${network}.signed`;
+let pending;let hash;
+if(existsSync(deploymentFile)){
+  pending=JSON.parse(readFileSync(deploymentFile,"utf8"));
+  if(pending.creationBytecodeSha256!==report.creationBytecodeSha256||pending.constructorArgumentsSha256!==report.constructorArgumentsSha256||pending.deployer.toLowerCase()!==account.address.toLowerCase())throw new Error("An existing deployment reference has different approved parameters. Review it before any broadcast.");
+  hash=pending.deploymentTransactionHash;
+  console.log(`Recovering the recorded Arc deployment transaction: ${hash}.`);
+}else{
+  const request=await wallet.prepareTransactionRequest({account,data:encodeDeployData({abi:artifact.abi,bytecode:artifact.bytecode.object,args}),value:0n,maxFeePerGas:40_000_000_000n,maxPriorityFeePerGas:1_000_000_000n});
+  const signed=await wallet.signTransaction(request);hash=keccak256(signed);
+  writeFileSync(signedFile,signed,{mode:0o600});
+  pending={...report,deployer:account.address,deploymentTransactionHash:hash,status:"prepared"};
+  // The signed bytes and hash exist before transmission; retrying never uses a new nonce.
+  writeFileSync(deploymentFile,JSON.stringify(pending,null,2)+"\n");
+}
+let knownReceipt;try{knownReceipt=await client.getTransactionReceipt({hash});}catch(error){if(error.name!=="TransactionReceiptNotFoundError")throw error;}
+if(!knownReceipt&&existsSync(signedFile)){
+  const signed=readFileSync(signedFile,"utf8").trim();if(keccak256(signed)!==hash)throw new Error("The saved deployment signature differs from its transaction reference.");
+  try{const sent=await client.sendRawTransaction({serializedTransaction:signed});if(sent!==hash)throw new Error("Unexpected deployment hash.");}catch(error){if(!/already known|known transaction/i.test(error.shortMessage??error.message))throw error;}
+  pending={...pending,status:"submitted"};writeFileSync(deploymentFile,JSON.stringify(pending,null,2)+"\n");
+}
 const receipt = await client.waitForTransactionReceipt({
   hash,
   timeout: 120_000,
@@ -169,7 +179,7 @@ const final = {
   deploymentBlock: receipt.blockNumber.toString(),
   confirmedAt: new Date().toISOString(),
   explorerUrl: `${explorer}/address/${deployed}`,
-  verificationStatus: "pending explorer source verification",
+  verificationStatus: pending.verificationStatus ?? "pending explorer source verification",
 };
 writeFileSync(new URL(`deployment-${network}.json`, folder), JSON.stringify(final, null, 2) + "\n");
 console.log(`Arc escrow confirmed: ${deployed}. Transaction: ${hash}. Source verification remains required.`);

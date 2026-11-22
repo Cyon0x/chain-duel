@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID, randomBytes } from "node:crypto";
 import { encodeFunctionData, erc20Abi, isAddressEqual, keccak256, toBytes, type Address } from "viem";
-import { ARC_USDC, ARC_MIN_MAX_FEE, parseUsdc, arcPoolSplit } from "../networks/arc";
+import { ARC_USDC, ARC_MIN_MAX_FEE, parseArcStake, arcPoolSplit } from "../networks/arc";
 import { buildTargetSchedule, theoreticalMaxScore } from "../game/pulse";
 import { verifySubmission, type SubmissionPayload } from "../game/verify";
 import { PulseBot } from "../game/bot";
@@ -57,7 +57,7 @@ export async function createArcGame(input: {
     "SELECT * FROM arc_games WHERE creator_id=? AND network_id=? AND request_key=?",
     [input.userId, config.networkId, input.requestKey],
   );
-  const stake = parseUsdc(input.amount);
+  const stake = parseArcStake(input.amount);
   if (existing) {
     if (existing.stake_units !== stake.toString() || existing.mode !== input.mode)
       throw new ChainDuelError(

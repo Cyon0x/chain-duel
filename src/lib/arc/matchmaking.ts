@@ -1,6 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { parseUsdc, formatUsdc } from "../networks/arc";
+import { parseArcStake, formatUsdc } from "../networks/arc";
 import { ChainDuelError } from "../services/errors";
 import { arcConfig } from "./config";
 import { arcDb } from "./db";
@@ -47,7 +47,7 @@ export async function joinArcQueue(userId: string, amount: string) {
   const database = await arcDb();
   const existing = await arcQueue(userId);
   if (existing.status === "matched") return existing;
-  const units = parseUsdc(amount);
+  const units = parseArcStake(amount);
   if (units <= 0n) throw new ChainDuelError("Enter a positive USDC stake.", "invalid_stake", 422);
   const now = new Date().toISOString();
   const expires = new Date(Date.now() + 120_000).toISOString();

@@ -19,8 +19,8 @@ deployment requirement under the preservation instruction.
 Arc lives in `src/lib/arc`, `/api/arc`, `/arc`, and `contracts/arc`. Its tables are
 additive and retain network IDs, currency, token, escrow address and integer USDC
 amounts. Original rows are neither migrated destructively nor overwritten.
-Read-only Stellar views expose inferred historical network identifiers without
-changing the original ledger. Every Arc queue is scoped by network, USDC, game
+Read-only Stellar queries expose inferred historical network identifiers without
+changing the original ledger or adding views that block startup migrations. Every Arc queue is scoped by network, USDC, game
 type, mode and exact stake. The original Stellar APIs reject Arc/USDC requests at
 the shared routing boundary.
 
@@ -57,9 +57,10 @@ Required environment settings:
 - `NEXT_PUBLIC_CIRCLE_APP_ID`, the corresponding public Circle application ID.
 - `ARC_NETWORK=mainnet|testnet` and `ARC_WALLETS_ENABLED=true` after real testing.
 
-Circle credentials were unavailable during implementation. SDK/API boundary tests
-use test doubles; they do not establish successful live Google/X wallet
-provisioning, signing or recovery. Activation must wait for those real checks.
+The supplied Circle live key was authenticated and its configured App ID verified
+as `b6c707ff-be8a-504b-8651-aaf58983217a`. Preview and Production use Arc Mainnet with
+the live key. Google/X and PIN signing/recovery tests still require the account
+owner's interaction; SDK boundary tests do not establish a completed live PIN flow.
 
 ## Arc escrow and deployment
 
@@ -105,6 +106,14 @@ Runtime gaming needs `ARC_DUEL_CONTRACT_ADDRESS`, a securely configured
 and `ARC_GAMING_ENABLED=true`. Confirm the configured signer matches the on-chain
 authority. Fund bot reserves separately using the approved treasury.
 
+The approved Mainnet contract is `0xc68d4a23433a51d17cf3358ee1281a13b6e58210`,
+transaction `0xf85a02f227beed53a6cef671ba1a78f6624a95c46fe3c9ef56922ccea5a16c18`,
+block 32550241. Sourcify reports exact creation and runtime matches. All five
+roles use `0x73cc6bd174543be6f2fb40da7c3c041ceb8c0b1d`. The approved min/max are
+0.50 and 1,000 USDC, enforced in the frontend, backend and immutable contract
+parameters. The engineering audit and explicit user deployment approval are
+recorded under `docs/arc-deployments`.
+
 ## Official CCTP USDC transfers
 
 Circle CCTP V2 officially supports Stellar domain 27 and Arc domain 26 in both
@@ -148,7 +157,7 @@ Circle credentials. **No bridge route is active yet.**
 ## Deployment and remaining verification
 
 Use the existing GitHub repository and Vercel `chain-duel` project, production
-branch `main`. Branch-specific Preview persistence uses the separate Neon schema
+branch `main`. Branch-specific Preview persistence uses the separate pooled Neon database
 `chain_duel_multichain_preview`. Existing production data and Stellar environment
 values are preserved. Verify Preview before integration, then inspect actual
 production pages, network endpoints, build logs and the existing domain.
@@ -157,11 +166,10 @@ Safe defaults keep Arc signing/gaming and CCTP transfers inactive. Real balances
 wallets and transaction success are never fabricated. The release status report
 must distinguish deployed navigation/backend code from financial activation.
 
-Remaining external requirements: Circle credentials and real social-wallet tests,
-verified Arc recipients/limits/authority, approved financial-contract review,
-Arc broadcast/source verification/runtime signer/bot funding, and genuine CCTP
-tests in both directions. The overall Mainnet expansion is incomplete until these
-are met.
+Remaining external verification: real Google/X account and Circle PIN/signing/recovery
+flows, funded game flows through the Circle wallet, bot reserves, and genuine CCTP
+tests in both directions. Existing Stellar gaming remains Testnet. The final
+release report records the actual frontend/backend activation status.
 
 Official references: [Arc connection](https://docs.arc.io/arc/references/connect-to-arc),
 [USDC event model](https://docs.arc.io/arc/references/usdc-system-events),

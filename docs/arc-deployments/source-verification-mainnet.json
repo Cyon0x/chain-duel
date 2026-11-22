@@ -1,0 +1,40 @@
+{
+  "network": "arc-mainnet",
+  "chainId": 5042,
+  "address": "0xc68d4a23433a51d17cf3358ee1281a13b6e58210",
+  "httpStatus": 202,
+  "result": {
+    "verificationId": "717306d5-967c-46a2-8b7a-21d36b8a5a10"
+  },
+  "checkedAt": "2026-11-22T10:37:18.061Z",
+  "job": {
+    "isJobCompleted": true,
+    "verificationId": "717306d5-967c-46a2-8b7a-21d36b8a5a10",
+    "jobStartTime": "2026-11-22T10:37:18Z",
+    "jobFinishTime": "2026-11-22T10:37:18Z",
+    "compilationTime": "390",
+    "externalVerifications": {
+      "etherscan": {
+        "verificationId": "m22lfvcw6a6is2ibmycdwmhcauew8nnxynifn9d9ac7bynz8a4",
+        "statusUrl": "https://api.etherscan.io/v2/api?chainid=5042&module=contract&action=checkverifystatus&guid=m22lfvcw6a6is2ibmycdwmhcauew8nnxynifn9d9ac7bynz8a4",
+        "explorerUrl": "https://arc.etherscan.io//address/0xC68D4A23433A51d17Cf3358EE1281A13B6e58210",
+        "contractApiUrl": "https://api.etherscan.io/v2/api?chainid=5042&module=contract&action=getabi&address=0xC68D4A23433A51d17Cf3358EE1281A13B6e58210"
+      },
+      "blockscout": {
+        "verificationId": "c68d4a23433a51d17cf3358ee1281a13b6e582106b02c5de",
+        "statusUrl": "https://explorer.arc.io/api?module=contract&action=checkverifystatus&chainid=5042&guid=c68d4a23433a51d17cf3358ee1281a13b6e582106b02c5de",
+        "explorerUrl": "https://explorer.arc.io//address/0xC68D4A23433A51d17Cf3358EE1281A13B6e58210",
+        "contractApiUrl": "https://explorer.arc.io/api?module=contract&action=getabi&chainid=5042&address=0xC68D4A23433A51d17Cf3358EE1281A13B6e58210"
+      }
+    },
+    "contract": {
+      "match": "exact_match",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "chainId": "5042",
+      "address": "0xC68D4A23433A51d17Cf3358EE1281A13B6e58210",
+      "verifiedAt": "2026-11-22T10:37:18Z",
+      "matchId": "59707547"
+    }
+  }
+}

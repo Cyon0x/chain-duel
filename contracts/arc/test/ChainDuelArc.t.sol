@@ -56,6 +56,22 @@ contract ChainDuelArcTest {
     function _join() internal { vm.prank(BOB); duel.joinGame(ID); }
     function _start() internal { vm.prank(AUTH); duel.startGame(ID); vm.warp(block.timestamp + 60); }
     function _settle(address winner) internal { vm.prank(AUTH); duel.settleGame(ID, winner, RESULT); }
+    function testSharedDeploymentRolesAndExactRequestedStakeLimits() public {
+        ChainDuelArc shared = new ChainDuelArc(address(token),AUTH,AUTH,AUTH,AUTH,AUTH,500_000,1_000e6);
+        require(shared.owner()==AUTH && shared.settlementAuthority()==AUTH && shared.protocolRecipient()==AUTH && shared.ecosystemRecipient()==AUTH && shared.botRecipient()==AUTH);
+        vm.prank(ALICE); token.approve(address(shared),type(uint256).max);
+        vm.prank(BOB); token.approve(address(shared),type(uint256).max);
+        vm.expectRevert(ChainDuelArc.InvalidStake.selector); vm.prank(ALICE); shared.createGame(keccak256('below-min'),499_999,false);
+        vm.expectRevert(ChainDuelArc.InvalidStake.selector); vm.prank(ALICE); shared.createGame(keccak256('above-max'),1_000e6+1,false);
+        uint256 beforeWinner=token.balanceOf(ALICE); uint256 beforeFees=token.balanceOf(AUTH);
+        vm.prank(ALICE); shared.createGame(ID,500_000,false); vm.prank(BOB); shared.joinGame(ID);
+        vm.prank(AUTH); shared.startGame(ID); vm.warp(block.timestamp+60);
+        vm.prank(AUTH); shared.settleGame(ID,ALICE,RESULT);
+        require(token.balanceOf(ALICE)==beforeWinner-500_000+900_000);
+        require(token.balanceOf(AUTH)==beforeFees+100_000);
+        require(shared.lockedEscrow()==0);
+        vm.prank(ALICE); shared.createGame(keccak256('max-entry'),1_000e6,false);
+    }
     function _invariant() internal view {
         require(token.balanceOf(address(duel)) == duel.lockedEscrow() + duel.botLiquidity(), 'balance invariant');
     }
