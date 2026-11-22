@@ -66,8 +66,10 @@ Both CCTP directions and PIN recovery remain separate owner checks.
 ## Release limitations
 
 The supplied Circle live key authenticated and matched the supplied App ID.
-Completing live Google/X wallet provisioning, PIN signing, recovery and both CCTP
-transfer directions requires account-owner participation and real flow verification.
+Live Google registration, Circle wallet creation, PIN signing, Mainnet staking,
+bot settlement, both 0.05 USDC fee transfers and full-stake cancellation/refund
+passed owner validation. Live X registration, PIN recovery, a human-winning
+payment and both CCTP transfer directions remain separate owner checks.
 The Arc escrow was deployed with the approved parameters and its creation/runtime
 bytecode verified exactly by Sourcify. Activation status is recorded in the release report.
 

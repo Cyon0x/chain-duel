@@ -1,0 +1,70 @@
+{
+  "checkedAt": "2026-11-22T17:50:19.153Z",
+  "commit": "ec409b3fcbc6ada68e043d0590a095248510755d",
+  "deployment": "chain-duel-3xb17vhu9-cyon0xs-projects.vercel.app",
+  "readyState": "READY",
+  "domains": [
+    {
+      "url": "https://www.chainduel.site",
+      "updatedDeploymentVerified": true,
+      "healthPassed": true,
+      "pages": [
+        "/",
+        "/arc/login",
+        "/arc/wallet",
+        "/arc/play",
+        "/bridge"
+      ],
+      "arcOAuthRedirectsPassed": true
+    },
+    {
+      "url": "https://chain-duel.vercel.app",
+      "updatedDeploymentVerified": true,
+      "healthPassed": true,
+      "pages": [
+        "/",
+        "/arc/login",
+        "/arc/wallet",
+        "/arc/play",
+        "/bridge"
+      ],
+      "arcOAuthRedirectsPassed": true
+    }
+  ],
+  "arcGamingEnabled": true,
+  "bridgeEnabled": false,
+  "browserPages": [
+    "/",
+    "/dashboard",
+    "/wallet",
+    "/play",
+    "/transactions",
+    "/arc/dashboard",
+    "/arc/wallet",
+    "/arc/play",
+    "/arc/profile",
+    "/arc/transactions",
+    "/arc/login",
+    "/bridge"
+  ],
+  "browserResultChecks": {
+    "viewers": [
+      "human winner",
+      "computer loser",
+      "PvP loser",
+      "pending settlement",
+      "spectator"
+    ],
+    "widths": [
+      390,
+      768,
+      1440
+    ],
+    "fixturesOnly": true,
+    "passed": true,
+    "pageErrors": []
+  },
+  "deployedStellarDemoRegression": "passed",
+  "protectedStellarFilesUnchanged": 117,
+  "verificationNote": "Result variants use browser fixtures; live Mainnet financial evidence is recorded separately in owner-flow-mainnet.json."
+}

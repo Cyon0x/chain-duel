@@ -191,10 +191,13 @@ Safe defaults keep Arc signing/gaming and CCTP transfers inactive. Real balances
 wallets and transaction success are never fabricated. The release status report
 must distinguish deployed navigation/backend code from financial activation.
 
-Remaining external verification: real Google/X account and Circle PIN/signing/recovery
-flows, funded game flows through the Circle wallet, and genuine CCTP
-tests in both directions. Existing Stellar gaming remains Testnet. The final
-release report records the actual frontend/backend activation status.
+Live Google onboarding, Circle wallet creation/PIN signing, a Mainnet bot round
+and cancellation/refund have passed owner validation. Arc gaming is active in
+the approved production release. Remaining external checks include live X
+onboarding, PIN recovery, a human-winning payment and both CCTP directions.
+The owner's Stellar Mainnet address needs activation and a USDC trustline before
+bridge testing. CCTP remains disabled, and existing Stellar gaming remains
+Testnet. The release report records the actual activation status and receipts.
 
 Official references: [Arc connection](https://docs.arc.io/arc/references/connect-to-arc),
 [USDC event model](https://docs.arc.io/arc/references/usdc-system-events),

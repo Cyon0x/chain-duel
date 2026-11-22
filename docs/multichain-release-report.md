@@ -112,7 +112,14 @@ Verified release Preview: https://chain-duel-bc32fzyzf-cyon0xs-projects.vercel.a
 Stable owner Preview: https://chain-duel-multichain-preview.vercel.app.
 Preview uses the separate `chain_duel_multichain_preview` database.
 
-The approved rollout sets production `ARC_GAMING_ENABLED=true`. Wallets and the
-reviewed Mainnet escrow remain configured. All CCTP activation flags stay false.
-Production readiness, public configuration, deployed pages and the existing
-Stellar game regression are checked after integration.
+The release was merged in https://github.com/Cyon0x/chain-duel/pull/3 at
+`ec409b3fcbc6ada68e043d0590a095248510755d`. Vercel deployed that application commit
+at https://chain-duel-3xb17vhu9-cyon0xs-projects.vercel.app and reports READY.
+Both production domains were verified against that deployment. Their persistent
+database, wallet and play pages, dedicated OAuth redirects and reviewed Mainnet
+escrow configuration passed. Arc gaming reports enabled; CCTP reports disabled.
+The full deployed no-stake Stellar game regression also passed.
+
+Production browser checks also passed all 12 pages and the win/loss, pending and
+spectator result fixtures at 390, 768 and 1440 pixels. Evidence is recorded in
+`arc-deployments/production-verification.json`.
