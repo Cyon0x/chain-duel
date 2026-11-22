@@ -18,14 +18,16 @@ const PHASES: Record<BridgePhase, string> = {
   source_burn: "Burn source USDC",
   destination_mint: "Mint destination USDC",
 };
-export function BridgePanel({ availability }: { availability: ReturnType<typeof bridgeAvailability> }) {
-  const [source, setSource] = useState<"stellar" | "arc">("stellar");
-  const [amount, setAmount] = useState("");
+export function BridgePanel({ availability: initialAvailability }: { availability: ReturnType<typeof bridgeAvailability> }) {
+  const [source, setSource] = useState<"stellar" | "arc">(initialAvailability.validationMode ? "arc" : "stellar");
+  const [amount, setAmount] = useState(initialAvailability.maxAmountUsdc ?? "");
   const [data, setData] = useState<{
+    availability: ReturnType<typeof bridgeAvailability>;
     arc: ReturnType<typeof publicArcConfig>;
     signedIn: boolean;
     transfers: BridgeRow[];
   } | null>(null);
+  const availability = data?.availability ?? initialAvailability;
   const [quote, setQuote] = useState<Quote | null>(null);
   const [view, setView] = useState<View | null>(null);
   const [prepared, setPrepared] = useState<Prepared | null>(null);

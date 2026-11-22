@@ -44,6 +44,10 @@ vi.mock("@/lib/bridge/stellar", async (importOriginal) => {
     bridgeStellarSigner: async (id: string) => ({
       address: mocks.stellar.get(id).address,
     }),
+    bridgeStellarWallet: async (id: string) => ({
+      address: mocks.stellar.get(id).address,
+      custody: "managed",
+    }),
     stellarBridgeInfo: async (id: string) => mocks.stellar.get(id),
     prepareStellarBridgeStep: mocks.prepare,
     signStellarBridgePayload: mocks.sign,
@@ -261,6 +265,22 @@ describe("Durable bridge orchestration", () => {
     await expect(createBridge(userId, "stellar", "6", key)).rejects.toMatchObject({
       code: "bridge_conflict",
     });
+  });
+  it("limits owner Preview validation without opening other accounts or oversized saved transfers", async () => {
+    const userId = await account();
+    const existing = await createBridge(userId, "stellar", "5", crypto.randomUUID());
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("BRIDGE_ENABLED", "false");
+    vi.stubEnv("BRIDGE_E2E_VERIFIED", "false");
+    vi.stubEnv("BRIDGE_VALIDATION_ENABLED", "true");
+    vi.stubEnv("BRIDGE_VALIDATION_USER_ID", userId);
+    const allowed = await createBridge(userId, "arc", "0.10", crypto.randomUUID());
+    expect(allowed.amount_units).toBe("100000");
+    await expect(createBridge(userId, "arc", "0.100001", crypto.randomUUID())).rejects.toMatchObject({ code: "bridge_validation_limit" });
+    await expect(prepareBridgeStep(userId, existing.id, "source_approval")).rejects.toMatchObject({ code: "bridge_validation_limit" });
+    await expect(authorizeBridgeStep(userId, existing.id, crypto.randomUUID())).rejects.toMatchObject({ code: "bridge_validation_limit" });
+    const other = await account();
+    await expect(createBridge(other, "arc", "0.10", crypto.randomUUID())).rejects.toMatchObject({ code: "bridge_unavailable" });
   });
   it("requires Arc source funds for both the burn and Circle's pinned gas reserve", async () => {
     const userId = await account();

@@ -15,7 +15,7 @@ import { CCTP_ADDRESSES } from "./cctp";
 import { validateBridgeMessage } from "./validation";
 import { prepareArcBridgeStep, verifyArcMintReference } from "./evm";
 import {
-  bridgeStellarSigner,
+  bridgeStellarWallet,
   stellarBridgeInfo,
   stellarBridgeNetwork,
   prepareStellarBridgeStep,
@@ -27,9 +27,11 @@ import {
 import type { BridgeRow, BridgeStep, BridgePhase } from "./types";
 
 const now = () => new Date().toISOString();
-function requireBridge() {
-  const availability = bridgeAvailability();
+function requireBridge(userId: string, amount?: bigint) {
+  const availability = bridgeAvailability(userId);
   if (!availability.enabled) throw new ChainDuelError(availability.reason, "bridge_unavailable", 503);
+  if (availability.maxAmountUsdc && amount !== undefined && amount > parseUsdc(availability.maxAmountUsdc))
+    throw new ChainDuelError("Owner validation allows transfers up to 0.10 USDC.", "bridge_validation_limit", 422);
 }
 export async function loadBridge(userId: string, id: string) {
   const row = await (
@@ -49,7 +51,7 @@ export async function loadBridge(userId: string, id: string) {
       409,
     );
   const wallet = await arcWalletFor(userId);
-  const signer = await bridgeStellarSigner(userId);
+  const signer = await bridgeStellarWallet(userId);
   if (
     !isAddressEqual(
       (fromArc ? row.source_address : row.destination_address) as Address,
@@ -65,8 +67,8 @@ export async function loadBridge(userId: string, id: string) {
   return row;
 }
 export async function quoteBridge(userId: string, source: "arc" | "stellar", amount: string) {
-  requireBridge();
   const units = parseUsdc(amount);
+  requireBridge(userId, units);
   if (units <= 0n) throw new ChainDuelError("Enter a positive USDC amount.", "invalid_amount", 400);
   const wallet = await arcWalletFor(userId);
   const stellar = await stellarBridgeInfo(userId);
@@ -100,7 +102,7 @@ export async function quoteBridge(userId: string, source: "arc" | "stellar", amo
   };
 }
 export async function createBridge(userId: string, source: "arc" | "stellar", amount: string, key: string) {
-  requireBridge();
+  requireBridge(userId, parseUsdc(amount));
   const database = await arcDb();
   const existing = await database.one<BridgeRow>(
     "SELECT * FROM bridge_transfers WHERE user_id=? AND idempotency_key=?",
@@ -387,9 +389,10 @@ async function nextPhase(transfer: BridgeRow, steps: BridgeStep[]): Promise<Brid
     : "source_approval";
 }
 export async function prepareBridgeStep(userId: string, id: string, phase: BridgePhase) {
-  requireBridge();
+  requireBridge(userId);
   await refreshBridge(userId, id);
   const transfer = await loadBridge(userId, id);
+  requireBridge(userId, BigInt(transfer.amount_units));
   const database = await arcDb();
   const steps = await stepsFor(id);
   const expected = await nextPhase(transfer, steps);
@@ -510,8 +513,9 @@ function publicPrepared(step: BridgeStep) {
   };
 }
 export async function authorizeBridgeStep(userId: string, id: string, stepId: string) {
-  requireBridge();
+  requireBridge(userId);
   const transfer = await loadBridge(userId, id);
+  requireBridge(userId, BigInt(transfer.amount_units));
   const database = await arcDb();
   const step = await database.one<BridgeStep>("SELECT * FROM bridge_steps WHERE id=? AND bridge_id=?", [
     stepId,

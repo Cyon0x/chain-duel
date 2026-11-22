@@ -14,6 +14,8 @@ import {
   type Transaction,
 } from "@stellar/stellar-sdk";
 import { signerForUser } from "../wallet/signer";
+import { db } from "../db";
+import { primaryWallet } from "../db/repositories/identity";
 import { ChainDuelError } from "../services/errors";
 import { CCTP_ADDRESSES, cctpToStellarUnits, evmRecipientBytes32 } from "./cctp";
 import { arcConfig } from "../arc/config";
@@ -49,8 +51,14 @@ export async function bridgeStellarSigner(userId: string) {
     );
   return signer;
 }
+export async function bridgeStellarWallet(userId: string) {
+  const wallet = await primaryWallet(await db(), userId);
+  if (!wallet || wallet.custody !== "managed")
+    throw new ChainDuelError("Your managed Stellar wallet is unavailable.", "bridge_wallet_unavailable", 409);
+  return wallet;
+}
 export async function stellarBridgeInfo(userId: string) {
-  const signer = await bridgeStellarSigner(userId);
+  const signer = await bridgeStellarWallet(userId);
   const network = stellarBridgeNetwork();
   const horizon = new Horizon.Server(network.horizonUrl);
   try {
@@ -98,7 +106,7 @@ export async function stellarBridgeRpc() {
   return server;
 }
 export async function prepareStellarBridgeStep(userId: string, transfer: BridgeRow, phase: BridgePhase) {
-  const signer = await bridgeStellarSigner(userId);
+  const signer = await bridgeStellarWallet(userId);
   const network = stellarBridgeNetwork();
   const server = await stellarBridgeRpc();
   const horizon = new Horizon.Server(network.horizonUrl);
