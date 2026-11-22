@@ -1,0 +1,204 @@
+{
+  "checkedAt": "2026-11-22T17:33:09.343Z",
+  "environment": "Preview",
+  "network": "arc-mainnet",
+  "contractAddress": "0xc68d4a23433a51d17cf3358ee1281a13b6e58210",
+  "walletReady": true,
+  "escrow": {
+    "botLiquidity": "5400000",
+    "lockedEscrow": "0",
+    "escrowBalance": "5400000",
+    "reconciled": true
+  },
+  "verifiedFlows": [
+    {
+      "game": {
+        "id": "arc_0bcb76f2-9bea-4067-b552-e6c0c7079db2",
+        "status": "settled",
+        "settlement_status": "confirmed",
+        "settle_tx_hash": "0x1135c9467db699218ec79767fa88c5d060210ce467edaa1fd796ed00f355d65f",
+        "stake_units": "500000",
+        "contract_game_id": "0x6cf9b6d1fb4f784090700e41a571def0fe50d92c70e976a4f64a8c99dd3881b9"
+      },
+      "receipts": [
+        {
+          "action": "create",
+          "txHash": "0x267ae6079c1fc57ba70876665cef6af8d64188cada53587a15e0f42869cb0196",
+          "block": "32598188",
+          "gasFee": "5024170723736492",
+          "events": [
+            {
+              "emitter": "0x3600000000000000000000000000000000000000",
+              "eventName": "Transfer",
+              "args": {
+                "from": "0x34bb0101982C01fCcA52B625AC032FdcfF4ef86d",
+                "to": "0xC68D4A23433A51d17Cf3358EE1281A13B6e58210",
+                "value": "500000"
+              }
+            },
+            {
+              "emitter": "0xc68d4a23433a51d17cf3358ee1281a13b6e58210",
+              "eventName": "GameCreated",
+              "args": {
+                "id": "0x6cf9b6d1fb4f784090700e41a571def0fe50d92c70e976a4f64a8c99dd3881b9",
+                "creator": "0x34bb0101982C01fCcA52B625AC032FdcfF4ef86d",
+                "stake": "500000",
+                "bot": true
+              }
+            }
+          ]
+        },
+        {
+          "action": "approve",
+          "txHash": "0x1e80dd186db77e607795d68a750f74f8f03383e760eacf4ab5cdc33347972358",
+          "block": "32598150",
+          "gasFee": "1759851900510354",
+          "events": [
+            {
+              "emitter": "0x3600000000000000000000000000000000000000",
+              "eventName": "Approval",
+              "args": {
+                "owner": "0x34bb0101982C01fCcA52B625AC032FdcfF4ef86d",
+                "spender": "0xC68D4A23433A51d17Cf3358EE1281A13B6e58210",
+                "value": "500000"
+              }
+            }
+          ]
+        },
+        {
+          "action": "settlement",
+          "txHash": "0x1135c9467db699218ec79767fa88c5d060210ce467edaa1fd796ed00f355d65f",
+          "block": "32598362",
+          "event": {
+            "id": "0x6cf9b6d1fb4f784090700e41a571def0fe50d92c70e976a4f64a8c99dd3881b9",
+            "winner": "0x73cc6BD174543bE6F2Fb40DA7C3C041ceB8c0b1d",
+            "payout": "900000",
+            "protocolFee": "50000",
+            "ecosystemFee": "50000",
+            "resultHash": "0x8645128eabf79affee58def52839ef7d7512ddcfb47131ee5f43602abd44d05c"
+          },
+          "tokenTransfers": [
+            {
+              "from": "0xC68D4A23433A51d17Cf3358EE1281A13B6e58210",
+              "to": "0x73cc6BD174543bE6F2Fb40DA7C3C041ceB8c0b1d",
+              "value": "50000"
+            },
+            {
+              "from": "0xC68D4A23433A51d17Cf3358EE1281A13B6e58210",
+              "to": "0x73cc6BD174543bE6F2Fb40DA7C3C041ceB8c0b1d",
+              "value": "50000"
+            }
+          ],
+          "feeTransfersVerified": true
+        }
+      ],
+      "repeatRefreshDoesNotDuplicateLedger": true
+    },
+    {
+      "game": {
+        "id": "arc_e0d53d0e-7413-497f-a16c-8139f9195d15",
+        "status": "refunded",
+        "settlement_status": null,
+        "settle_tx_hash": null,
+        "stake_units": "500000",
+        "contract_game_id": "0x8939b49304439d1e09a5db56b62b3da150781197229d96e7dd6f9f491893394d"
+      },
+      "receipts": [
+        {
+          "action": "create",
+          "txHash": "0x92f39c2774ca447940d4fcec73c25080bb3dbb2ad90060fd3a954b8f0d92efb8",
+          "block": "32597507",
+          "gasFee": "4939467500000000",
+          "events": [
+            {
+              "emitter": "0x3600000000000000000000000000000000000000",
+              "eventName": "Transfer",
+              "args": {
+                "from": "0x34bb0101982C01fCcA52B625AC032FdcfF4ef86d",
+                "to": "0xC68D4A23433A51d17Cf3358EE1281A13B6e58210",
+                "value": "500000"
+              }
+            },
+            {
+              "emitter": "0xc68d4a23433a51d17cf3358ee1281a13b6e58210",
+              "eventName": "GameCreated",
+              "args": {
+                "id": "0x8939b49304439d1e09a5db56b62b3da150781197229d96e7dd6f9f491893394d",
+                "creator": "0x34bb0101982C01fCcA52B625AC032FdcfF4ef86d",
+                "stake": "500000",
+                "bot": true
+              }
+            }
+          ]
+        },
+        {
+          "action": "approve",
+          "txHash": "0xebf807b369c182f4f4bfcf665796e7c3cf9731b487ff91e6ae461ec366cce210",
+          "block": "32597468",
+          "gasFee": "1212065298537948",
+          "events": [
+            {
+              "emitter": "0x3600000000000000000000000000000000000000",
+              "eventName": "Approval",
+              "args": {
+                "owner": "0x34bb0101982C01fCcA52B625AC032FdcfF4ef86d",
+                "spender": "0xC68D4A23433A51d17Cf3358EE1281A13B6e58210",
+                "value": "500000"
+              }
+            }
+          ]
+        },
+        {
+          "action": "cancel",
+          "txHash": "0x14344d3cc69c24e54213ca8a4309f2564e14f0284277e76cd40b31055e515404",
+          "block": "32597736",
+          "gasFee": "1978965986806375",
+          "events": [
+            {
+              "emitter": "0x3600000000000000000000000000000000000000",
+              "eventName": "Transfer",
+              "args": {
+                "from": "0xC68D4A23433A51d17Cf3358EE1281A13B6e58210",
+                "to": "0x34bb0101982C01fCcA52B625AC032FdcfF4ef86d",
+                "value": "500000"
+              }
+            },
+            {
+              "emitter": "0xc68d4a23433a51d17cf3358ee1281a13b6e58210",
+              "eventName": "GameRefunded",
+              "args": {
+                "id": "0x8939b49304439d1e09a5db56b62b3da150781197229d96e7dd6f9f491893394d"
+              }
+            }
+          ]
+        }
+      ],
+      "repeatRefreshDoesNotDuplicateLedger": true
+    }
+  ],
+  "feePreparation": {
+    "checkedAt": "2026-11-22T17:29:19.276Z",
+    "environment": "Preview",
+    "network": "arc-mainnet",
+    "liveFeeEstimateVerified": true,
+    "absoluteFeeChallengeAccepted": true,
+    "repeatedRequestReusesChallenge": true,
+    "observedUnderfundedDepositBlocked": true,
+    "maximumGasFeeNativeUnits": "3634316210937500",
+    "financialTransactionExecuted": false
+  },
+  "bridgeReady": false,
+  "bridgePrerequisites": {
+    "stellarMainnetAccountExists": false,
+    "stellarUsdcTrustlineExists": false
+  },
+  "limits": {
+    "minStakeUsdc": "0.50",
+    "maxStakeUsdc": "1000"
+  },
+  "limitations": [
+    "The completed live round was a computer win; its winner share stays in the bot reserve.",
+    "Human-winning and PvP payout paths passed contract tests; a live human-winning payout was not claimed.",
+    "Live X onboarding, PIN recovery and both CCTP directions remain separate owner tests."
+  ]
+}

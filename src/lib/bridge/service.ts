@@ -6,6 +6,7 @@ import { arcWalletFor } from "../arc/access";
 import { arcConfig } from "../arc/config";
 import { circleClient, circleCredentials } from "../arc/circle";
 import { verifiedArcClient, arcBalance } from "../arc/chain";
+import { arcFeeBudget, requireArcFunds } from "../arc/fees";
 import { ARC_USDC, parseUsdc, formatUsdc } from "../networks/arc";
 import { ChainDuelError } from "../services/errors";
 import { bridgeAvailability } from "./config";
@@ -548,7 +549,18 @@ export async function authorizeBridgeStep(userId: string, id: string, stepId: st
       const credentials = await circleCredentials(wallet.circle_user_id);
       let challengeId = step.challenge_id;
       if (!challengeId) {
-        await verifiedArcClient();
+        const client = await verifiedArcClient();
+        const debitUnits = step.phase === "source_burn" ? BigInt(transfer.amount_units) : 0n;
+        const balance = await client.getBalance({ address: wallet.address as Address });
+        requireArcFunds(balance, debitUnits, 0n);
+        const estimate = await circleClient().estimateContractExecutionFee({
+          userToken: credentials.userToken,
+          source: { walletId: wallet.wallet_id },
+          contractAddress: step.target,
+          callData: step.calldata!,
+        });
+        const budget = arcFeeBudget(estimate.data?.high);
+        requireArcFunds(balance, debitUnits, budget.reserve);
         const result = await circleClient().createUserTransactionContractExecutionChallenge({
           userToken: credentials.userToken,
           walletId: wallet.wallet_id,
@@ -556,7 +568,7 @@ export async function authorizeBridgeStep(userId: string, id: string, stepId: st
           callData: step.calldata!,
           idempotencyKey: step.idempotency_key,
           refId: step.id,
-          fee: { type: "level", config: { feeLevel: "HIGH" } },
+          fee: budget.fee,
         });
         challengeId = result.data?.challengeId ?? null;
         if (!challengeId) throw new Error("Missing Circle challenge.");

@@ -133,8 +133,10 @@ export function ArcMatchStage({ id }: { id: string }) {
       <p className="eyebrow">{arc.name} · Pulse Duel</p>
       <h1>
         {view.game.status === "settled"
-          ? view.game.winner_id === session.userId
-            ? "You won"
+          ? self
+            ? view.game.winner_id === session.userId
+              ? "You won"
+              : "You lost"
             : "Duel complete"
           : "Arc duel lobby"}
       </h1>
@@ -146,6 +148,7 @@ export function ArcMatchStage({ id }: { id: string }) {
           <div key={p.seat}>
             <strong>{p.username}</strong>
             <span>
+              {view.game.status === "settled" ? `${p.user_id === view.game.winner_id ? "Won" : "Lost"} · ` : ""}
               {p.score !== null ? `${p.score} points` : p.funded ? "Stake confirmed" : "Stake not deposited"}
             </span>
           </div>

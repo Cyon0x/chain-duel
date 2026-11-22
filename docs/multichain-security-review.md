@@ -2,8 +2,8 @@
 
 Review date: 2026-11-22. This records implementation checks. The final escrow
 engineering audit and user-approved Mainnet deployment are recorded in
-`arc-deployments`; no independent third-party audit is claimed. Real Circle PIN
-and CCTP transfer verification remain separate checks.
+`arc-deployments`; no independent third-party audit is claimed. Live Circle PIN signing, staking, settlement and refund passed owner validation.
+Both CCTP directions and PIN recovery remain separate owner checks.
 
 ## Checks completed
 
@@ -23,6 +23,9 @@ and CCTP transfer verification remain separate checks.
   stake. Player funding is recorded once. Reverted operation/settlement hashes are
   archived before retry; unknown/pending hashes remain intact. External timed
   refunds reconcile against a successful contract event and receipt.
+- Circle challenges pin the verified absolute fee quote and require native USDC
+  balance for the stake/burn plus maximum gas reserve before signing. Regression
+  checks cover the observed underfunded deposit, funded retry and gas-only refund.
 - CCTP records bind authenticated source/destination wallets. Attestation validation
   checks domains, token, messenger, owner, recipient, amount, maximum/executed fee,
   standard finality and Stellar forwarding hook. Saved message hashes/nonces cannot
@@ -38,7 +41,7 @@ and CCTP transfer verification remain separate checks.
 ## Verification evidence
 
 - Application checks: TypeScript, ESLint and optimized Next.js build passed.
-- 259 JavaScript tests passed; 16 opt-in tests skipped in the default run.
+- 264 JavaScript tests passed; 16 opt-in tests skipped in the default run.
 - 23 unchanged Soroban tests passed.
 - 16 Solidity tests passed, including 256 rounding/conservation fuzz cases and
   the approved shared roles and stake limits.

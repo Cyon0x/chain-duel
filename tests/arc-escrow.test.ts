@@ -8,12 +8,15 @@ const mocks = vi.hoisted(() => ({
   challenge: vi.fn(),
   circleTransaction: vi.fn(),
   signingChallenge: vi.fn(),
+  balance: vi.fn(),
+  estimateFee: vi.fn(),
 }));
 vi.mock("@/lib/arc/chain", () => ({
   verifiedArcClient: async () => ({
     readContract: mocks.readContract,
     getTransactionReceipt: mocks.receipt,
     getTransaction: mocks.transaction,
+    getBalance: mocks.balance,
   }),
 }));
 vi.mock("@/lib/arc/circle", () => ({
@@ -26,6 +29,7 @@ vi.mock("@/lib/arc/circle", () => ({
     getUserChallenge: mocks.challenge,
     getTransaction: mocks.circleTransaction,
     createUserTransactionContractExecutionChallenge: mocks.signingChallenge,
+    estimateContractExecutionFee: mocks.estimateFee,
   }),
 }));
 import { signInWithProvider } from "@/lib/services/accounts";
@@ -41,6 +45,10 @@ describe("Arc escrow orchestration uses verified chain receipts", () => {
   beforeEach(() => {
     vi.stubEnv("ARC_NETWORK", "testnet");
     mocks.signingChallenge.mockResolvedValue({ data: { challengeId: "retry-challenge" } });
+    mocks.balance.mockResolvedValue(10_000_000_000_000_000_000n);
+    mocks.estimateFee.mockResolvedValue({ data: { high: {
+      gasLimit: "257713", maxFee: "53.989159085", priorityFee: "13.989159085",
+    } } });
     vi.stubEnv("ARC_WALLETS_ENABLED", "true");
     vi.stubEnv("ARC_GAMING_ENABLED", "true");
     vi.stubEnv("ARC_CONTRACT_REVIEWED", "true");
@@ -266,6 +274,42 @@ describe("Arc escrow orchestration uses verified chain receipts", () => {
     );
     expect((await refreshArcOperation(userId, operation.id)).status).toBe("submitted");
     await authorizeArcOperation(userId, operation.id);
+    expect(mocks.signingChallenge).not.toHaveBeenCalled();
+  });
+  it("blocks the observed stake-plus-gas shortfall before requesting a PIN signature", async () => {
+    const userId = await account(ALICE);
+    const row = await createArcGame({ userId, mode: "bot", amount: "0.50", requestKey: crypto.randomUUID() });
+    const operation = await prepareArcEntry(userId, row.id, "entry");
+    mocks.balance.mockResolvedValue(504_682_000_000_000_000n);
+    await expect(authorizeArcOperation(userId, operation.id)).rejects.toMatchObject({
+      code: "insufficient_balance",
+    });
+    expect(mocks.signingChallenge).not.toHaveBeenCalled();
+    const saved = await (await arcDb()).one<{ status: string; lease_until: string | null }>(
+      "SELECT status,lease_until FROM arc_operations WHERE id=?", [operation.id],
+    );
+    expect(saved).toMatchObject({ status: "failed", lease_until: null });
+    mocks.balance.mockResolvedValue(600_000_000_000_000_000n);
+    await authorizeArcOperation(userId, operation.id);
+    expect(mocks.signingChallenge).toHaveBeenCalledWith(expect.objectContaining({ fee: {
+      type: "absolute", config: {
+        gasLimit: "257713", maxFee: "53.989159085", priorityFee: "13.989159085",
+      },
+    } }));
+  });
+  it("checks the gas budget for a refund without requiring its incoming stake balance", async () => {
+    const { userId, row } = await game();
+    const operation = await prepareArcEntry(userId, row.id, "cancel");
+    mocks.balance.mockResolvedValue(14_000_000_000_000_000n);
+    await expect(authorizeArcOperation(userId, operation.id)).resolves.toMatchObject({
+      challengeId: "retry-challenge",
+    });
+  });
+  it("fails closed when Circle omits fee details", async () => {
+    const { userId, row } = await game();
+    const operation = await prepareArcEntry(userId, row.id, "entry");
+    mocks.estimateFee.mockResolvedValue({ data: { high: { gasLimit: "257713" } } });
+    await expect(authorizeArcOperation(userId, operation.id)).rejects.toMatchObject({ code: "fee_unavailable" });
     expect(mocks.signingChallenge).not.toHaveBeenCalled();
   });
 });
