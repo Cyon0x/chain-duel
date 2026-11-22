@@ -9,6 +9,7 @@ import { arcWalletFor } from "./access";
 import { arcConfig } from "./config";
 import { verifiedArcClient } from "./chain";
 import { arcDuelAbi } from "./abi";
+import { arcFeeBudget, requireArcFunds } from "./fees";
 import type { ArcOperationRow } from "./types";
 
 export async function createArcOperation(input: {
@@ -141,7 +142,20 @@ export async function authorizeArcOperation(userId: string, id: string) {
       409,
     );
   try {
-    await verifiedArcClient();
+    const client = await verifiedArcClient();
+    const debitUnits = row.action === "create" || row.action === "join" ? BigInt(row.amount_units) : 0n;
+    const balance = await client.getBalance({ address: wallet.address as Address });
+    // Arc's ERC-20 USDC and native gas currency share a balance. Gas is reserved
+    // before transferFrom executes, so stake-only balance checks are insufficient.
+    requireArcFunds(balance, debitUnits, 0n);
+    const estimate = await circleClient().estimateContractExecutionFee({
+      userToken: credentials.userToken,
+      source: { walletId: wallet.wallet_id },
+      contractAddress: row.target,
+      callData: row.calldata,
+    });
+    const budget = arcFeeBudget(estimate.data?.high);
+    requireArcFunds(balance, debitUnits, budget.reserve);
     const challenge = await circleClient().createUserTransactionContractExecutionChallenge({
       userToken: credentials.userToken,
       walletId: wallet.wallet_id,
@@ -149,7 +163,7 @@ export async function authorizeArcOperation(userId: string, id: string) {
       callData: row.calldata,
       idempotencyKey: row.idempotency_key,
       refId: row.id,
-      fee: { type: "level", config: { feeLevel: "HIGH" } },
+      fee: budget.fee,
     });
     if (!challenge.data?.challengeId) throw new Error("challenge missing");
     await database.execute(
@@ -162,11 +176,13 @@ export async function authorizeArcOperation(userId: string, id: string) {
       challengeId: challenge.data.challengeId,
       appId: config.appId,
     };
-  } catch {
+  } catch (error) {
+    const message = error instanceof ChainDuelError ? error.message : "Transaction preparation failed. Please retry.";
     await database.execute(
       `UPDATE arc_operations SET status='failed',error=?,lease_until=NULL,updated_at=? WHERE id=?`,
-      ["Transaction preparation failed. Please retry.", new Date().toISOString(), id],
+      [message, new Date().toISOString(), id],
     );
+    if (error instanceof ChainDuelError) throw error;
     throw new ChainDuelError(
       "Circle could not prepare this transaction. Please retry.",
       "operation_failed",

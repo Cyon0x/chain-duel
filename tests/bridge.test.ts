@@ -21,13 +21,21 @@ const mocks = vi.hoisted(() => ({
   sign: vi.fn(),
   mint: vi.fn(),
   fetch: vi.fn(),
+  balance: vi.fn(),
+  estimateFee: vi.fn(),
+  challenge: vi.fn(),
 }));
 vi.mock("@/lib/arc/circle", () => ({
   associatedArcWallet: async (id: string) => mocks.wallets.get(id),
+  circleCredentials: async () => ({ userToken: "unit-token", encryptionKey: "unit-key" }),
+  circleClient: () => ({
+    estimateContractExecutionFee: mocks.estimateFee,
+    createUserTransactionContractExecutionChallenge: mocks.challenge,
+  }),
 }));
 vi.mock("@/lib/arc/chain", () => ({
   arcBalance: async () => ({ formatted: "100", units: "100000000" }),
-  verifiedArcClient: async () => ({ readContract: async () => 100000000n }),
+  verifiedArcClient: async () => ({ readContract: async () => 100000000n, getBalance: mocks.balance }),
 }));
 vi.mock("@/lib/bridge/stellar", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/bridge/stellar")>();
@@ -168,6 +176,11 @@ describe("CCTP message and fee validation", () => {
 });
 describe("Durable bridge orchestration", () => {
   beforeEach(() => {
+    mocks.balance.mockResolvedValue(6_000_000_000_000_000_000n);
+    mocks.estimateFee.mockResolvedValue({ data: { high: {
+      gasLimit: "257713", maxFee: "53.989159085", priorityFee: "13.989159085",
+    } } });
+    mocks.challenge.mockResolvedValue({ data: { challengeId: "unit-burn-challenge" } });
     for (const [name, value] of Object.entries({
       ARC_NETWORK: "testnet",
       ARC_WALLETS_ENABLED: "true",
@@ -248,6 +261,29 @@ describe("Durable bridge orchestration", () => {
     await expect(createBridge(userId, "stellar", "6", key)).rejects.toMatchObject({
       code: "bridge_conflict",
     });
+  });
+  it("requires Arc source funds for both the burn and Circle's pinned gas reserve", async () => {
+    const userId = await account();
+    const transfer = await createBridge(userId, "arc", "5", crypto.randomUUID());
+    const database = await arcDb();
+    const timestamp = new Date().toISOString();
+    for (const [phase, status] of [["source_approval", "confirmed"], ["source_burn", "awaiting_approval"]]) {
+      await database.execute(
+        "INSERT INTO bridge_steps(id,bridge_id,phase,network_id,target,calldata,status,idempotency_key,created_at,updated_at) VALUES(?,?,?,'arc-testnet',?,'0x1234',?,?,?,?)",
+        [crypto.randomUUID(), transfer.id, phase, CCTP_ADDRESSES.testnet.arcMessenger, status, crypto.randomUUID(), timestamp, timestamp],
+      );
+    }
+    const step = await database.one<{ id: string }>("SELECT id FROM bridge_steps WHERE bridge_id=? AND phase='source_burn'", [transfer.id]);
+    mocks.balance.mockResolvedValue(5_004_682_000_000_000_000n);
+    await expect(authorizeBridgeStep(userId, transfer.id, step!.id)).rejects.toMatchObject({ code: "insufficient_balance" });
+    expect(mocks.challenge).not.toHaveBeenCalled();
+    mocks.balance.mockResolvedValue(6_000_000_000_000_000_000n);
+    await authorizeBridgeStep(userId, transfer.id, step!.id);
+    expect(mocks.challenge).toHaveBeenCalledWith(expect.objectContaining({ fee: {
+      type: "absolute", config: { gasLimit: "257713", maxFee: "53.989159085", priorityFee: "13.989159085" },
+    } }));
+    await authorizeBridgeStep(userId, transfer.id, step!.id);
+    expect(mocks.challenge).toHaveBeenCalledTimes(1);
   });
   it("refuses an unverified user's transfer record", async () => {
     const { userId, transfer } = await preparedBurn();
