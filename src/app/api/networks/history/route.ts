@@ -1,0 +1,20 @@
+import { ok, fail } from "@/lib/api/respond";
+import { requireSessionUser } from "@/lib/auth/session";
+import { arcDb } from "@/lib/arc/db";
+export async function GET() {
+  try {
+    const userId = (await requireSessionUser()).user.id;
+    const database = await arcDb();
+    const stellar = await database.query(
+      "SELECT * FROM stellar_transactions_networked WHERE user_id=? ORDER BY created_at DESC LIMIT 100",
+      [userId],
+    );
+    const arc = await database.query(
+      "SELECT * FROM arc_transactions WHERE user_id=? ORDER BY created_at DESC LIMIT 100",
+      [userId],
+    );
+    return ok({ stellar, arc });
+  } catch (error) {
+    return fail(error);
+  }
+}

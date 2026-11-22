@@ -13,7 +13,7 @@
     "start": "next start -p 4310",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --maxWorkers=4",
     "test:watch": "vitest",
     "test:contract": "node scripts/cargo.mjs test --manifest-path contracts/chain_duel/Cargo.toml",
     "contract:wasm": "node scripts/cargo.mjs build --manifest-path contracts/chain_duel/Cargo.toml --target wasm32v1-none --release",
@@ -23,22 +23,31 @@
     "verify": "npm run typecheck && npm run lint && npm run test && npm run build",
     "verify:all": "npm run verify && npm run test:contract",
     "stellar:verify": "node scripts/verify-deployment.mjs",
-    "treasury:fund": "node scripts/fund-treasury.mjs"
+    "treasury:fund": "node scripts/fund-treasury.mjs",
+    "stellar:regression": "node scripts/stellar-regression.mjs",
+    "arc:test": "forge test --root contracts/arc -vv",
+    "arc:abi": "node scripts/arc-abi.mjs",
+    "arc:review:manifest": "node scripts/arc-build-manifest.mjs",
+    "arc:deploy:prepare": "node scripts/arc-deploy.mjs"
   },
   "dependencies": {
+    "@circle-fin/user-controlled-wallets": "10.8.1",
+    "@circle-fin/w3s-pw-web-sdk": "1.1.11",
     "@creit.tech/stellar-wallets-kit": "2.7.0",
+    "@openzeppelin/contracts": "5.6.1",
     "@stellar/freighter-api": "6.0.1",
     "@stellar/stellar-sdk": "17.2.1",
     "clsx": "2.1.1",
     "framer-motion": "14.0.0",
     "jose": "^6.1.0",
-    "next": "16.3.8",
+    "next": "16.4.6",
     "pg": "8.23.1",
     "qrcode.react": "4.2.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "^0.0.1",
-    "zod": "4.6.5"
+    "viem": "2.58.4",
+    "zod": "4.6.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",
@@ -47,9 +56,18 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "eslint": "^9.39.0",
-    "eslint-config-next": "16.3.8",
+    "eslint-config-next": "16.4.6",
     "tailwindcss": "4.3.3",
     "typescript": "^5.9.0",
     "vitest": "5.0.3"
+  },
+  "overrides": {
+    "@circle-fin/w3s-pw-web-sdk": {
+      "uuid": "11.1.1",
+      "firebase": {
+        "@grpc/grpc-js": "1.13.6",
+        "undici": "6.29.1"
+      }
+    }
   }
 }

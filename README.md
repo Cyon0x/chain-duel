@@ -500,6 +500,12 @@ Full threat model and mitigations: [docs/security.md](docs/security.md).
 
 ## Known limitations
 
+The additive Stellar/Arc implementation, Circle onboarding, CCTP route and required
+activation settings are documented in [docs/multichain-operations.md](docs/multichain-operations.md).
+Arc gaming and USDC transfers remain disabled until credentials, audited deployment
+parameters and real wallet/transfer verification are available. The existing Stellar
+deployment continues on Testnet without contract or economic changes.
+
 - The bot treasury is replenished by the protocol, not automatically: each computer match commits
   one entry of liquidity from the pool, so the pool needs occasional `treasury:fund` top-ups. This
   is by design and is visible on-chain and in `/admin/treasury`.

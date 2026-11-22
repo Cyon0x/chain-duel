@@ -2,6 +2,7 @@ import Image from "next/image";
 import localFont from "next/font/local";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "./arc.css";
 import { GameCursor } from "@/components/game-cursor";
 import { PreferencesProvider, SessionProvider } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
@@ -11,6 +12,9 @@ import { appUrl, demoModeEnabled, integrationStatus, isProduction } from "@/lib/
 import { publicStellarConfig } from "@/lib/config/stellar";
 import { isThemeId } from "@/lib/config/themes";
 import brandMark from "@/assets/brand/chain-duel-mark.png";
+import { NetworkProvider } from "@/components/networks/network-provider";
+import { publicArcConfig } from "@/lib/arc/config";
+import { selectedEcosystem } from "@/lib/networks/selection";
 
 const uiFont = localFont({
   src: [
@@ -31,7 +35,7 @@ const arcadeFont = localFont({
 
 const TITLE = "Chain Duel — Compete. React. Duel.";
 const DESCRIPTION =
-  "Chain Duel is a skill-based 1v1 competitive arcade game with real Stellar Testnet escrow, settlement and rewards.";
+  "Chain Duel connects ecosystems through competitive on-chain gaming, with independent Stellar XLM and Arc USDC integrations.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl()),
@@ -60,6 +64,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // render the chrome and let pages surface their own error state.
   const session = await getSessionUser().catch(() => null);
   const network = publicStellarConfig();
+  const arc = publicArcConfig();
+  const selected = await selectedEcosystem();
   const integrations = integrationStatus();
   const theme = isThemeId(session?.profile?.theme) ? session.profile.theme : "neon";
   const persistence = await persistenceStatus();
@@ -84,6 +90,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               onboardingComplete: session?.profile?.onboarding_complete === 1,
             }}
           >
+            <NetworkProvider value={{ selected, stellarLabel: network.label, arc, socialAccount: session?.user.auth_provider === "google" || session?.user.auth_provider === "x" }}>
             <GameCursor />
             <SiteHeader
               networkLabel={network.label}
@@ -118,7 +125,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     className="h-5 w-auto opacity-80"
                   />
                   <p>
-                    Chain Duel runs on {network.label}. Testnet assets carry no real-world value.
+                    Stellar · XLM. Arc · USDC. {network.isTestnet ? "Stellar Testnet assets carry no real-world value." : "Independent ecosystems, one Chain Duel account."}
                   </p>
                 </div>
                 <nav className="site-footer__links" aria-label="Legal">
@@ -129,6 +136,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </nav>
               </div>
             </footer>
+            </NetworkProvider>
           </SessionProvider>
         </PreferencesProvider>
       </body>

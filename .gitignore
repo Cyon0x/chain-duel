@@ -8,6 +8,11 @@ coverage/
 .env
 .env.local
 .env*.local
+contracts/arc/out/
+contracts/arc/cache/
+contracts/arc/broadcast/
+*.key
+*.pem
 !.env.example
 .vercel
 .DS_Store
