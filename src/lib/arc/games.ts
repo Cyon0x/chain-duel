@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID, randomBytes } from "node:crypto";
 import { encodeFunctionData, erc20Abi, isAddressEqual, keccak256, toBytes, type Address } from "viem";
-import { ARC_USDC, ARC_MIN_MAX_FEE, parseArcStake, arcPoolSplit } from "../networks/arc";
+import { ARC_USDC, parseArcStake, arcPoolSplit } from "../networks/arc";
 import { buildTargetSchedule, theoreticalMaxScore } from "../game/pulse";
 import { verifySubmission, type SubmissionPayload } from "../game/verify";
 import { PulseBot } from "../game/bot";
@@ -14,6 +14,7 @@ import { arcDuelAbi } from "./abi";
 import { verifiedArcClient } from "./chain";
 import { createArcOperation, refreshArcOperation } from "./operations";
 import { arcSettlementSigner } from "./signer";
+import { sendArcAuthority } from "./authority";
 import type { ArcGameRow, ArcPlayerRow } from "./types";
 
 const DURATION = 60_000;
@@ -320,7 +321,7 @@ export async function synchronizeArcGame(id: string) {
     );
   if (chainGame.status === 2)
     await database.execute(
-      `UPDATE arc_games SET status='joined' WHERE id=? AND status IN ('awaiting_entry','waiting')`,
+      `UPDATE arc_games SET status='joined' WHERE id=? AND status IN ('awaiting_entry','waiting','starting')`,
       [game.id],
     );
   if (chainGame.status === 3)
@@ -400,13 +401,15 @@ export async function startArcGame(userId: string, id: string) {
       functionName: "settlementAuthority",
     });
     if (!isAddressEqual(authority, signer.account.address)) throw new Error("wrong authority");
-    const hash = await signer.writeContract({
-      address: game.contract_address as Address,
-      abi: arcDuelAbi,
-      functionName: "startGame",
-      args: [game.contract_game_id],
-      maxFeePerGas: ARC_MIN_MAX_FEE * 2n,
-      maxPriorityFeePerGas: 1_000_000_000n,
+    const hash = await sendArcAuthority({
+      gameId: game.id,
+      action: "start",
+      target: game.contract_address as Address,
+      calldata: encodeFunctionData({
+        abi: arcDuelAbi,
+        functionName: "startGame",
+        args: [game.contract_game_id],
+      }),
     });
     const receipt = await client.waitForTransactionReceipt({
       hash,
@@ -510,7 +513,7 @@ export async function settleArcGame(id: string) {
       !isAddressEqual(chainGame.opponent, players[1].address as Address)
     )
       throw new Error("Escrow participants or stake mismatch");
-    if (!hash && chainGame.status !== 4) {
+    if (chainGame.status !== 4) {
       const signer = arcSettlementSigner();
       const authority = await client.readContract({
         address,
@@ -518,13 +521,15 @@ export async function settleArcGame(id: string) {
         functionName: "settlementAuthority",
       });
       if (!isAddressEqual(authority, signer.account.address)) throw new Error("wrong authority");
-      hash = await signer.writeContract({
-        address,
-        abi: arcDuelAbi,
-        functionName: "settleGame",
-        args: [game.contract_game_id, winner.address as Address, resultHash],
-        maxFeePerGas: ARC_MIN_MAX_FEE * 2n,
-        maxPriorityFeePerGas: 1_000_000_000n,
+      hash = await sendArcAuthority({
+        gameId: game.id,
+        action: "settle",
+        target: address,
+        calldata: encodeFunctionData({
+          abi: arcDuelAbi,
+          functionName: "settleGame",
+          args: [game.contract_game_id, winner.address as Address, resultHash],
+        }),
       });
       await database.execute("UPDATE arc_games SET settle_tx_hash=? WHERE id=?", [hash, game.id]);
     }

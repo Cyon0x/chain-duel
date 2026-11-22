@@ -42,7 +42,7 @@ changes use OpenZeppelin's two-step mechanism. Fee destinations are immutable.
 - 16 Solidity tests passed, including 256 conservation/rounding fuzz cases,
   reentrancy, invalid transfer behavior, shared roles, exact stake limits,
   unauthorized settlement, replay, cancellations and timed recovery.
-- 248 application tests, TypeScript, ESLint and optimized production build passed.
+- 252 application tests, TypeScript, ESLint and optimized production build passed.
 - 23 original Soroban tests and five funded Stellar Testnet flows passed.
 - A real isolated PostgreSQL regression re-ran the original Stellar migrations
   after the Arc schema without altering its existing user record. Network history
@@ -50,6 +50,10 @@ changes use OpenZeppelin's two-step mechanism. Fee destinations are immutable.
 - Deployment checks bind exact compiler/source/bytecode/constructor hashes,
   validate chain ID/token decimals and signer funding, save signed transaction
   bytes/hash before transmission, and verify the deployed role/token/stake fields.
+- The independent Arc backend reserves authority nonces under a distributed
+  lease and persists signed transactions before transmission. Concurrency,
+  uncertain transmission, replaced nonce recovery and signature substitution
+  tests passed. No Stellar signing logic was changed.
 
 ## Disclosed trust and operational limits
 

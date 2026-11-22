@@ -75,7 +75,7 @@ export function ArcSection({ section, id }: { section: string; id?: string }) {
       {section === "dashboard" && !arc.gamingEnabled ? (
         <p className="arc-notice" role="status">
           {arc.walletEnabled
-            ? "Arc wallets are available. Gaming is awaiting escrow activation."
+            ? "Arc wallets are available. Gaming is awaiting final wallet transaction verification."
             : "Arc wallets and USDC gaming are awaiting activation."}{" "}
           Your existing Stellar games remain available.
         </p>

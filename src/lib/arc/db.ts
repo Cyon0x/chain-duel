@@ -54,6 +54,17 @@ export const ARC_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS arc_settlement_attempts (
     game_id TEXT NOT NULL REFERENCES arc_games(id), tx_hash TEXT NOT NULL,
     status TEXT NOT NULL, archived_at TEXT NOT NULL, PRIMARY KEY(game_id,tx_hash))`,
+  `CREATE TABLE IF NOT EXISTS arc_signer_state (
+    network_id TEXT NOT NULL, address TEXT NOT NULL, next_nonce TEXT NOT NULL DEFAULT '0',
+    lease_owner TEXT, lease_until TEXT, PRIMARY KEY(network_id,address))`,
+  `CREATE TABLE IF NOT EXISTS arc_authority_transactions (
+    id TEXT PRIMARY KEY, network_id TEXT NOT NULL, game_id TEXT NOT NULL REFERENCES arc_games(id),
+    action TEXT NOT NULL, address TEXT NOT NULL, target TEXT NOT NULL, calldata TEXT NOT NULL,
+    nonce TEXT, signed_transaction TEXT, tx_hash TEXT, status TEXT NOT NULL,
+    created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(network_id,game_id,action), UNIQUE(network_id,address,nonce))`,
+  `CREATE TABLE IF NOT EXISTS arc_authority_attempts (
+    tx_hash TEXT PRIMARY KEY, authority_id TEXT NOT NULL REFERENCES arc_authority_transactions(id),
+    status TEXT NOT NULL, snapshot TEXT NOT NULL, archived_at TEXT NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS bridge_transfers (
     id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), idempotency_key TEXT NOT NULL,
     source_network TEXT NOT NULL, destination_network TEXT NOT NULL, currency TEXT NOT NULL CHECK(currency = 'USDC'),

@@ -1,0 +1,26 @@
+{
+  "network": "arc-mainnet",
+  "chainId": 5042,
+  "contractAddress": "0xc68d4a23433a51d17cf3358ee1281a13b6e58210",
+  "treasury": "0x73cc6BD174543bE6F2Fb40DA7C3C041ceB8c0b1d",
+  "token": "0x3600000000000000000000000000000000000000",
+  "tokenDecimals": 6,
+  "amountUnits": "5000000",
+  "status": "confirmed",
+  "transactions": [
+    {
+      "name": "bot-approve-mainnet",
+      "hash": "0x07f07dffa41a92a34cf2d2e6f586b01999b507fff2bbd965919252711be8ad1b",
+      "status": "confirmed"
+    },
+    {
+      "name": "bot-fund-mainnet",
+      "hash": "0x15c89cb209e33102bd893ecb936662194814d7857e47fa5b4c224f0e90be45f2",
+      "status": "confirmed"
+    }
+  ],
+  "liquidityUnits": "5000000",
+  "lockedEscrowUnits": "0",
+  "contractUsdcUnits": "5000000",
+  "confirmedAt": "2026-11-22T10:49:14.998Z"
+}

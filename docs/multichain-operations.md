@@ -106,6 +106,13 @@ Runtime gaming needs `ARC_DUEL_CONTRACT_ADDRESS`, a securely configured
 and `ARC_GAMING_ENABLED=true`. Confirm the configured signer matches the on-chain
 authority. Fund bot reserves separately using the approved treasury.
 
+The initial Mainnet bot reserve was funded with 5 USDC from the designated
+treasury. `bot-pool-mainnet.json` records the approval/funding hashes and verified
+5 USDC reserve, zero locked player escrow, and matching token balance. Authority
+transactions reserve nonces under a distributed lease and persist signed bytes
+before broadcasting, so simultaneous duels and uncertain retries do not reuse a
+nonce or create a new transaction intent.
+
 The approved Mainnet contract is `0xc68d4a23433a51d17cf3358ee1281a13b6e58210`,
 transaction `0xf85a02f227beed53a6cef671ba1a78f6624a95c46fe3c9ef56922ccea5a16c18`,
 block 32550241. Sourcify reports exact creation and runtime matches. All five
@@ -167,7 +174,7 @@ wallets and transaction success are never fabricated. The release status report
 must distinguish deployed navigation/backend code from financial activation.
 
 Remaining external verification: real Google/X account and Circle PIN/signing/recovery
-flows, funded game flows through the Circle wallet, bot reserves, and genuine CCTP
+flows, funded game flows through the Circle wallet, and genuine CCTP
 tests in both directions. Existing Stellar gaming remains Testnet. The final
 release report records the actual frontend/backend activation status.
 

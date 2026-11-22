@@ -38,13 +38,17 @@ and CCTP transfer verification remain separate checks.
 ## Verification evidence
 
 - Application checks: TypeScript, ESLint and optimized Next.js build passed.
-- 248 JavaScript tests passed; 16 opt-in tests skipped in the default run.
+- 252 JavaScript tests passed; 16 opt-in tests skipped in the default run.
 - 23 unchanged Soroban tests passed.
 - 16 Solidity tests passed, including 256 rounding/conservation fuzz cases and
   the approved shared roles and stake limits.
 - Five funded Stellar Testnet regression flows passed. A real isolated PostgreSQL
   regression passed after applying Arc migrations and re-running the original
   migrations, confirming compatibility and preserved user records.
+- Arc authority transactions use a distributed signer lease, durable nonce
+  reservation and signed outbox. Concurrent games allocate different nonces,
+  uncertain submissions reuse signed bytes, and replaced nonces require definitive
+  chain evidence. Signature substitution is rejected before transmission.
 - Browser regression passed the full 60-second Stellar demo multiplayer flow,
   onboarding, invitations, queue cancellation, authoritative scores/results,
   replay and sign-out. This exercises real application handlers with no-stake

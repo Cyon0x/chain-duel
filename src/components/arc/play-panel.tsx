@@ -73,7 +73,7 @@ export function ArcPlayPanel() {
         <h2>Choose your Arc opponent</h2>
         {!arc.gamingEnabled ? (
           <p className="arc-notice" role="status">
-            Arc gaming is awaiting wallet and escrow activation. No USDC stakes are being accepted.
+            Arc gaming is awaiting final wallet transaction verification. No USDC stakes are being accepted.
           </p>
         ) : null}
         <div className="arc-mode-picker" role="group" aria-label="Arc game mode">
