@@ -85,8 +85,9 @@ On 2026-11-23, the owner's 0.10 USDC Arc-to-Stellar transfer was directly
 verified against Circle and both chains. The Mainnet trustline is active, and the
 successful mint-and-forward credited the exact 0.1000000 USDC to the existing
 Stellar wallet. Circle's executed transfer fee was zero. The 0.10 USDC return to
-the same Arc wallet is prepared and awaits owner approval and verified destination
-settlement. `BRIDGE_E2E_VERIFIED` remains false. Details and public receipts:
+the same Arc wallet has verified Stellar allowance and burn receipts and a matching
+Circle attestation. Its final Arc mint awaits the owner's Circle PIN approval and
+verified destination settlement. `BRIDGE_E2E_VERIFIED` remains false. Details and public receipts:
 `bridge-owner-validation.md` and `bridge-deployments/owner-flow-mainnet.json`.
 Stellar gaming remains Testnet.
 
@@ -105,15 +106,22 @@ Stellar gaming remains Testnet.
   escrow reconciliation and history idempotency passed.
 
 Follow-up checks on 2026-11-23 passed TypeScript, ESLint, the optimized production
-build, 274 application tests (16 opt-in tests skipped), 16 Arc Solidity tests with
+build, 276 application tests (16 opt-in tests skipped), 16 Arc Solidity tests with
 256 conservation fuzz cases, 23 Soroban tests and the isolated PostgreSQL migration
 regression. All 117 protected Stellar files still match the baseline. The live
 forward bridge receipts, attestation and destination credit were verified;
-repeated refresh preserves the completed record. The return remains an unsigned
-prepared request, and both-direction verification is not yet claimed.
+repeated refresh preserves the completed record. The return's Stellar signed
+allowance/burn receipts and emitted message also match the saved intent and
+Circle attestation. Its final mint is prepared; both-direction completion is
+not yet claimed.
 Deployed Preview checks also passed all 12 pages, backend/network/OAuth checks,
 game result fixtures and completed-forward/prepared-return review fixtures at
 390, 768 and 1440 pixels without page errors or horizontal overflow.
+The updated mint UI additionally passed 18 local browser fixtures covering ready,
+waiting, submitted, failed-retry and completed states. It identifies the final
+destination approval and suppresses further approval prompts while a mint hash
+is awaiting confirmation. Expired allowance and burn handling passed regression
+tests without signing or moving funds.
 
 The recorded engineering review is not an independent third-party certification.
 The previous dependency review retains 28 production advisories, including ten

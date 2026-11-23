@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   balance: vi.fn(),
   estimateFee: vi.fn(),
   challenge: vi.fn(),
+  getChallenge: vi.fn(),
 }));
 vi.mock("@/lib/arc/circle", () => ({
   associatedArcWallet: async (id: string) => mocks.wallets.get(id),
@@ -31,11 +32,17 @@ vi.mock("@/lib/arc/circle", () => ({
   circleClient: () => ({
     estimateContractExecutionFee: mocks.estimateFee,
     createUserTransactionContractExecutionChallenge: mocks.challenge,
+    getUserChallenge: mocks.getChallenge,
   }),
 }));
 vi.mock("@/lib/arc/chain", () => ({
   arcBalance: async () => ({ formatted: "100", units: "100000000" }),
-  verifiedArcClient: async () => ({ readContract: async () => 100000000n, getBalance: mocks.balance }),
+  verifiedArcClient: async () => ({
+    readContract: async () => 100000000n,
+    getBalance: mocks.balance,
+    estimateGas: async () => 250000n,
+    estimateFeesPerGas: async () => ({ maxFeePerGas: 30000000000n }),
+  }),
 }));
 vi.mock("@/lib/bridge/stellar", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/bridge/stellar")>();
@@ -185,6 +192,7 @@ describe("Durable bridge orchestration", () => {
       gasLimit: "257713", maxFee: "53.989159085", priorityFee: "13.989159085",
     } } });
     mocks.challenge.mockResolvedValue({ data: { challengeId: "unit-burn-challenge" } });
+    mocks.getChallenge.mockResolvedValue({ data: { challenge: { status: "PENDING" } } });
     for (const [name, value] of Object.entries({
       ARC_NETWORK: "testnet",
       ARC_WALLETS_ENABLED: "true",
@@ -252,6 +260,56 @@ describe("Durable bridge orchestration", () => {
     const prepared = await prepareBridgeStep(userId, transfer.id, "source_burn");
     return { userId, transfer, prepared };
   }
+  async function expiredArcStep(phase: "source_approval" | "source_burn") {
+    const userId = await account();
+    const transfer = await createBridge(userId, "arc", "5", crypto.randomUUID());
+    const database = await arcDb();
+    const stepId = crypto.randomUUID();
+    const idempotencyKey = crypto.randomUUID();
+    const timestamp = new Date().toISOString();
+    await database.execute(
+      "INSERT INTO bridge_steps(id,bridge_id,phase,network_id,target,calldata,status,challenge_id,idempotency_key,created_at,updated_at) VALUES(?,?,?,'arc-testnet',?,'0x1234','awaiting_approval','expired-circle-challenge',?,?,?)",
+      [stepId, transfer.id, phase, phase === "source_approval" ? ARC_USDC : CCTP_ADDRESSES.testnet.arcMessenger, idempotencyKey, timestamp, timestamp],
+    );
+    mocks.getChallenge.mockResolvedValue({ data: { challenge: { status: "EXPIRED" } } });
+    return { userId, transfer, stepId, idempotencyKey, database };
+  }
+  it("archives an expired Arc allowance approval before creating a fresh signing challenge", async () => {
+    const { userId, transfer, stepId, idempotencyKey, database } = await expiredArcStep("source_approval");
+    const expired = await refreshBridge(userId, transfer.id);
+    expect(expired.transfer.source_tx_hash).toBeNull();
+    expect(expired.nextPhase).toBe("source_approval");
+    expect(expired.steps[0].status).toBe("failed");
+    const prepared = await prepareBridgeStep(userId, transfer.id, "source_approval");
+    expect(prepared.stepId).toBe(stepId);
+    const saved = await database.one<{ idempotency_key: string; challenge_id: string | null; tx_hash: string | null }>("SELECT idempotency_key,challenge_id,tx_hash FROM bridge_steps WHERE id=?", [stepId]);
+    expect(saved?.idempotency_key).not.toBe(idempotencyKey);
+    expect(saved?.challenge_id).toBeNull();
+    expect(saved?.tx_hash).toBeNull();
+    const attempts = await database.query<{ snapshot: string }>("SELECT snapshot FROM bridge_step_attempts WHERE step_id=?", [stepId]);
+    expect(attempts).toHaveLength(1);
+    expect(JSON.parse(attempts[0].snapshot).challenge_id).toBe("expired-circle-challenge");
+    await authorizeBridgeStep(userId, transfer.id, stepId);
+    expect(mocks.challenge).toHaveBeenCalledTimes(1);
+    expect(mocks.challenge).toHaveBeenCalledWith(expect.objectContaining({ idempotencyKey: saved?.idempotency_key }));
+    expect(mocks.sign).not.toHaveBeenCalled();
+    expect(mocks.submit).not.toHaveBeenCalled();
+  });
+  it("retains an expired Arc burn attempt and requires a new reviewed transfer", async () => {
+    const { userId, transfer, stepId, idempotencyKey, database } = await expiredArcStep("source_burn");
+    const expired = await refreshBridge(userId, transfer.id);
+    expect(expired.transfer.status).toBe("failed");
+    expect(expired.transfer.source_tx_hash).toBeNull();
+    expect(expired.nextPhase).toBeNull();
+    await expect(prepareBridgeStep(userId, transfer.id, "source_burn")).rejects.toMatchObject({ code: "bridge_state_invalid" });
+    await expect(authorizeBridgeStep(userId, transfer.id, stepId)).rejects.toMatchObject({ code: "bridge_state_invalid" });
+    const saved = await database.one<{ idempotency_key: string; challenge_id: string }>("SELECT idempotency_key,challenge_id FROM bridge_steps WHERE id=?", [stepId]);
+    expect(saved).toMatchObject({ idempotency_key: idempotencyKey, challenge_id: "expired-circle-challenge" });
+    expect((await createBridge(userId, "arc", "5", crypto.randomUUID())).id).not.toBe(transfer.id);
+    expect(mocks.challenge).not.toHaveBeenCalled();
+    expect(mocks.sign).not.toHaveBeenCalled();
+    expect(mocks.submit).not.toHaveBeenCalled();
+  });
   it("reuses one transfer for repeated and concurrent identical intents", async () => {
     const userId = await account();
     const key = crypto.randomUUID();

@@ -180,8 +180,9 @@ expired authorization and recovery. Public routes remain disabled. Preview has
 an authenticated owner-only validation exception capped at 0.10 USDC; Production
 and other accounts cannot use it. The Arc-to-Stellar owner transfer completed
 and its actual receipts, Circle attestation and exact destination credit were
-verified on 2026-11-23. The return is prepared but still awaits owner approval and
-destination receipt verification. See `bridge-owner-validation.md`.
+verified on 2026-11-23. The return's Stellar allowance/burn and Circle attestation
+are also verified; its final Arc mint awaits owner PIN approval and destination
+receipt verification. See `bridge-owner-validation.md`.
 
 ## Deployment and remaining verification
 
@@ -198,7 +199,7 @@ must distinguish deployed navigation/backend code from financial activation.
 Live Google onboarding, Circle wallet creation/PIN signing, a Mainnet bot round
 and cancellation/refund have passed owner validation. Arc gaming is active in
 the approved production release. Remaining external checks include live X
-onboarding, PIN recovery, a human-winning payment and the Stellar-to-Arc CCTP return.
+onboarding, PIN recovery, a human-winning payment and the final Arc mint of the CCTP return.
 The owner's Stellar Mainnet account and official USDC trustline are active; the
 0.10 USDC Arc-to-Stellar transfer and exact destination settlement were verified.
 Public CCTP remains disabled while the capped Preview validation continues, and

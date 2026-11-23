@@ -63,14 +63,22 @@ PIN recovery remain separate owner checks.
   replay and sign-out. This exercises real application handlers with no-stake
   demo identities; it does not prove live social OAuth or Mainnet financial flows.
 - Responsive scans and existing cross-platform matrices have no mechanical FAILs.
-- Follow-up verification on 2026-11-23 passed 274 application tests, TypeScript,
+- Follow-up verification on 2026-11-23 passed 276 application tests, TypeScript,
   ESLint, the optimized build, both contract suites and the isolated PostgreSQL
   migration regression; all 117 protected Stellar files remain unchanged.
 - The live 0.10 USDC Arc-to-Stellar transfer matches the actual source allowance,
   wallet-to-local-minter funding, minter burn, emitted CCTP message, Circle
   attestation, exact Stellar mint-and-forward invocation and official destination
   USDC credit. Repeated refresh preserves all completed receipt references.
-  The 0.10 USDC return was prepared without signing or executing a transaction.
+  The return's owner-approved Stellar allowance/burn envelopes match the persisted
+  signed bytes and exact invocation. The official USDC debit and emitted message
+  match the saved intent and Circle attestation. The final Arc mint awaits owner
+  PIN approval. Verification and preparation did not execute a financial transaction.
+- Expired Arc allowance approvals are archived before a new challenge is prepared;
+  expired burn attempts remain terminal and require a new reviewed transfer.
+  Regression tests verify both behaviors. The mint UI passed 18 local browser
+  cases for ready, waiting, submitted, failed-retry and completed states without
+  authorization, page errors or horizontal overflow.
 
 ## Release limitations
 

@@ -18,6 +18,15 @@ const PHASES: Record<BridgePhase, string> = {
   source_burn: "Burn source USDC",
   destination_mint: "Mint destination USDC",
 };
+function transferLabel(transfer: BridgeRow, mintNeedsApproval = false) {
+  if (transfer.status === "completed" || transfer.status === "failed") return BRIDGE_LABELS[transfer.status];
+  if (
+    mintNeedsApproval ||
+    (transfer.status === "attestation_pending" && transfer.source_tx_hash && transfer.message && transfer.attestation)
+  )
+    return `Ready to mint on ${transfer.destination_network.startsWith("arc-") ? "Arc" : "Stellar"}`;
+  return BRIDGE_LABELS[transfer.status];
+}
 export function BridgePanel({ availability: initialAvailability }: { availability: ReturnType<typeof bridgeAvailability> }) {
   const [source, setSource] = useState<"stellar" | "arc">(initialAvailability.validationMode ? "arc" : "stellar");
   const [amount, setAmount] = useState(initialAvailability.maxAmountUsdc ?? "");
@@ -34,6 +43,8 @@ export function BridgePanel({ availability: initialAvailability }: { availabilit
   const [recoveryHash, setRecoveryHash] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const mintNeedsApproval = view?.nextPhase === "destination_mint" &&
+    !view.steps.some((step) => step.phase === "destination_mint" && step.tx_hash && step.status !== "failed");
   const request = useCallback(
     async <T,>(extra: Record<string, unknown>) => {
       if (!data) throw new Error("Wait for the bridge connection to load.");
@@ -227,8 +238,9 @@ export function BridgePanel({ availability: initialAvailability }: { availabilit
         <Panel className="arc-card">
           <h2>{availability.enabled ? "Your transfer" : "When transfers are available"}</h2>
           <p>
-            Circle supports USDC transfers between Stellar and Arc. Chain Duel will activate this route after
-            both directions are ready and verified.
+            {availability.enabled && !availability.validationMode
+              ? "USDC transfers between Stellar and Arc are available. Review the fees and approve each step to complete your transfer."
+              : "Circle supports USDC transfers between Stellar and Arc. Chain Duel will activate this route after both directions are ready and verified."}
           </p>
           <p>
             Current environments: {availability.stellarNetwork} and {availability.arcNetwork}.
@@ -260,11 +272,17 @@ export function BridgePanel({ availability: initialAvailability }: { availabilit
       </div>
       {view ? (
         <Panel className="arc-card">
-          <h2>{BRIDGE_LABELS[view.transfer.status]}</h2>
+          <h2>{transferLabel(view.transfer, mintNeedsApproval)}</h2>
           <p>
             {formatUnits(BigInt(view.transfer.amount_units), 6)} USDC · {view.transfer.source_network} →{" "}
             {view.transfer.destination_network}
           </p>
+          {mintNeedsApproval ? (
+            <p className="arc-notice" role="status">
+              Your source transfer is confirmed. Review and approve the final mint on{" "}
+              {view.transfer.destination_network.startsWith("arc-") ? "Arc" : "Stellar"} to receive your USDC.
+            </p>
+          ) : null}
           {view.transfer.error ? (
             <p className="arc-notice" role="status">
               {view.transfer.error}
@@ -318,11 +336,11 @@ export function BridgePanel({ availability: initialAvailability }: { availabilit
                   transfer.
                 </p>
               ) : null}
-              <Button disabled={busy || !availability.enabled} onClick={() => void run(approve)}>
+              <Button disabled={busy || !availability.enabled || (prepared.phase === "destination_mint" && !mintNeedsApproval)} onClick={() => void run(approve)}>
                 Approve {PHASES[prepared.phase].toLowerCase()}
               </Button>
             </div>
-          ) : view.nextPhase ? (
+          ) : view.nextPhase && (view.nextPhase !== "destination_mint" || mintNeedsApproval) ? (
             <Button disabled={busy || !availability.enabled} onClick={() => void run(prepare)}>
               Review: {PHASES[view.nextPhase]}
             </Button>
@@ -406,7 +424,7 @@ export function BridgePanel({ availability: initialAvailability }: { availabilit
           {data.transfers.map((transfer) => (
             <div className="arc-actions" key={transfer.id}>
               <p>
-                {formatUnits(BigInt(transfer.amount_units), 6)} USDC · {BRIDGE_LABELS[transfer.status]}
+                {formatUnits(BigInt(transfer.amount_units), 6)} USDC · {transferLabel(transfer)}
               </p>
               <Button
                 variant="secondary"
