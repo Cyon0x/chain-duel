@@ -77,11 +77,18 @@ owner interaction checks. Supplied secrets remain outside Git and frontend bundl
 
 Official CCTP V2 supports Arc domain 26 and Stellar domain 27 in both directions.
 The implementation validates official infrastructure, amounts, fees, attestations,
-nonce/message identity and actual destination settlement. Both routes remain
-inactive. The owner's existing Stellar address has no Mainnet account or USDC
-trustline; Mainnet XLM activation/reserve funding and owner-approved transfers
-are needed before both directions can be verified. Stellar Testnet gameplay is
-not evidence of Stellar Mainnet bridge readiness.
+nonce/message identity and actual destination settlement. Public bridging remains
+inactive. A capped, authenticated owner-only exception on Preview permits real
+validation transfers up to 0.10 USDC; Production cannot use this exception.
+
+On 2026-11-23, the owner's 0.10 USDC Arc-to-Stellar transfer was directly
+verified against Circle and both chains. The Mainnet trustline is active, and the
+successful mint-and-forward credited the exact 0.1000000 USDC to the existing
+Stellar wallet. Circle's executed transfer fee was zero. The 0.10 USDC return to
+the same Arc wallet is prepared and awaits owner approval and verified destination
+settlement. `BRIDGE_E2E_VERIFIED` remains false. Details and public receipts:
+`bridge-owner-validation.md` and `bridge-deployments/owner-flow-mainnet.json`.
+Stellar gaming remains Testnet.
 
 ## Verification
 
@@ -96,6 +103,17 @@ not evidence of Stellar Mainnet bridge readiness.
   settlement and spectators at 390, 768 and 1440 pixels, with no overflow or errors.
 - Live owner Circle signing, stake, bot settlement, two fee transfers, refund,
   escrow reconciliation and history idempotency passed.
+
+Follow-up checks on 2026-11-23 passed TypeScript, ESLint, the optimized production
+build, 274 application tests (16 opt-in tests skipped), 16 Arc Solidity tests with
+256 conservation fuzz cases, 23 Soroban tests and the isolated PostgreSQL migration
+regression. All 117 protected Stellar files still match the baseline. The live
+forward bridge receipts, attestation and destination credit were verified;
+repeated refresh preserves the completed record. The return remains an unsigned
+prepared request, and both-direction verification is not yet claimed.
+Deployed Preview checks also passed all 12 pages, backend/network/OAuth checks,
+game result fixtures and completed-forward/prepared-return review fixtures at
+390, 768 and 1440 pixels without page errors or horizontal overflow.
 
 The recorded engineering review is not an independent third-party certification.
 The previous dependency review retains 28 production advisories, including ten

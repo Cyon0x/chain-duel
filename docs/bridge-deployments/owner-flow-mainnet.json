@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-23T09:35:09.001Z",
+  "environment": "Preview",
+  "publicBridgeEnabled": false,
+  "bridgeE2eVerified": false,
+  "forward": {
+    "transferId": "7f05b5d6-71b6-4750-b766-c2c0daba9326",
+    "status": "completed",
+    "source": "arc-mainnet",
+    "destination": "stellar-mainnet",
+    "amountUsdc": "0.10",
+    "receivedUsdc": "0.1",
+    "executedCircleFeeUsdc": "0",
+    "messageHash": "0xfd4ca1ab89d0271fb52339cae2931ed1982b0d4e06fcf3a46f26856294a94846",
+    "nonce": "0xaccb2487bcafd5b14c65bb213b9cb3e193a9c270e56c26182ad40bab8e22e2c1",
+    "attestationMatchesCircle": true,
+    "receipts": [
+      {
+        "phase": "source_approval",
+        "network": "arc-mainnet",
+        "hash": "0x43fa630442acabc93871a088de1fcf2709da5099eb02384e59930af5cf804db7",
+        "status": "success",
+        "block": "32614796",
+        "circleState": "COMPLETE",
+        "senderAndCalldataVerified": true
+      },
+      {
+        "phase": "source_burn",
+        "network": "arc-mainnet",
+        "hash": "0x784426a148fee8c5dcf1453363b58a6a8e954807d445914e8b59d8375b1555a2",
+        "status": "success",
+        "block": "32614848",
+        "circleState": "COMPLETE",
+        "senderAndCalldataVerified": true,
+        "burnAmountUnits": "100000",
+        "officialLocalMinter": "0xfd78EE919681417d192449715b2594ab58f5D002",
+        "walletFundingAndMinterBurnVerified": true,
+        "sourceMessageHash": "0x95c08970d5bf1d1edfbcff1570c6d7e7b834bc64bdd9d14d1a2f4d8a86c6bd31",
+        "sourceMessageMatchesAttestedTransfer": true
+      },
+      {
+        "phase": "trustline",
+        "network": "stellar-mainnet",
+        "hash": "ff06b10703ba7f0ce808362cee774f9ecc7aafe3cca3f11996ad858b30fdb1a5",
+        "status": "SUCCESS"
+      },
+      {
+        "phase": "destination_mint",
+        "network": "stellar-mainnet",
+        "hash": "649102fec2d788e93af76807b38de4dd83ad1f17f561e3eb377a80944deb7663",
+        "status": "SUCCESS",
+        "ledger": 65618069,
+        "exactMintAndForwardVerified": true,
+        "officialUsdcCreditStellarUnits": "1000000"
+      }
+    ],
+    "repeatedRefreshPreservesReceipts": true
+  },
+  "wallets": {
+    "stellarAddress": "GBGDTBOXVZ4GIDDRISY5FGXYY7XCWCCK3FRHJHSVFEZMWA3ZZ2HUALTK",
+    "stellarUsdcBalance": "0.1000000",
+    "stellarXlmBalance": "4.9750686",
+    "arcAddress": "0x34bb0101982c01fcca52b625ac032fdcff4ef86d",
+    "arcUsdcBalance": "0.279742"
+  },
+  "return": {
+    "transferId": "5748415a-f5f3-44de-8d77-79d3a7e0452f",
+    "source": "stellar-mainnet",
+    "destination": "arc-mainnet",
+    "amountUsdc": "0.1",
+    "maximumCircleFeeUsdc": "0",
+    "minimumReceivedUsdc": "0.1",
+    "status": "awaiting_approval",
+    "nextPhase": "source_approval",
+    "prepared": {
+      "stepId": "09f803b6-c71c-4c6b-bdac-f1291f918b17",
+      "phase": "source_approval",
+      "networkId": "stellar-mainnet",
+      "target": "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75",
+      "status": "awaiting_approval",
+      "gasFeeUnits": "13267",
+      "gasSymbol": "XLM",
+      "gasDecimals": 7
+    },
+    "quotedStellarApprovalFeeXlm": "0.0013267",
+    "repeatRequestReusesTransfer": true,
+    "financialTransactionExecutedByPreparation": false,
+    "url": "https://chain-duel-multichain-preview.vercel.app/bridge"
+  },
+  "verification": {
+    "checkedAt": "2026-11-23T09:52:19.346Z",
+    "testedApplicationCommit": "0482f5ff3029da4863ecf36543119f675eea1691",
+    "typecheckPassed": true,
+    "lintPassed": true,
+    "optimizedBuildPassed": true,
+    "applicationTestsPassed": 274,
+    "optInTestsSkipped": 16,
+    "arcContractTestsPassed": 16,
+    "conservationFuzzCases": 256,
+    "stellarContractTestsPassed": 23,
+    "isolatedPostgresMigrationPassed": true,
+    "protectedStellarFilesUnchanged": 117,
+    "browser": {
+      "deployment": "https://chain-duel-nk9ocgjn3-cyon0xs-projects.vercel.app",
+      "pages": [
+        "/",
+        "/dashboard",
+        "/wallet",
+        "/play",
+        "/transactions",
+        "/arc/dashboard",
+        "/arc/wallet",
+        "/arc/play",
+        "/arc/profile",
+        "/arc/transactions",
+        "/arc/login",
+        "/bridge"
+      ],
+      "checks": [
+        "Persistent isolated Preview backend and preserved Stellar Testnet configuration",
+        "Verified Arc Mainnet contract configured; Preview gaming available for owner validation",
+        "CCTP availability accurate and disabled",
+        "Preview sign-in, onboarding, durable profile and Stellar wallet association",
+        "Stellar APIs reject Arc currency/network substitution",
+        "Explicit ecosystem selection routes shared dashboard consistently",
+        "Additive Arc tables and Stellar read-only network history queries work on PostgreSQL",
+        "Circle provisioning requires a verified Google/X account",
+        "Dedicated Arc Google/X clients, PKCE, callback URIs, secret exclusion and invalid-state rejection",
+        "Rendered Arc wins, losses to computer and PvP, pending settlement and spectator results correctly at 390, 768 and 1440 pixels using browser fixtures",
+        "Browser fixtures using verified receipt metadata show the completed forward transfer, all four correct explorer links and destination settlement, plus the unsigned Stellar-to-Arc allowance review and exact XLM fee at 390, 768 and 1440 pixels without authorization or overflow"
+      ],
+      "widths": [
+        390,
+        768,
+        1440
+      ],
+      "pageErrors": [],
+      "financialViewsUseFixtures": true,
+      "financialTransactionsExecuted": false
+    }
+  }
+}

@@ -3,7 +3,8 @@
 Review date: 2026-11-22. This records implementation checks. The final escrow
 engineering audit and user-approved Mainnet deployment are recorded in
 `arc-deployments`; no independent third-party audit is claimed. Live Circle PIN signing, staking, settlement and refund passed owner validation.
-Both CCTP directions and PIN recovery remain separate owner checks.
+The live Arc-to-Stellar CCTP transfer was verified on 2026-11-23; its return and
+PIN recovery remain separate owner checks.
 
 ## Checks completed
 
@@ -62,6 +63,14 @@ Both CCTP directions and PIN recovery remain separate owner checks.
   replay and sign-out. This exercises real application handlers with no-stake
   demo identities; it does not prove live social OAuth or Mainnet financial flows.
 - Responsive scans and existing cross-platform matrices have no mechanical FAILs.
+- Follow-up verification on 2026-11-23 passed 274 application tests, TypeScript,
+  ESLint, the optimized build, both contract suites and the isolated PostgreSQL
+  migration regression; all 117 protected Stellar files remain unchanged.
+- The live 0.10 USDC Arc-to-Stellar transfer matches the actual source allowance,
+  wallet-to-local-minter funding, minter burn, emitted CCTP message, Circle
+  attestation, exact Stellar mint-and-forward invocation and official destination
+  USDC credit. Repeated refresh preserves all completed receipt references.
+  The 0.10 USDC return was prepared without signing or executing a transaction.
 
 ## Release limitations
 
@@ -69,7 +78,9 @@ The supplied Circle live key authenticated and matched the supplied App ID.
 Live Google registration, Circle wallet creation, PIN signing, Mainnet staking,
 bot settlement, both 0.05 USDC fee transfers and full-stake cancellation/refund
 passed owner validation. Live X registration, PIN recovery, a human-winning
-payment and both CCTP transfer directions remain separate owner checks.
+payment and the Stellar-to-Arc CCTP return remain separate owner checks. Public
+bridging remains disabled; the authenticated owner-only Preview exception is
+capped at 0.10 USDC and is unavailable in Production.
 The Arc escrow was deployed with the approved parameters and its creation/runtime
 bytecode verified exactly by Sourcify. Activation status is recorded in the release report.
 
