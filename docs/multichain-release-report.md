@@ -3,8 +3,8 @@
 Release date: 2026-11-22. Arc Mainnet wallet signing, staking, computer-game
 settlement and cancellation/refund passed live owner validation. This release
 activates Arc gaming in the existing production project. Both Mainnet CCTP
-directions passed live owner validation on 2026-11-23. The public bridge release
-is prepared; its production deployment and verification are recorded below.
+directions passed live owner validation on 2026-11-23. Public CCTP bridging is
+active and verified on both existing production domains; evidence is recorded below.
 Separate live X login, PIN recovery and human-winning payout checks remain open.
 
 ## Released behavior
@@ -164,3 +164,30 @@ The full deployed no-stake Stellar game regression also passed.
 Production browser checks also passed all 12 pages and the win/loss, pending and
 spectator result fixtures at 390, 768 and 1440 pixels. Evidence is recorded in
 `arc-deployments/production-verification.json`.
+
+## Public CCTP production release — 2026-11-23
+
+[PR #4](https://github.com/Cyon0x/chain-duel/pull/4) merged into `main` at
+`225e01159c4ade28f70f207fca2128ee6e5fd816`. The verified application deployed to
+https://chain-duel-9wcguspzm-cyon0xs-projects.vercel.app,
+`dpl_4obwHzaqcE75eF1dwJofdjoAaAYm`, with status READY and target Production.
+Both https://www.chainduel.site and https://chain-duel.vercel.app point to it.
+Their bridge endpoints report enabled, E2E-verified public CCTP with owner
+validation inactive. Arc Mainnet wallets/gaming remain enabled; existing Stellar
+XLM games remain Testnet with PostgreSQL available. All non-bridge environment
+settings were preserved when the three reviewed release flags were applied.
+
+Production passed all 12 pages, backend/network/OAuth checks, guest financial
+request rejection, game outcome fixtures and 18 mint-state browser fixtures at
+390, 768 and 1440 pixels without page errors or horizontal overflow. Arc OAuth
+continues through the existing registered `https://chain-duel.vercel.app` origin;
+primary-domain Google/X redirects, correct client IDs/callbacks, PKCE and invalid
+state rejection passed. These configuration/browser checks do not replace the
+remaining owner checks for live X registration and PIN recovery.
+
+Both actual 0.10 USDC Mainnet directions, source and destination receipts,
+attestations, nonce consumption, exact USDC credits, actual gas reconciliation,
+confirmed-step idempotency and destination recovery are verified. Public evidence,
+release settings and production checks are recorded in
+`bridge-deployments/owner-flow-mainnet.json`. The stable Preview link remains
+https://chain-duel-multichain-preview.vercel.app on its separate Preview database.

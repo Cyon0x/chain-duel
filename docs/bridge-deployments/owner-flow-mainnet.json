@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "checkedAt": "2026-11-23T09:35:09.001Z",
   "environment": "Preview",
-  "publicBridgeEnabled": false,
+  "publicBridgeEnabled": true,
   "bridgeE2eVerified": true,
   "forward": {
     "transferId": "7f05b5d6-71b6-4750-b766-c2c0daba9326",
@@ -327,7 +327,7 @@
     "financialTransactionExecuted": false
   },
   "activation": {
-    "status": "public_preview_verified_production_pending",
+    "status": "production_active_verified",
     "preview": {
       "configuredAt": "2026-11-23T15:23:46.911Z",
       "environment": "preview",
@@ -373,7 +373,205 @@
         "errors": []
       }
     },
-    "production": null
+    "production": {
+      "configuredAt": "2026-11-23T15:46:26.619Z",
+      "environment": "production",
+      "project": "chain-duel",
+      "settings": {
+        "BRIDGE_ENABLED": true,
+        "BRIDGE_E2E_VERIFIED": true,
+        "BRIDGE_SECURITY_REVIEWED": true
+      },
+      "bothMainnetDirectionsVerified": true,
+      "otherEnvironmentSettingsPreserved": true,
+      "financialTransactionExecuted": false,
+      "verifiedAt": "2026-11-23T16:24:24.548Z",
+      "applicationCommit": "225e01159c4ade28f70f207fca2128ee6e5fd816",
+      "deploymentId": "dpl_4obwHzaqcE75eF1dwJofdjoAaAYm",
+      "deployment": "https://chain-duel-9wcguspzm-cyon0xs-projects.vercel.app",
+      "readyState": "READY",
+      "domains": [
+        "https://www.chainduel.site",
+        "https://chain-duel.vercel.app"
+      ],
+      "canonicalArcOAuthOrigin": "https://chain-duel.vercel.app",
+      "endpoints": {
+        "primaryBridge": {
+          "officiallySupported": true,
+          "infrastructure": "Circle CCTP V2",
+          "domains": {
+            "stellar": 27,
+            "arc": 26
+          },
+          "enabled": true,
+          "validationMode": false,
+          "e2eVerified": true,
+          "maxAmountUsdc": null,
+          "stellarNetwork": "Stellar Mainnet",
+          "stellarGamingNetwork": "Stellar Testnet",
+          "arcNetwork": "Arc Mainnet",
+          "environmentsMatch": true,
+          "reason": "Approve each step. A transfer completes after destination settlement is verified.",
+          "documentation": "https://developers.circle.com/cctp/quickstarts/transfer-usdc-stellar-arc"
+        },
+        "secondaryBridge": {
+          "officiallySupported": true,
+          "infrastructure": "Circle CCTP V2",
+          "domains": {
+            "stellar": 27,
+            "arc": 26
+          },
+          "enabled": true,
+          "validationMode": false,
+          "e2eVerified": true,
+          "maxAmountUsdc": null,
+          "stellarNetwork": "Stellar Mainnet",
+          "stellarGamingNetwork": "Stellar Testnet",
+          "arcNetwork": "Arc Mainnet",
+          "environmentsMatch": true,
+          "reason": "Approve each step. A transfer completes after destination settlement is verified.",
+          "documentation": "https://developers.circle.com/cctp/quickstarts/transfer-usdc-stellar-arc"
+        },
+        "stellarGamingNetwork": "testnet",
+        "persistence": "postgres",
+        "persistenceAvailable": true
+      },
+      "verification": {
+        "pages": [
+          "/",
+          "/dashboard",
+          "/wallet",
+          "/play",
+          "/transactions",
+          "/arc/dashboard",
+          "/arc/wallet",
+          "/arc/play",
+          "/arc/profile",
+          "/arc/transactions",
+          "/arc/login",
+          "/bridge"
+        ],
+        "checks": [
+          "Persistent Production backend and preserved Stellar Testnet configuration",
+          "Verified Arc Mainnet contract configured; Preview gaming available for owner validation",
+          "Public CCTP enabled after verified Mainnet round trip; owner validation cap inactive; unauthenticated financial requests rejected",
+          "Preview sign-in, onboarding, durable profile and Stellar wallet association",
+          "Stellar APIs reject Arc currency/network substitution",
+          "Explicit ecosystem selection routes shared dashboard consistently",
+          "Additive Arc tables and Stellar read-only network history queries work on PostgreSQL",
+          "Circle provisioning requires a verified Google/X account",
+          "Existing canonical Arc OAuth host retained; primary-domain Google/X login redirects correctly to the registered production callback origin",
+          "Dedicated Arc Google/X clients, PKCE, callback URIs, secret exclusion and invalid-state rejection",
+          "Rendered Arc wins, losses to computer and PvP, pending settlement and spectator results correctly at 390, 768 and 1440 pixels using browser fixtures",
+          "All 18 mint-stage browser fixtures passed after deployment: ready Arc/Stellar, waiting attestation, submitted, failed-retry and completed at 390, 768 and 1440 pixels without authorization or overflow"
+        ],
+        "errors": [],
+        "mintUiFixtures": {
+          "base": "https://chain-duel-9wcguspzm-cyon0xs-projects.vercel.app",
+          "fixtureOnly": true,
+          "financialTransactionsExecuted": false,
+          "checks": [
+            {
+              "scenario": "ready-arc",
+              "width": 390,
+              "heading": "Ready to mint on Arc"
+            },
+            {
+              "scenario": "ready-arc",
+              "width": 768,
+              "heading": "Ready to mint on Arc"
+            },
+            {
+              "scenario": "ready-arc",
+              "width": 1440,
+              "heading": "Ready to mint on Arc"
+            },
+            {
+              "scenario": "ready-stellar",
+              "width": 390,
+              "heading": "Ready to mint on Stellar"
+            },
+            {
+              "scenario": "ready-stellar",
+              "width": 768,
+              "heading": "Ready to mint on Stellar"
+            },
+            {
+              "scenario": "ready-stellar",
+              "width": 1440,
+              "heading": "Ready to mint on Stellar"
+            },
+            {
+              "scenario": "waiting-attestation",
+              "width": 390,
+              "heading": "Attestation pending"
+            },
+            {
+              "scenario": "waiting-attestation",
+              "width": 768,
+              "heading": "Attestation pending"
+            },
+            {
+              "scenario": "waiting-attestation",
+              "width": 1440,
+              "heading": "Attestation pending"
+            },
+            {
+              "scenario": "submitted-arc",
+              "width": 390,
+              "heading": "Destination transaction pending"
+            },
+            {
+              "scenario": "submitted-arc",
+              "width": 768,
+              "heading": "Destination transaction pending"
+            },
+            {
+              "scenario": "submitted-arc",
+              "width": 1440,
+              "heading": "Destination transaction pending"
+            },
+            {
+              "scenario": "failed-mint-retry",
+              "width": 390,
+              "heading": "Ready to mint on Arc"
+            },
+            {
+              "scenario": "failed-mint-retry",
+              "width": 768,
+              "heading": "Ready to mint on Arc"
+            },
+            {
+              "scenario": "failed-mint-retry",
+              "width": 1440,
+              "heading": "Ready to mint on Arc"
+            },
+            {
+              "scenario": "completed-arc",
+              "width": 390,
+              "heading": "Completed"
+            },
+            {
+              "scenario": "completed-arc",
+              "width": 768,
+              "heading": "Completed"
+            },
+            {
+              "scenario": "completed-arc",
+              "width": 1440,
+              "heading": "Completed"
+            }
+          ],
+          "errors": []
+        }
+      },
+      "github": {
+        "pullRequest": 4,
+        "url": "https://github.com/Cyon0x/chain-duel/pull/4",
+        "merged": true,
+        "mergeCommit": "225e01159c4ade28f70f207fca2128ee6e5fd816"
+      }
+    }
   },
   "releaseVerification": {
     "checkedAt": "2026-11-23T15:38:19.803Z",

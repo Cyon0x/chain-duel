@@ -95,8 +95,8 @@ Live Google registration, Circle wallet creation, PIN signing, Mainnet staking,
 bot settlement, both 0.05 USDC fee transfers and full-stake cancellation/refund
 passed owner validation. Live X registration, PIN recovery, a human-winning
 payment remain separate owner checks. Both CCTP directions, live PIN signing,
-destination settlement and recovery passed. Public bridging is verified for
-release; its activation is recorded in the release report. The initial
+destination settlement and recovery passed. Public bridging is active and
+verified on both production domains; its activation is recorded in the release report. The initial
 owner-only validation exception remains excluded from Production.
 The Arc escrow was deployed with the approved parameters and its creation/runtime
 bytecode verified exactly by Sourcify. Activation status is recorded in the release report.

@@ -204,7 +204,7 @@ onboarding, PIN recovery and a human-winning payment.
 The owner's Stellar Mainnet account and official USDC trustline are active; the
 0.10 USDC Arc-to-Stellar transfer and exact destination settlement were verified,
 followed by the completed 0.10 USDC return and exact Arc mint. Public CCTP is
-verified for release; existing Stellar gaming remains Testnet. The release report
+active and verified in Production; existing Stellar gaming remains Testnet. The release report
 records the actual activation status, deployment checks and receipts.
 
 Official references: [Arc connection](https://docs.arc.io/arc/references/connect-to-arc),

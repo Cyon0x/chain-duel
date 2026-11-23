@@ -5,6 +5,15 @@ source and destination receipts were verified. Circle's executed standard-transf
 fee was zero in both directions. This verifies the official CCTP route for the
 existing managed Stellar wallet and Circle user-controlled Arc wallet.
 
+Public bridging is active at https://www.chainduel.site/bridge and
+https://chain-duel.vercel.app/bridge. PR #4 was merged into `main` at
+`225e01159c4ade28f70f207fca2128ee6e5fd816`. Vercel deployment
+`dpl_4obwHzaqcE75eF1dwJofdjoAaAYm` is READY in Production; both domains,
+public availability, PostgreSQL persistence, OAuth routing, all 12 pages and
+game/mint browser fixtures passed. The existing canonical Arc OAuth origin
+remains `https://chain-duel.vercel.app`. All other environment settings and
+all 117 protected Stellar files are unchanged.
+
 | Direction | Source burn | Destination settlement | USDC minted |
 | --- | --- | --- | --- |
 | Arc → Stellar | [Arc burn](https://explorer.arc.io/tx/0x784426a148fee8c5dcf1453363b58a6a8e954807d445914e8b59d8375b1555a2) | [Stellar mint and forwarding](https://stellar.expert/explorer/public/tx/649102fec2d788e93af76807b38de4dd83ad1f17f561e3eb377a80944deb7663) | 0.10 |
