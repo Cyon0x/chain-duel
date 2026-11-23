@@ -3,8 +3,8 @@
 Review date: 2026-11-22. This records implementation checks. The final escrow
 engineering audit and user-approved Mainnet deployment are recorded in
 `arc-deployments`; no independent third-party audit is claimed. Live Circle PIN signing, staking, settlement and refund passed owner validation.
-The live Arc-to-Stellar CCTP transfer was verified on 2026-11-23; its return and
-PIN recovery remain separate owner checks.
+Both live CCTP directions and destination receipts were verified on 2026-11-23.
+PIN recovery remains a separate owner check.
 
 ## Checks completed
 
@@ -72,13 +72,21 @@ PIN recovery remain separate owner checks.
   USDC credit. Repeated refresh preserves all completed receipt references.
   The return's owner-approved Stellar allowance/burn envelopes match the persisted
   signed bytes and exact invocation. The official USDC debit and emitted message
-  match the saved intent and Circle attestation. The final Arc mint awaits owner
-  PIN approval. Verification and preparation did not execute a financial transaction.
+  match the saved intent and Circle attestation. The final Arc receipt verifies
+  the exact transmitter calldata, MessageReceived, consumed nonce and 100,000
+  six-decimal USDC mint. Its native balance change reconciles with the mint less
+  actual gas. Verification and preparation did not execute a financial transaction.
 - Expired Arc allowance approvals are archived before a new challenge is prepared;
   expired burn attempts remain terminal and require a new reviewed transfer.
   Regression tests verify both behaviors. The mint UI passed 18 local browser
   cases for ready, waiting, submitted, failed-retry and completed states without
   authorization, page errors or horizontal overflow.
+- Live release probes verified the Circle gas quote, blocked a full-wallet debit
+  that cannot reserve gas, observed the owner's prior expired Circle authorization,
+  and verified idempotent confirmed approvals. Destination recovery accepts the
+  actual mint hash and rejects an unrelated transaction. Forty-two focused bridge,
+  configuration and routing tests passed again; all protected Stellar files remain
+  unchanged. These checks justify the reviewed public-release flags.
 
 ## Release limitations
 
@@ -86,9 +94,10 @@ The supplied Circle live key authenticated and matched the supplied App ID.
 Live Google registration, Circle wallet creation, PIN signing, Mainnet staking,
 bot settlement, both 0.05 USDC fee transfers and full-stake cancellation/refund
 passed owner validation. Live X registration, PIN recovery, a human-winning
-payment and the Stellar-to-Arc CCTP return remain separate owner checks. Public
-bridging remains disabled; the authenticated owner-only Preview exception is
-capped at 0.10 USDC and is unavailable in Production.
+payment remain separate owner checks. Both CCTP directions, live PIN signing,
+destination settlement and recovery passed. Public bridging is verified for
+release; its activation is recorded in the release report. The initial
+owner-only validation exception remains excluded from Production.
 The Arc escrow was deployed with the approved parameters and its creation/runtime
 bytecode verified exactly by Sourcify. Activation status is recorded in the release report.
 

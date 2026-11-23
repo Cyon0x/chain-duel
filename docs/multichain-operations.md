@@ -176,13 +176,14 @@ Externally completed mints can be recovered using a verified destination hash.
 Activation requires `BRIDGE_ENABLED=true`, `BRIDGE_E2E_VERIFIED=true`,
 `BRIDGE_SECURITY_REVIEWED=true`, configured Circle wallets and real two-direction
 tests including destination settlement, insufficient gas, duplicate submission,
-expired authorization and recovery. Public routes remain disabled. Preview has
-an authenticated owner-only validation exception capped at 0.10 USDC; Production
-and other accounts cannot use it. The Arc-to-Stellar owner transfer completed
-and its actual receipts, Circle attestation and exact destination credit were
-verified on 2026-11-23. The return's Stellar allowance/burn and Circle attestation
-are also verified; its final Arc mint awaits owner PIN approval and destination
-receipt verification. See `bridge-owner-validation.md`.
+expired authorization and recovery. Both 0.10 USDC Mainnet directions completed
+and their source, attestation and destination receipts were verified on 2026-11-23.
+The return's Arc nonce, exact USDC mint and gas-adjusted balance reconcile.
+Live fee-reserve, duplicate-approval and destination-recovery checks passed;
+expired Circle authorization was observed and bridge expiry behavior is
+regression-tested. The verified public release sets all three flags to true.
+The initial owner-only Preview exception is inactive when the public route is
+enabled. See `bridge-owner-validation.md` and the release/deployment evidence.
 
 ## Deployment and remaining verification
 
@@ -199,12 +200,12 @@ must distinguish deployed navigation/backend code from financial activation.
 Live Google onboarding, Circle wallet creation/PIN signing, a Mainnet bot round
 and cancellation/refund have passed owner validation. Arc gaming is active in
 the approved production release. Remaining external checks include live X
-onboarding, PIN recovery, a human-winning payment and the final Arc mint of the CCTP return.
+onboarding, PIN recovery and a human-winning payment.
 The owner's Stellar Mainnet account and official USDC trustline are active; the
-0.10 USDC Arc-to-Stellar transfer and exact destination settlement were verified.
-Public CCTP remains disabled while the capped Preview validation continues, and
-existing Stellar gaming remains Testnet. The release report records the actual
-activation status and receipts.
+0.10 USDC Arc-to-Stellar transfer and exact destination settlement were verified,
+followed by the completed 0.10 USDC return and exact Arc mint. Public CCTP is
+verified for release; existing Stellar gaming remains Testnet. The release report
+records the actual activation status, deployment checks and receipts.
 
 Official references: [Arc connection](https://docs.arc.io/arc/references/connect-to-arc),
 [USDC event model](https://docs.arc.io/arc/references/usdc-system-events),

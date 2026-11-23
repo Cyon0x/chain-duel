@@ -2,8 +2,10 @@
 
 Release date: 2026-11-22. Arc Mainnet wallet signing, staking, computer-game
 settlement and cancellation/refund passed live owner validation. This release
-activates Arc gaming in the existing production project. CCTP remains disabled;
-the overall multi-chain expansion is not marked complete.
+activates Arc gaming in the existing production project. Both Mainnet CCTP
+directions passed live owner validation on 2026-11-23. The public bridge release
+is prepared; its production deployment and verification are recorded below.
+Separate live X login, PIN recovery and human-winning payout checks remain open.
 
 ## Released behavior
 
@@ -77,17 +79,23 @@ owner interaction checks. Supplied secrets remain outside Git and frontend bundl
 
 Official CCTP V2 supports Arc domain 26 and Stellar domain 27 in both directions.
 The implementation validates official infrastructure, amounts, fees, attestations,
-nonce/message identity and actual destination settlement. Public bridging remains
-inactive. A capped, authenticated owner-only exception on Preview permits real
-validation transfers up to 0.10 USDC; Production cannot use this exception.
+nonce/message identity and actual destination settlement. Both Mainnet routes
+are verified for public release. The initial authenticated owner-only Preview
+exception capped validation at 0.10 USDC and excluded Production. The verified
+public route takes precedence over that exception and has no validation cap.
 
 On 2026-11-23, the owner's 0.10 USDC Arc-to-Stellar transfer was directly
 verified against Circle and both chains. The Mainnet trustline is active, and the
 successful mint-and-forward credited the exact 0.1000000 USDC to the existing
 Stellar wallet. Circle's executed transfer fee was zero. The 0.10 USDC return to
 the same Arc wallet has verified Stellar allowance and burn receipts and a matching
-Circle attestation. Its final Arc mint awaits the owner's Circle PIN approval and
-verified destination settlement. `BRIDGE_E2E_VERIFIED` remains false. Details and public receipts:
+Circle attestation. Its final Arc mint completed in transaction
+`0x2acb634e7f04a5324ca02ce96625f22ca51751de6802e3a5000922944aeacab6`.
+The expected transmitter call, MessageReceived, consumed nonce and exact
+100,000 six-decimal USDC credit were verified. The native balance change equals
+the 0.10 USDC mint less 0.00785866218592266 USDC in actual gas. The checked Arc
+balance is 0.371883 USDC. `BRIDGE_E2E_VERIFIED` is now justified by both real
+directions. Release flags enable the reviewed route after deployment. Details and public receipts:
 `bridge-owner-validation.md` and `bridge-deployments/owner-flow-mainnet.json`.
 Stellar gaming remains Testnet.
 
@@ -112,8 +120,8 @@ regression. All 117 protected Stellar files still match the baseline. The live
 forward bridge receipts, attestation and destination credit were verified;
 repeated refresh preserves the completed record. The return's Stellar signed
 allowance/burn receipts and emitted message also match the saved intent and
-Circle attestation. Its final mint is prepared; both-direction completion is
-not yet claimed.
+Circle attestation. Its Arc mint, final balance and consumed nonce also passed
+direct chain verification. Both-direction completion is verified.
 Deployed Preview checks also passed all 12 pages, backend/network/OAuth checks,
 game result fixtures and completed-forward/prepared-return review fixtures at
 390, 768 and 1440 pixels without page errors or horizontal overflow.
@@ -122,6 +130,13 @@ waiting, submitted, failed-retry and completed states. It identifies the final
 destination approval and suppresses further approval prompts while a mint hash
 is awaiting confirmation. Expired allowance and burn handling passed regression
 tests without signing or moving funds.
+Release checks additionally passed 42 focused bridge/configuration/routing tests.
+A live Circle gas quote passes a funded gas-only request and blocks a full-wallet
+USDC debit before signing. A prior expired Mainnet Circle authorization was
+observed, and bridge expiry handling passed regression tests. Confirmed approvals
+create no new challenge; repeated refresh preserves receipts. Destination recovery
+accepts the correct mint hash and rejects an unrelated transaction. Both live
+directions had zero Circle standard-transfer fee; network gas was charged separately.
 
 The recorded engineering review is not an independent third-party certification.
 The previous dependency review retains 28 production advisories, including ten
