@@ -28,7 +28,7 @@ export async function GET() {
         ])
       : [];
     return ok({
-      availability: bridgeAvailability(),
+      availability: bridgeAvailability(session?.user.id),
       arc: publicArcConfig(),
       signedIn: Boolean(session),
       transfers,

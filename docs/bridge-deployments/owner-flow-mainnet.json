@@ -1,0 +1,384 @@
+{
+  "schemaVersion": 2,
+  "checkedAt": "2026-11-23T09:35:09.001Z",
+  "environment": "Preview",
+  "publicBridgeEnabled": false,
+  "bridgeE2eVerified": true,
+  "forward": {
+    "transferId": "7f05b5d6-71b6-4750-b766-c2c0daba9326",
+    "status": "completed",
+    "source": "arc-mainnet",
+    "destination": "stellar-mainnet",
+    "amountUsdc": "0.10",
+    "receivedUsdc": "0.1",
+    "executedCircleFeeUsdc": "0",
+    "messageHash": "0xfd4ca1ab89d0271fb52339cae2931ed1982b0d4e06fcf3a46f26856294a94846",
+    "nonce": "0xaccb2487bcafd5b14c65bb213b9cb3e193a9c270e56c26182ad40bab8e22e2c1",
+    "attestationMatchesCircle": true,
+    "receipts": [
+      {
+        "phase": "source_approval",
+        "network": "arc-mainnet",
+        "hash": "0x43fa630442acabc93871a088de1fcf2709da5099eb02384e59930af5cf804db7",
+        "status": "success",
+        "block": "32614796",
+        "circleState": "COMPLETE",
+        "senderAndCalldataVerified": true
+      },
+      {
+        "phase": "source_burn",
+        "network": "arc-mainnet",
+        "hash": "0x784426a148fee8c5dcf1453363b58a6a8e954807d445914e8b59d8375b1555a2",
+        "status": "success",
+        "block": "32614848",
+        "circleState": "COMPLETE",
+        "senderAndCalldataVerified": true,
+        "burnAmountUnits": "100000",
+        "officialLocalMinter": "0xfd78EE919681417d192449715b2594ab58f5D002",
+        "walletFundingAndMinterBurnVerified": true,
+        "sourceMessageHash": "0x95c08970d5bf1d1edfbcff1570c6d7e7b834bc64bdd9d14d1a2f4d8a86c6bd31",
+        "sourceMessageMatchesAttestedTransfer": true
+      },
+      {
+        "phase": "trustline",
+        "network": "stellar-mainnet",
+        "hash": "ff06b10703ba7f0ce808362cee774f9ecc7aafe3cca3f11996ad858b30fdb1a5",
+        "status": "SUCCESS"
+      },
+      {
+        "phase": "destination_mint",
+        "network": "stellar-mainnet",
+        "hash": "649102fec2d788e93af76807b38de4dd83ad1f17f561e3eb377a80944deb7663",
+        "status": "SUCCESS",
+        "ledger": 65618069,
+        "exactMintAndForwardVerified": true,
+        "officialUsdcCreditStellarUnits": "1000000"
+      }
+    ],
+    "repeatedRefreshPreservesReceipts": true
+  },
+  "wallets": {
+    "stellarAddress": "GBGDTBOXVZ4GIDDRISY5FGXYY7XCWCCK3FRHJHSVFEZMWA3ZZ2HUALTK",
+    "stellarUsdcBalance": "0.1000000",
+    "stellarXlmBalance": "4.9750686",
+    "arcAddress": "0x34bb0101982c01fcca52b625ac032fdcff4ef86d",
+    "arcUsdcBalance": "0.279742"
+  },
+  "return": {
+    "checkedAt": "2026-11-23T15:01:30.861Z",
+    "environment": "Preview",
+    "transferId": "5748415a-f5f3-44de-8d77-79d3a7e0452f",
+    "source": "stellar-mainnet",
+    "destination": "arc-mainnet",
+    "amountUsdc": "0.10",
+    "status": "completed",
+    "sourceTxHash": "22616a5cc3f82d80fd2d9e82ca6bf0c21706764e4fb86e0106d7435b1e9ed4d6",
+    "destinationTxHash": "0x2acb634e7f04a5324ca02ce96625f22ca51751de6802e3a5000922944aeacab6",
+    "nextPhase": null,
+    "executedCircleFeeUsdc": "0",
+    "minimumReceivedUsdc": "0.1",
+    "messageHash": "0xf787e3beac13ea53e4edbf5811152b8cfd06548301df75941692aff0ea9940f9",
+    "nonce": "0x4e697f70031155ec41b48d207219b99795155fc677809328f8907a5bf07c2016",
+    "receipts": [
+      {
+        "phase": "source_approval",
+        "network": "stellar-mainnet",
+        "hash": "5138c9cd776be9bf0c4f75deaa0f503e95216ec7b1d0ce6f2e90abb8a499f35a",
+        "status": "SUCCESS",
+        "ledger": 65628803,
+        "senderAndApprovedInvocationVerified": true,
+        "persistedSignedBytesMatch": true
+      },
+      {
+        "phase": "source_burn",
+        "network": "stellar-mainnet",
+        "hash": "22616a5cc3f82d80fd2d9e82ca6bf0c21706764e4fb86e0106d7435b1e9ed4d6",
+        "status": "SUCCESS",
+        "ledger": 65628809,
+        "senderAndApprovedInvocationVerified": true,
+        "persistedSignedBytesMatch": true,
+        "officialUsdcDebitStellarUnits": "1000000",
+        "sourceMessageHash": "0x26ffdbe672af1ed5af1cf6b45402008ce8ab44104740433ecd1f8b1f83dfce51",
+        "sourceMessageMatchesAttestedTransfer": true
+      },
+      {
+        "phase": "destination_mint",
+        "network": "arc-mainnet",
+        "hash": "0x2acb634e7f04a5324ca02ce96625f22ca51751de6802e3a5000922944aeacab6",
+        "status": "success",
+        "block": "32751490",
+        "circleState": "COMPLETE",
+        "expectedTransmitterCalldataVerified": true,
+        "messageReceivedAndUsdcMintVerified": true,
+        "consumedNonceVerified": true,
+        "mintedUsdcUnits": "100000",
+        "nativeBalanceBefore": "279742564431744663",
+        "nativeBalanceAfter": "371883902245822003",
+        "actualGasNativeUnits": "7858662185922660",
+        "balanceReconcilesWithMintAndGas": true
+      }
+    ],
+    "checks": {
+      "attestationMatchesCircle": true,
+      "sourceReceiptsVerified": true,
+      "destinationReceiptVerified": true,
+      "repeatedConfirmedApprovalsCreateNoChallenge": true,
+      "unrelatedDestinationRecoveryRejected": true,
+      "verifiedDestinationRecoveryAccepted": true,
+      "repeatedRefreshPreservesReceipts": true
+    },
+    "wallets": {
+      "stellarAddress": "GBGDTBOXVZ4GIDDRISY5FGXYY7XCWCCK3FRHJHSVFEZMWA3ZZ2HUALTK",
+      "stellarUsdcBalance": "0.0000000",
+      "stellarXlmBalance": "4.9728588",
+      "arcAddress": "0x34bb0101982c01fcca52b625ac032fdcff4ef86d",
+      "arcUsdcBalance": "0.371883"
+    },
+    "financialTransactionExecutedByVerification": false,
+    "sourceBurnCompleted": true,
+    "destinationMintCompleted": true,
+    "prepared": null
+  },
+  "verification": {
+    "checkedAt": "2026-11-23T09:52:19.346Z",
+    "testedApplicationCommit": "0482f5ff3029da4863ecf36543119f675eea1691",
+    "typecheckPassed": true,
+    "lintPassed": true,
+    "optimizedBuildPassed": true,
+    "applicationTestsPassed": 274,
+    "optInTestsSkipped": 16,
+    "arcContractTestsPassed": 16,
+    "conservationFuzzCases": 256,
+    "stellarContractTestsPassed": 23,
+    "isolatedPostgresMigrationPassed": true,
+    "protectedStellarFilesUnchanged": 117,
+    "browser": {
+      "deployment": "https://chain-duel-nk9ocgjn3-cyon0xs-projects.vercel.app",
+      "pages": [
+        "/",
+        "/dashboard",
+        "/wallet",
+        "/play",
+        "/transactions",
+        "/arc/dashboard",
+        "/arc/wallet",
+        "/arc/play",
+        "/arc/profile",
+        "/arc/transactions",
+        "/arc/login",
+        "/bridge"
+      ],
+      "checks": [
+        "Persistent isolated Preview backend and preserved Stellar Testnet configuration",
+        "Verified Arc Mainnet contract configured; Preview gaming available for owner validation",
+        "CCTP availability accurate and disabled",
+        "Preview sign-in, onboarding, durable profile and Stellar wallet association",
+        "Stellar APIs reject Arc currency/network substitution",
+        "Explicit ecosystem selection routes shared dashboard consistently",
+        "Additive Arc tables and Stellar read-only network history queries work on PostgreSQL",
+        "Circle provisioning requires a verified Google/X account",
+        "Dedicated Arc Google/X clients, PKCE, callback URIs, secret exclusion and invalid-state rejection",
+        "Rendered Arc wins, losses to computer and PvP, pending settlement and spectator results correctly at 390, 768 and 1440 pixels using browser fixtures",
+        "Browser fixtures using verified receipt metadata show the completed forward transfer, all four correct explorer links and destination settlement, plus the unsigned Stellar-to-Arc allowance review and exact XLM fee at 390, 768 and 1440 pixels without authorization or overflow"
+      ],
+      "widths": [
+        390,
+        768,
+        1440
+      ],
+      "pageErrors": [],
+      "financialViewsUseFixtures": true,
+      "financialTransactionsExecuted": false
+    }
+  },
+  "latestWallets": {
+    "stellarAddress": "GBGDTBOXVZ4GIDDRISY5FGXYY7XCWCCK3FRHJHSVFEZMWA3ZZ2HUALTK",
+    "stellarUsdcBalance": "0.0000000",
+    "stellarXlmBalance": "4.9728588",
+    "arcAddress": "0x34bb0101982c01fcca52b625ac032fdcff4ef86d",
+    "arcUsdcBalance": "0.371883"
+  },
+  "followUpVerification": {
+    "checkedAt": "2026-11-23T11:02:41.469Z",
+    "baseCommit": "757021ffdaa88d05243b3d28359dec20cd58d6a0",
+    "sourceHashes": {
+      "src/components/bridge/bridge-panel.tsx": "16cbc0c93a05b97efc5c3cff50f7c88e361f6a4488ae66eec1be2cd6772654d3",
+      "tests/bridge.test.ts": "864d96955f02009eb95c0789720a373a70f46cff488fa9756c5d5dda617c1b16"
+    },
+    "applicationTestsPassed": 276,
+    "optInTestsSkipped": 16,
+    "typecheckPassed": true,
+    "lintPassed": true,
+    "optimizedBuildPassed": true,
+    "protectedStellarFilesUnchanged": 117,
+    "expiredAllowanceRetryAndTerminalBurnRegressionPassed": true,
+    "mintStageBrowserFixtures": {
+      "base": "http://127.0.0.1:4310",
+      "fixtureOnly": true,
+      "financialTransactionsExecuted": false,
+      "checks": [
+        {
+          "scenario": "ready-arc",
+          "width": 390,
+          "heading": "Ready to mint on Arc"
+        },
+        {
+          "scenario": "ready-arc",
+          "width": 768,
+          "heading": "Ready to mint on Arc"
+        },
+        {
+          "scenario": "ready-arc",
+          "width": 1440,
+          "heading": "Ready to mint on Arc"
+        },
+        {
+          "scenario": "ready-stellar",
+          "width": 390,
+          "heading": "Ready to mint on Stellar"
+        },
+        {
+          "scenario": "ready-stellar",
+          "width": 768,
+          "heading": "Ready to mint on Stellar"
+        },
+        {
+          "scenario": "ready-stellar",
+          "width": 1440,
+          "heading": "Ready to mint on Stellar"
+        },
+        {
+          "scenario": "waiting-attestation",
+          "width": 390,
+          "heading": "Attestation pending"
+        },
+        {
+          "scenario": "waiting-attestation",
+          "width": 768,
+          "heading": "Attestation pending"
+        },
+        {
+          "scenario": "waiting-attestation",
+          "width": 1440,
+          "heading": "Attestation pending"
+        },
+        {
+          "scenario": "submitted-arc",
+          "width": 390,
+          "heading": "Destination transaction pending"
+        },
+        {
+          "scenario": "submitted-arc",
+          "width": 768,
+          "heading": "Destination transaction pending"
+        },
+        {
+          "scenario": "submitted-arc",
+          "width": 1440,
+          "heading": "Destination transaction pending"
+        },
+        {
+          "scenario": "failed-mint-retry",
+          "width": 390,
+          "heading": "Ready to mint on Arc"
+        },
+        {
+          "scenario": "failed-mint-retry",
+          "width": 768,
+          "heading": "Ready to mint on Arc"
+        },
+        {
+          "scenario": "failed-mint-retry",
+          "width": 1440,
+          "heading": "Ready to mint on Arc"
+        },
+        {
+          "scenario": "completed-arc",
+          "width": 390,
+          "heading": "Completed"
+        },
+        {
+          "scenario": "completed-arc",
+          "width": 768,
+          "heading": "Completed"
+        },
+        {
+          "scenario": "completed-arc",
+          "width": 1440,
+          "heading": "Completed"
+        }
+      ],
+      "errors": []
+    }
+  },
+  "bothMainnetDirectionsVerified": true,
+  "releaseGuards": {
+    "checkedAt": "2026-11-23T15:11:32.718Z",
+    "network": "arc-mainnet",
+    "liveCircleFeeQuoteVerified": true,
+    "maximumQuotedGasReserveNativeUnits": "3627871181710450",
+    "walletUsdcBalance": "0.371883",
+    "fundedGasOnlyRequestPasses": true,
+    "fullWalletDebitRejectedWithActualFeeReserve": true,
+    "expiredMainnetCircleAuthorizationObserved": true,
+    "priorOwnerChallengesInspected": 1,
+    "bridgeExpiryRetryAndTerminalBurnRegressionPassed": true,
+    "financialChallengeCreated": false,
+    "financialTransactionExecuted": false
+  },
+  "activation": {
+    "status": "public_preview_verified_production_pending",
+    "preview": {
+      "configuredAt": "2026-11-23T15:23:46.911Z",
+      "environment": "preview",
+      "project": "chain-duel",
+      "settings": {
+        "BRIDGE_ENABLED": true,
+        "BRIDGE_E2E_VERIFIED": true,
+        "BRIDGE_SECURITY_REVIEWED": true
+      },
+      "bothMainnetDirectionsVerified": true,
+      "otherEnvironmentSettingsPreserved": true,
+      "financialTransactionExecuted": false,
+      "deploymentId": "dpl_GH9RHzTn9pi4FydMkL6KyorM4vU5",
+      "deployment": "https://chain-duel-c4q462aml-cyon0xs-projects.vercel.app",
+      "applicationCommit": "8f51cd59fe7618ba69504f96af7e04a650627be1",
+      "verification": {
+        "pages": [
+          "/",
+          "/dashboard",
+          "/wallet",
+          "/play",
+          "/transactions",
+          "/arc/dashboard",
+          "/arc/wallet",
+          "/arc/play",
+          "/arc/profile",
+          "/arc/transactions",
+          "/arc/login",
+          "/bridge"
+        ],
+        "checks": [
+          "Persistent isolated Preview backend and preserved Stellar Testnet configuration",
+          "Verified Arc Mainnet contract configured; Preview gaming available for owner validation",
+          "Public CCTP enabled after verified Mainnet round trip; owner validation cap inactive; unauthenticated financial requests rejected",
+          "Preview sign-in, onboarding, durable profile and Stellar wallet association",
+          "Stellar APIs reject Arc currency/network substitution",
+          "Explicit ecosystem selection routes shared dashboard consistently",
+          "Additive Arc tables and Stellar read-only network history queries work on PostgreSQL",
+          "Circle provisioning requires a verified Google/X account",
+          "Dedicated Arc Google/X clients, PKCE, callback URIs, secret exclusion and invalid-state rejection",
+          "All 18 mint-stage browser fixtures passed after deployment: ready Arc/Stellar, waiting attestation, submitted, failed-retry and completed at 390, 768 and 1440 pixels without authorization or overflow"
+        ],
+        "errors": []
+      }
+    },
+    "production": null
+  },
+  "releaseVerification": {
+    "checkedAt": "2026-11-23T15:38:19.803Z",
+    "focusedBridgeConfigurationRoutingTestsPassed": 42,
+    "protectedStellarFilesUnchanged": 117
+  },
+  "publicPreviewBridgeEnabled": true
+}
