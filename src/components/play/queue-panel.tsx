@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Avatar, Button, Panel } from "@/components/ui";
 import { StakePicker } from "./stake-picker";
-import { api, post, del } from "@/lib/api/client";
+import { api, postStellar, del } from "@/lib/api/client";
+import { useNetwork } from "@/components/networks/network-provider";
 import { useAsync } from "@/lib/hooks/use-async";
 import { formatXlm } from "@/lib/config/game";
 
@@ -32,6 +33,8 @@ export function QueuePanel({
   selfName: string | null;
 }) {
   const router = useRouter();
+  const { stellar } = useNetwork();
+  const symbol = stellar.asset.symbol;
   const [entry, setEntry] = useState(defaultEntry);
   const [entryValid, setEntryValid] = useState(true);
   const [demo, setDemo] = useState(false);
@@ -67,7 +70,7 @@ export function QueuePanel({
     setBusy(true);
     setError(null);
     try {
-      const snapshot = await post<QueueSnapshot>("/api/matchmaking", { entryXlm: demo ? 0 : entry, demo });
+      const snapshot = await postStellar<QueueSnapshot>("/api/matchmaking", { entryXlm: demo ? 0 : entry, demo });
       setData(snapshot);
       if (snapshot.status === "matched" && snapshot.gameId) router.push(`/match/${snapshot.gameId}`);
     } catch (caught) {
@@ -105,7 +108,7 @@ export function QueuePanel({
           <h1 className="text-display text-2xl">Searching for opponent</h1>
           <p className="numeric mt-2 text-sm text-muted">
             {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")} elapsed ·{" "}
-            {demo ? "Demo" : `${formatXlm(data?.entryStroops ?? 0)} XLM`}
+            {demo ? "Demo" : `${formatXlm(data?.entryStroops ?? 0, 7)} ${symbol}`}
           </p>
         </div>
         <p className="max-w-sm text-sm text-dim">
@@ -170,7 +173,7 @@ export function QueuePanel({
         </p>
       ) : null}
 
-      <Button size="lg" loading={busy} onClick={find} disabled={!demo && !entryValid}>
+      <Button size="lg" loading={busy} onClick={find} disabled={!demo && (!entryValid || !stellar.gamingEnabled)}>
         Find random player
       </Button>
     </Panel>

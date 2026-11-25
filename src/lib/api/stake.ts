@@ -1,5 +1,6 @@
 import { parseStakeXlm, type StakeParseOptions } from "@/lib/config/game";
 import { ChainDuelError } from "@/lib/services/errors";
+import { publicStellarConfig } from "@/lib/config/stellar";
 
 /**
  * Validates a client-supplied XLM entry and returns the exact stroop amount the
@@ -8,6 +9,6 @@ import { ChainDuelError } from "@/lib/services/errors";
  */
 export function entryStroopsOrThrow(value: unknown, opts: StakeParseOptions = {}): number {
   const parsed = parseStakeXlm(value, opts);
-  if (!parsed.ok) throw new ChainDuelError(parsed.error, "invalid_entry");
+  if (!parsed.ok) throw new ChainDuelError(parsed.error.replace(/\bXLM\b/g, publicStellarConfig().asset.symbol), "invalid_entry");
   return parsed.stroops;
 }

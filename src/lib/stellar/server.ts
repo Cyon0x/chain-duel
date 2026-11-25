@@ -16,6 +16,11 @@ import {
 } from "@stellar/stellar-sdk";
 import { contractId, stellarNetwork } from "../config/stellar";
 import { rawEnv } from "../config/env";
+import { playerControlledSigningEnabled, stellarVerificationEnabled } from "../config/stellar-verification";
+import { STELLAR_DEPLOYMENT_ADMIN, STELLAR_MAINNET_USDC_ISSUER, STELLAR_TESTNET_USDC_ISSUER, type StellarNetworkId } from "./shared";
+import { authorizationAddress, authorizeGameEntry } from "./authorization";
+import { createHash } from "node:crypto";
+import { executeStellarIntent } from "./intents";
 
 export const DEFAULT_TIMEOUT_SECONDS = 60;
 
@@ -26,16 +31,32 @@ const CONFIRM_TIMEOUT_MS = 90_000;
 /** Delay before re-broadcasting a submission that has not been seen at all. */
 const RESEND_AFTER_MS = 12_000;
 
-let cachedServer: rpc.Server | null = null;
+const cachedServers = new Map<string, rpc.Server>();
+const checkedNetworks = new Map<string, Promise<void>>();
 
-export function rpcServer(): rpc.Server {
-  if (!cachedServer) {
-    const net = stellarNetwork();
-    cachedServer = new rpc.Server(net.rpcUrl, {
+export function rpcServer(networkId?: StellarNetworkId): rpc.Server {
+  const net = stellarNetwork(networkId);
+  let server = cachedServers.get(net.rpcUrl);
+  if (!server) {
+    server = new rpc.Server(net.rpcUrl, {
       allowHttp: net.rpcUrl.startsWith("http://"),
+      timeout: 20_000,
     });
+    // SDK 17's fetch transport ignores the constructor's timeout option.
+    // Configure the HTTP client so stalled reads cannot hold settlement open.
+    server.httpClient.defaults.timeout = 20_000;
+    cachedServers.set(net.rpcUrl, server);
   }
-  return cachedServer;
+  return server;
+}
+
+async function checkRpcNetwork(networkId?: StellarNetworkId) {
+  const net = stellarNetwork(networkId);
+  if (net.id !== "mainnet") return;
+  if (!checkedNetworks.has(net.rpcUrl)) checkedNetworks.set(net.rpcUrl, rpcServer(networkId).getNetwork().then(value => {
+    if (value.passphrase !== net.networkPassphrase) throw new StellarIntegrationError("The Stellar RPC network does not match Mainnet.", "not_configured");
+  }).catch(error => { checkedNetworks.delete(net.rpcUrl); throw error; }));
+  await checkedNetworks.get(net.rpcUrl);
 }
 
 export class StellarIntegrationError extends Error {
@@ -108,7 +129,9 @@ export function settlementKeypair(): Keypair {
     );
   }
   try {
-    return Keypair.fromSecret(secret.trim());
+    const key = Keypair.fromSecret(secret.trim());
+    if ((stellarNetwork().id === "mainnet" || stellarVerificationEnabled()) && (key.publicKey() !== STELLAR_DEPLOYMENT_ADMIN || env.ADMIN_WALLET_ADDRESS !== STELLAR_DEPLOYMENT_ADMIN)) throw new Error("Wrong designated signer");
+    return key;
   } catch {
     throw new StellarIntegrationError("The settlement signing key is not a valid Stellar secret key.", "not_configured");
   }
@@ -163,8 +186,10 @@ export interface PreparedInvocation {
   contractId: string;
 }
 
-function contractCall(method: string, args: xdr.ScVal[], escrowContractId?: string) {
-  const contract = new Contract(escrowContractId ?? requireContractId());
+function contractCall(method: string, args: xdr.ScVal[], escrowContractId?: string, networkId?: StellarNetworkId) {
+  const id = escrowContractId ?? contractId(networkId);
+  if (!id) throw new StellarIntegrationError("This network's escrow is not configured.", "not_configured");
+  const contract = new Contract(id);
   return contract.call(method, ...args);
 }
 
@@ -173,19 +198,21 @@ function contractCall(method: string, args: xdr.ScVal[], escrowContractId?: stri
  * The transaction is returned unsigned (XDR) for the wallet to sign.
  */
 export async function prepareInvocation(input: {
+  networkId?: StellarNetworkId;
   escrowContractId?: string;
   publicKey: string;
   method: string;
   args: xdr.ScVal[];
 }): Promise<PreparedInvocation> {
-  const server = rpcServer();
+  await checkRpcNetwork(input.networkId);
+  const server = rpcServer(input.networkId);
   const account = await server.getAccount(input.publicKey);
-  const net = stellarNetwork();
+  const net = stellarNetwork(input.networkId);
   const transaction = new TransactionBuilder(account, {
     fee: BASE_FEE,
     networkPassphrase: net.networkPassphrase,
   })
-    .addOperation(contractCall(input.method, input.args, input.escrowContractId))
+    .addOperation(contractCall(input.method, input.args, input.escrowContractId, input.networkId))
     .setTimeout(SUBMIT_WINDOW_SECONDS)
     .build();
 
@@ -197,7 +224,17 @@ export async function prepareInvocation(input: {
       simulation,
     );
   }
-  const prepared = rpc.assembleTransaction(transaction, simulation).build();
+  let builder = rpc.assembleTransaction(transaction, simulation);
+  if ((net.id === "mainnet" || stellarVerificationEnabled(net.id)) && ["create_game", "join_game"].includes(input.method)) {
+    const target = input.escrowContractId ?? requireContractId();
+    if (target !== contractId(net.id)) throw new StellarIntegrationError("Unapproved Stellar escrow.", "not_configured");
+    const invoke = transaction.operations[0];
+    if (invoke.type !== "invokeHostFunction") throw new StellarIntegrationError("Invalid game invocation.", "simulation_failed");
+    const validUntil = await latestLedger(input.networkId) + 200;
+    const auth = await Promise.all((simulation.result?.auth ?? []).map(entry => authorizeGameEntry(entry, settlementKeypair(), target, input.method, input.args, validUntil, net.networkPassphrase)));
+    builder = builder.clearOperations().addOperation(Operation.invokeHostFunction({ source: invoke.source, func: invoke.func, auth }));
+  }
+  const prepared = builder.build();
   return {
     xdr: prepared.toXDR(),
     hash: Buffer.from(prepared.hash()).toString("hex"),
@@ -215,9 +252,9 @@ export interface SubmittedTransaction {
 
 async function pollForResult(
   hash: string,
-  options: { timeoutMs?: number; resend?: () => Promise<void> } = {},
+  options: { timeoutMs?: number; resend?: () => Promise<void>; networkId?: StellarNetworkId } = {},
 ): Promise<SubmittedTransaction> {
-  const server = rpcServer();
+  const server = rpcServer(options.networkId);
   const deadline = Date.now() + (options.timeoutMs ?? CONFIRM_TIMEOUT_MS);
   let last: rpc.Api.GetTransactionResponse | null = null;
   let lastResend = Date.now();
@@ -255,9 +292,10 @@ async function pollForResult(
   );
 }
 
-export async function submitSignedXdr(xdrBase64: string): Promise<SubmittedTransaction> {
-  const server = rpcServer();
-  const net = stellarNetwork();
+export async function submitSignedXdr(xdrBase64: string, networkId?: StellarNetworkId): Promise<SubmittedTransaction> {
+  await checkRpcNetwork(networkId);
+  const server = rpcServer(networkId);
+  const net = stellarNetwork(networkId);
   const transaction = TransactionBuilder.fromXDR(xdrBase64, net.networkPassphrase) as
     | Transaction
     | FeeBumpTransaction;
@@ -275,7 +313,7 @@ export async function submitSignedXdr(xdrBase64: string): Promise<SubmittedTrans
       sent,
     );
   }
-  return pollForResult(sent.hash, { resend });
+  return pollForResult(sent.hash, { resend, networkId });
 }
 
 /**
@@ -284,20 +322,25 @@ export async function submitSignedXdr(xdrBase64: string): Promise<SubmittedTrans
  * simulation supplies the authorisation entries, `authorizeEntry` signs them,
  * and the operation is rebuilt before a signed submission.
  */
-export async function invokeWithKeypair(input: {
+interface KeypairInvocation {
+  networkId?: StellarNetworkId;
+  intentId?: string;
   escrowContractId?: string;
   keypair: Keypair;
   method: string;
   args: xdr.ScVal[];
-}): Promise<SubmittedTransaction> {
-  const server = rpcServer();
-  const net = stellarNetwork();
+}
+
+async function prepareKeypairInvocation(input: KeypairInvocation): Promise<string> {
+  await checkRpcNetwork(input.networkId);
+  const server = rpcServer(input.networkId);
+  const net = stellarNetwork(input.networkId);
   const account = await server.getAccount(input.keypair.publicKey());
   const transaction = new TransactionBuilder(account, {
     fee: BASE_FEE,
     networkPassphrase: net.networkPassphrase,
   })
-    .addOperation(contractCall(input.method, input.args, input.escrowContractId))
+    .addOperation(contractCall(input.method, input.args, input.escrowContractId, input.networkId))
     .setTimeout(SUBMIT_WINDOW_SECONDS)
     .build();
 
@@ -318,11 +361,18 @@ export async function invokeWithKeypair(input: {
     );
   }
 
-  const validUntil = (await latestLedger()) + 200;
+  const validUntil = (await latestLedger(input.networkId)) + 200;
   const auth = await Promise.all(
-    (simulation.result?.auth ?? []).map((entry) =>
-      authorizeEntry(entry, input.keypair, validUntil, net.networkPassphrase),
-    ),
+    (simulation.result?.auth ?? []).map(async entry => {
+      const address = authorizationAddress(entry);
+      if (net.id === "mainnet" && address === STELLAR_DEPLOYMENT_ADMIN && address !== input.keypair.publicKey()) {
+        const target = input.escrowContractId ?? requireContractId();
+        if (target !== contractId("mainnet")) throw new StellarIntegrationError("Unapproved Mainnet escrow.", "not_configured");
+        return authorizeGameEntry(entry, settlementKeypair(), target, input.method, input.args, validUntil, net.networkPassphrase);
+      }
+      if (address && address !== input.keypair.publicKey()) throw new StellarIntegrationError("Unexpected transaction authority.", "simulation_failed");
+      return authorizeEntry(entry, input.keypair, validUntil, net.networkPassphrase, address ?? undefined);
+    }),
   );
 
   const assembled = rpc
@@ -339,17 +389,51 @@ export async function invokeWithKeypair(input: {
 
   const built = refreshTimebounds(assembled);
   built.sign(input.keypair);
-  return submitSignedXdr(built.toXDR());
+  return built.toXDR();
+}
+
+export async function transactionReceipt(hash: string, networkId?: StellarNetworkId): Promise<SubmittedTransaction | "FAILED" | null> {
+  const result = await rpcServer(networkId).getTransaction(hash);
+  if (result.status === "FAILED") return "FAILED";
+  if (result.status !== "SUCCESS") {
+    const history = await fetch(`${stellarNetwork(networkId).horizonUrl}/transactions/${hash}`, { cache: "no-store", signal: AbortSignal.timeout(15000) });
+    if (history.status === 404) return null;
+    if (!history.ok) throw new StellarIntegrationError("The saved transaction receipt is temporarily unavailable.", "submit_failed");
+    const receipt = await history.json() as { hash: string; successful: boolean; ledger: number };
+    if (receipt.hash !== hash) throw new StellarIntegrationError("The saved transaction receipt does not match its hash.", "failed_on_chain");
+    return receipt.successful ? { hash, ledger: receipt.ledger, returnValue: null, status: "SUCCESS" } : "FAILED";
+  }
+  return { hash: result.txHash, ledger: result.ledger, returnValue: decodeResult(result.returnValue), status: "SUCCESS" };
+}
+
+export async function invokeWithKeypair(input: KeypairInvocation): Promise<SubmittedTransaction> {
+  if (playerControlledSigningEnabled() && input.keypair.publicKey() !== STELLAR_DEPLOYMENT_ADMIN) throw new StellarIntegrationError("The backend cannot sign with player wallet keys.", "invalid_input");
+  const net = stellarNetwork(input.networkId);
+  if (net.id !== "mainnet" && !stellarVerificationEnabled(net.id)) return submitSignedXdr(await prepareKeypairInvocation(input), input.networkId);
+  const target = input.escrowContractId ?? requireContractId();
+  const argsHash = createHash("sha256").update(input.args.map(arg => Buffer.from(arg.toXdr()).toString("hex")).join(":" )).digest("hex");
+  const id = input.intentId ?? createHash("sha256").update(`${net.id}:${input.keypair.publicKey()}:${target}:${input.method}:${argsHash}`).digest("hex");
+  return executeStellarIntent({
+    id, networkId: net.id, address: input.keypair.publicKey(), contractId: target, method: input.method, argsHash,
+    prepare: () => prepareKeypairInvocation(input), submit: signed => submitSignedXdr(signed, net.id),
+    receipt: hash => transactionReceipt(hash, net.id),
+  });
 }
 
 export async function invokeWithServerKey(input: {
+  networkId?: StellarNetworkId;
+  intentId?: string;
   escrowContractId?: string;
   method: string;
   args: xdr.ScVal[];
   signer?: Keypair;
 }): Promise<SubmittedTransaction> {
+  const keypair = input.signer ?? settlementKeypair();
+  if (stellarNetwork(input.networkId).id === "mainnet" && keypair.publicKey() !== STELLAR_DEPLOYMENT_ADMIN) throw new StellarIntegrationError("Wrong Mainnet administrator.", "not_configured");
   return invokeWithKeypair({
-    keypair: input.signer ?? settlementKeypair(),
+    networkId: input.networkId,
+    intentId: input.intentId,
+    keypair,
     method: input.method,
     args: input.args,
     escrowContractId: input.escrowContractId,
@@ -358,10 +442,11 @@ export async function invokeWithServerKey(input: {
 
 // ------------------------------------------------------------------- reads
 
-export async function readContractState(method: string, args: xdr.ScVal[] = [], escrowContractId?: string): Promise<unknown> {
+export async function readContractState(method: string, args: xdr.ScVal[] = [], escrowContractId?: string, networkId?: StellarNetworkId): Promise<unknown> {
   const contract = new Contract(escrowContractId ?? requireContractId());
-  const server = rpcServer();
-  const net = stellarNetwork();
+  await checkRpcNetwork(networkId);
+  const server = rpcServer(networkId);
+  const net = stellarNetwork(networkId);
   const source = settlementPublicKey() ?? rawEnv().ADMIN_WALLET_ADDRESS ?? null;
   if (!source) {
     throw new StellarIntegrationError(
@@ -393,6 +478,8 @@ export interface AccountBalance {
   address: string;
   xlm: string;
   exists: boolean;
+  usdc?: string;
+  usdcTrustline?: boolean;
 }
 
 export async function getAccountBalance(address: string): Promise<AccountBalance> {
@@ -411,10 +498,11 @@ export async function getAccountBalance(address: string): Promise<AccountBalance
     );
   }
   const payload = (await response.json()) as {
-    balances?: Array<{ asset_type: string; balance: string }>;
+    balances?: Array<{ asset_type: string; balance: string; asset_code?: string; asset_issuer?: string }>;
   };
   const native = payload.balances?.find((entry) => entry.asset_type === "native");
-  return { address, xlm: native?.balance ?? "0", exists: true };
+  const usdc = payload.balances?.find(entry => entry.asset_code === "USDC" && entry.asset_issuer === (net.id === "mainnet" ? STELLAR_MAINNET_USDC_ISSUER : STELLAR_TESTNET_USDC_ISSUER));
+  return { address, xlm: native?.balance ?? "0", exists: true, usdc: usdc?.balance ?? "0", usdcTrustline: Boolean(usdc) };
 }
 
 export async function fundWithFriendbot(address: string): Promise<boolean> {
@@ -426,11 +514,11 @@ export async function fundWithFriendbot(address: string): Promise<boolean> {
   return response.ok;
 }
 
-export async function latestLedger(): Promise<number> {
+export async function latestLedger(networkId?: StellarNetworkId): Promise<number> {
   // We need only the sequence for expiry/auth. SDK 17.2 eagerly decodes the
   // entire ledger header, whose new Testnet SCP extension is not supported by
   // its XDR schema. The RPC's numeric sequence is independent of that header.
-  const response = await fetch(stellarNetwork().rpcUrl, {
+  const response = await fetch(stellarNetwork(networkId).rpcUrl, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: "chain-duel-ledger", method: "getLatestLedger" }),

@@ -1,3 +1,5 @@
+import type { StellarFinancialContext } from "../stellar/shared";
+
 export type SqlDialect = "sqlite" | "postgres";
 
 export interface SqlDriver {
@@ -30,7 +32,7 @@ export interface UserRow {
   last_seen_at: string | null;
 }
 
-export interface ProfileRow {
+export interface ProfileRow extends StellarFinancialContext {
   user_id: string;
   username: string;
   username_lower: string;
@@ -95,7 +97,9 @@ export type GameStatus =
 export type SettlementStatus = "pending" | "submitted" | "confirmed" | "failed";
 export type EscrowState = "none" | "offchain" | "onchain" | "settled" | "refunded";
 
-export interface GameRow {
+export interface GameRow extends StellarFinancialContext {
+  seed_chain_verified?: number;
+  input_deadline_ms?: number | null;
   id: string;
   code: string;
   game_type: string;
@@ -110,6 +114,10 @@ export interface GameRow {
   fee_bps: number;
   payout_stroops: number;
   fee_stroops: number;
+  protocol_fee_stroops?: number;
+  ecosystem_fee_stroops?: number;
+  start_tx_hash?: string | null;
+  settlement_started_at?: string | null;
   player_one_score: number;
   player_two_score: number;
   seed: string;
@@ -156,7 +164,7 @@ export interface GameEventRow {
   created_at: string;
 }
 
-export interface InviteRow {
+export interface InviteRow extends StellarFinancialContext {
   id: string;
   code: string;
   game_id: string;
@@ -171,7 +179,7 @@ export interface InviteRow {
   accepted_by: string | null;
 }
 
-export interface QueueRow {
+export interface QueueRow extends StellarFinancialContext {
   id: string;
   user_id: string;
   game_type: string;
@@ -184,7 +192,7 @@ export interface QueueRow {
   expires_at: string;
 }
 
-export interface MatchRow {
+export interface MatchRow extends StellarFinancialContext {
   id: string;
   game_id: string;
   user_id: string;
@@ -230,7 +238,7 @@ export interface AchievementRow {
   unlocked_at: string | null;
 }
 
-export interface BotMatchRow {
+export interface BotMatchRow extends StellarFinancialContext {
   game_id: string;
   player_id: string;
   bot_id: string;
@@ -249,6 +257,7 @@ export interface BotMatchRow {
 export type TransactionKind =
   | "deposit"
   | "transfer"
+  | "trustline"
   | "entry"
   | "payout"
   | "refund"
@@ -266,13 +275,16 @@ export type TransactionStatus =
   | "confirmed"
   | "failed";
 
-export interface TransactionRow {
+export interface TransactionRow extends StellarFinancialContext {
   id: string;
   user_id: string | null;
   game_id: string | null;
   kind: TransactionKind;
   direction: "in" | "out";
   amount_stroops: number;
+  allocation?: "protocol" | "ecosystem" | null;
+  fee_amount_stroops?: number;
+  prepared_hash?: string | null;
   status: TransactionStatus;
   tx_hash: string | null;
   ledger: number | null;
@@ -286,7 +298,7 @@ export interface TransactionRow {
   confirmed_at: string | null;
 }
 
-export interface TreasuryTransactionRow {
+export interface TreasuryTransactionRow extends StellarFinancialContext {
   id: string;
   kind: string;
   direction: "in" | "out";

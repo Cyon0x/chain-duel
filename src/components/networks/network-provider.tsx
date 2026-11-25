@@ -3,10 +3,13 @@ import { createContext, useContext, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import type { publicArcConfig } from "@/lib/arc/config";
 import { useSession } from "../providers";
+import type { StellarPublicConfig } from "@/lib/stellar/shared";
+import { configureStellarWallet } from "@/lib/wallet/public-config";
 export type ArcPublicConfig = ReturnType<typeof publicArcConfig>;
 interface NetworkContextValue {
   selected: "stellar" | "arc";
   stellarLabel: string;
+  stellar: StellarPublicConfig;
   arc: ArcPublicConfig;
   socialAccount: boolean;
 }
@@ -21,6 +24,7 @@ export function NetworkProvider({
   const path = usePathname();
   const session = useSession();
   const started = useRef<string | null>(null);
+  useEffect(() => { configureStellarWallet(value.stellar); }, [value.stellar]);
   useEffect(() => {
     if (
       !session.userId ||

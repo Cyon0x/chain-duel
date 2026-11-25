@@ -1,0 +1,31 @@
+{
+  "artifact": "9459f853992e8d59d9c2e74f404f6556205f515d09681c711f7200827b64c59f",
+  "artifactBytes": 39385,
+  "measurement": "Soroban SDK 28 compiled-WASM invocation metering",
+  "sdkLimits": { "cpuInstructions": 400000000, "memoryBytes": 41943040 },
+  "escrow": [
+    { "case": "create", "cpuInstructions": 3009215, "memoryBytes": 1772526, "sdkFeeEstimateUnits": 48456188 },
+    { "case": "join", "cpuInstructions": 2673965, "memoryBytes": 1757507, "sdkFeeEstimateUnits": 2949996 },
+    { "case": "start", "cpuInstructions": 1275773, "memoryBytes": 1633188, "sdkFeeEstimateUnits": 7878 },
+    { "case": "4000 inputs", "cpuInstructions": 18702853, "memoryBytes": 1642161, "sdkFeeEstimateUnits": 20429 },
+    { "case": "empty inputs", "cpuInstructions": 8090721, "memoryBytes": 1642161, "sdkFeeEstimateUnits": 13000 },
+    { "case": "PvP settlement", "cpuInstructions": 1800312, "memoryBytes": 1732425, "sdkFeeEstimateUnits": 627940 },
+    { "case": "realistic perfect inputs", "cpuInstructions": 8842790, "memoryBytes": 1641755, "sdkFeeEstimateUnits": 13493 },
+    { "case": "VEX-7 settlement", "cpuInstructions": 12128968, "memoryBytes": 1733107, "sdkFeeEstimateUnits": 635137 }
+  ],
+  "probe": {
+    "artifact": "0fab5df9e58a106d29ec71d533560c63e3f95360de93f2739bb6339bef19442c",
+    "artifactBytes": 10488,
+    "cases": [
+      { "durationMs": 60000, "events": 0, "cpuInstructions": 11752528, "memoryBytes": 1246151, "sdkFeeEstimateUnits": 8218 },
+      { "durationMs": 60000, "events": 4000, "cpuInstructions": 22683528, "memoryBytes": 1246151, "sdkFeeEstimateUnits": 15870 },
+      { "durationMs": 300000, "events": 4000, "cpuInstructions": 63120341, "memoryBytes": 1252235, "sdkFeeEstimateUnits": 44175 }
+    ]
+  },
+  "notes": [
+    "Production remains 60000ms; longer probes are stress tests only.",
+    "SDK budgets do not replace live network configuration or full transaction simulation.",
+    "Fee estimates use SDK modeled invocation/storage costs; live RPC/Horizon receipts are in testnet-evidence.json.",
+    "Maximum transcript size is 24000 bytes before its transaction envelope. Testnet accepted the real 4000-event transaction."
+  ]
+}

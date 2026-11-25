@@ -2,6 +2,7 @@ import { fail, ok, readJson } from "@/lib/api/respond";
 import { requireSessionUser } from "@/lib/auth/session";
 import { submitResult } from "@/lib/services/match";
 import type { HitRecord, MissRecord } from "@/lib/game/pulse";
+import type { SignedPulseInputs } from "@/lib/stellar/pulse-codec";
 
 export const dynamic = "force-dynamic";
 
@@ -15,10 +16,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       misses?: MissRecord[];
       clientScore?: number;
       clientDurationMs?: number;
+      signedInputs?: SignedPulseInputs;
+      verifiedReceiptHash?: string;
     }>(request);
     const result = await submitResult({
       gameId: id,
       userId: session.user.id,
+      signedInputs: body.signedInputs,
+      verifiedReceiptHash: body.verifiedReceiptHash,
       payload: {
         seat: Number(body.seat ?? 0),
         hits: Array.isArray(body.hits) ? body.hits : [],

@@ -8,6 +8,7 @@ import { sound } from "@/lib/sound/audio";
 import type { SubmitResponse } from "@/lib/api/views";
 import { formatXlm } from "@/lib/config/game";
 import { Icon } from "@/components/icons";
+import { financialSymbol, type StellarFinancialContext } from "@/lib/stellar/shared";
 import { ArenaOrbits, TargetLegend } from "./target-legend";
 
 interface HitRecordLocal {
@@ -34,8 +35,8 @@ export interface ArenaProps {
 }
 
 export interface ArenaView {
-  game: { id: string; mode: string; duration_ms: number; demo?: number; entry_stroops?: number };
-  players: { user_id: string | null; seat: number; username: string }[];
+  game: { id: string; mode: string; duration_ms: number; demo?: number; entry_stroops?: number; contract_game_id?: string | null } & StellarFinancialContext;
+  players: { user_id: string | null; seat: number; username: string; address?: string | null }[];
   schedule: TargetSpec[];
   botScore: number | null;
   liveScores: Record<string, number>;
@@ -145,6 +146,13 @@ export function PulseArena({ view, selfUserId, onFinished, apiBase = "/api/match
     setPhase("submitting");
     const snapshot = session.snapshot();
     try {
+      let verifiedReceiptHash: string | undefined;
+      if (view.game.verification_version === 1 && !view.game.demo && apiBase === "/api/matches") {
+        if (!self?.address || view.game.entry_stroops === undefined || !view.game.contract_game_id) throw new Error("The verified player's escrow context is missing.");
+        const game = { ...view.game, entry_stroops: view.game.entry_stroops, contract_game_id: view.game.contract_game_id };
+        const direct = await (await import("@/lib/wallet/verified-pulse")).submitDirectPulseInputs(game, self.address, hitsRef.current, missesRef.current.map(atMs => ({ atMs })));
+        verifiedReceiptHash = direct.hash;
+      }
       const response = await fetch(`${apiBase}/${view.game.id}/submit`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -154,6 +162,7 @@ export function PulseArena({ view, selfUserId, onFinished, apiBase = "/api/match
           misses: missesRef.current.map((atMs) => ({ atMs })),
           clientScore: snapshot.score,
           clientDurationMs: durationMs,
+          ...(verifiedReceiptHash ? { verifiedReceiptHash } : {}),
         }),
       });
       const payload = (await response.json()) as SubmitResponse & { error?: string };
@@ -174,7 +183,7 @@ export function PulseArena({ view, selfUserId, onFinished, apiBase = "/api/match
         submittedRef.current = false;
       }, 1_500);
     }
-  }, [addMark, apiBase, durationMs, onFinished, play, session, self?.seat, view.game.id]);
+  }, [addMark, apiBase, durationMs, onFinished, play, session, self?.address, self?.seat, view.game]);
 
   /* ------------------------------------------------------------------ game loop */
   useEffect(() => {
@@ -351,7 +360,7 @@ export function PulseArena({ view, selfUserId, onFinished, apiBase = "/api/match
 
       <div className="pulse-meta">
         <span><Icon name="gamepad" size={15} />Pulse Duel{view.game.mode === "bot" ? " · vs computer" : " · 1v1"}</span>
-        <span>{entryLabel ?? (view.game.demo ? "Demo · no stake" : view.game.entry_stroops === undefined ? "" : `${formatXlm(view.game.entry_stroops)} XLM entry · ${formatXlm(view.game.entry_stroops * 2)} XLM pool`)}</span>
+        <span>{entryLabel ?? (view.game.demo ? "Demo · no stake" : view.game.entry_stroops === undefined ? "" : `${formatXlm(view.game.entry_stroops, 7)} ${financialSymbol(view.game)} entry · ${formatXlm(view.game.entry_stroops * 2, 7)} ${financialSymbol(view.game)} pool`)}</span>
       </div>
 
       <div
@@ -427,7 +436,7 @@ export function PulseArena({ view, selfUserId, onFinished, apiBase = "/api/match
           <div className="absolute inset-0 z-30 grid place-items-center bg-bg/70 backdrop-blur-sm">
             <div className="text-center">
               <p className="eyebrow">Verifying result</p>
-              <p className="mt-2 text-sm text-muted">Replaying your event log on the server…</p>
+              <p className="mt-2 text-sm text-muted">{view.game.verification_version === 1 ? "Verifying your authorized inputs and payout on Stellar…" : "Replaying your event log on the server…"}</p>
             </div>
           </div>
         ) : null}

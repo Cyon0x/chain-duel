@@ -114,11 +114,16 @@ export function BridgePanel({ availability: initialAvailability }: { availabilit
   }
   async function approve() {
     if (!view || !prepared) return;
-    const result = await request<Parameters<typeof executeCircle>[0]>({
+    let result = await request<Parameters<typeof executeCircle>[0] & { stellarWalletSignature?: { xdr: string; address: string; networkPassphrase: string } }>({
       action: "approve",
       id: view.transfer.id,
       stepId: prepared.stepId,
     });
+    if (result.stellarWalletSignature) {
+      const handoff = result.stellarWalletSignature;
+      const signedXdr = await (await import("@/lib/wallet/client")).signTransactionXdr(handoff.xdr, handoff.address, handoff.networkPassphrase);
+      result = await request<Parameters<typeof executeCircle>[0]>({ action: "approve", id: view.transfer.id, stepId: prepared.stepId, signedXdr });
+    }
     await executeCircle(result);
     setPrepared(null);
     setView(await request<View>({ action: "refresh", id: view.transfer.id }));
@@ -247,7 +252,7 @@ export function BridgePanel({ availability: initialAvailability }: { availabilit
           </p>
           {availability.stellarGamingNetwork !== availability.stellarNetwork ? (
             <p>
-              Your XLM games continue on {availability.stellarGamingNetwork}. Stellar USDC transfers use{" "}
+              Your {availability.stellarGamingAsset ?? "XLM"} games use {availability.stellarGamingNetwork}. Stellar USDC transfers use{" "}
               {availability.stellarNetwork}.
             </p>
           ) : null}

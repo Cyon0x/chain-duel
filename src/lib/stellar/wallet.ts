@@ -2,6 +2,7 @@ import "server-only";
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { Keypair } from "@stellar/stellar-sdk";
 import { requireSecret } from "../config/env";
+import { playerControlledSigningEnabled } from "../config/stellar-verification";
 
 /**
  * Managed (embedded) wallet custody for social sign-in.
@@ -15,6 +16,7 @@ import { requireSecret } from "../config/env";
  */
 
 function encryptionKey(): Buffer {
+  if (playerControlledSigningEnabled()) throw new Error("The player-controlled backend cannot access legacy wallet encryption or signing keys.");
   const secret = requireSecret("WALLET_ENCRYPTION_KEY");
   return createHash("sha256").update(secret).digest();
 }
@@ -56,6 +58,7 @@ export interface ManagedWalletMaterial {
 }
 
 export function generateManagedWallet(): ManagedWalletMaterial {
+  if (playerControlledSigningEnabled()) throw new Error("Player wallets must be generated under the player's control.");
   const keypair = Keypair.random();
   return { publicKey: keypair.publicKey(), sealed: sealSecret(keypair.secret()) };
 }

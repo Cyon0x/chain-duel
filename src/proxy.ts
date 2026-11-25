@@ -37,11 +37,11 @@ export async function proxy(request: NextRequest) {
           "futurenet",
           "local",
         ].includes(network)) ||
-      (body.currency !== undefined && body.currency !== "XLM")
+      (body.currency !== undefined && body.currency !== "XLM" && !(body.currency === "USDC" && ["stellar-mainnet", "stellar-testnet"].includes(String(network))))
     )
       return NextResponse.json(
         {
-          error: "Use the API for the selected network. Stellar actions require XLM.",
+          error: "Use the Stellar API with the selected network and asset.",
           code: "network_mismatch",
         },
         { status: 409 },

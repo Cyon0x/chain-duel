@@ -25,6 +25,8 @@ import {
   verifyStellarMintReference,
 } from "./stellar";
 import type { BridgeRow, BridgeStep, BridgePhase } from "./types";
+import { playerControlledSigningEnabled } from "../config/stellar-verification";
+import { Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
 
 const now = () => new Date().toISOString();
 function requireBridge(userId: string, amount?: bigint) {
@@ -512,7 +514,7 @@ function publicPrepared(step: BridgeStep) {
     gasDecimals: step.gas_decimals,
   };
 }
-export async function authorizeBridgeStep(userId: string, id: string, stepId: string) {
+export async function authorizeBridgeStep(userId: string, id: string, stepId: string, playerSignedXdr?: string) {
   requireBridge(userId);
   const transfer = await loadBridge(userId, id);
   requireBridge(userId, BigInt(transfer.amount_units));
@@ -588,7 +590,19 @@ export async function authorizeBridgeStep(userId: string, id: string, stepId: st
     let hash = step.tx_hash;
     if (!signed) {
       if (!step.unsigned_xdr) throw new Error("Missing prepared Stellar transaction.");
-      const payload = await signStellarBridgePayload(userId, step.unsigned_xdr);
+      if (playerControlledSigningEnabled() && !playerSignedXdr) {
+        const wallet = await bridgeStellarWallet(userId);
+        return { credentials: null, challengeId: null, appId: null, stellarWalletSignature: { xdr: step.unsigned_xdr, address: wallet.address, networkPassphrase: stellarBridgeNetwork().passphrase } };
+      }
+      let payload: { xdr: string; hash: string };
+      if (playerControlledSigningEnabled()) {
+        const passphrase = stellarBridgeNetwork().passphrase;
+        const prepared = TransactionBuilder.fromXDR(step.unsigned_xdr, passphrase);
+        const authorized = TransactionBuilder.fromXDR(playerSignedXdr!, passphrase);
+        const wallet = await bridgeStellarWallet(userId);
+        if (!(authorized instanceof Transaction) || authorized.source !== wallet.address || Buffer.from(authorized.hash()).toString("hex") !== Buffer.from(prepared.hash()).toString("hex")) throw new ChainDuelError("The signed Stellar bridge step differs from the reviewed transfer.", "bridge_signature_mismatch", 422);
+        payload = { xdr: playerSignedXdr!, hash: Buffer.from(authorized.hash()).toString("hex") };
+      } else payload = await signStellarBridgePayload(userId, step.unsigned_xdr);
       signed = payload.xdr;
       hash = payload.hash;
       // Persist the exact signed bytes and hash BEFORE sending. Retries always retransmit these bytes.

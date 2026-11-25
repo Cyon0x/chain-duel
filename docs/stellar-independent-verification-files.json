@@ -1,0 +1,669 @@
+{
+  "branch": "feat/stellar-independent-verification",
+  "files": [
+    {
+      "path": ".env.example",
+      "purpose": "Document and run the guarded Stellar network, verification and deployment configuration."
+    },
+    {
+      "path": "AGENTS.md",
+      "purpose": "Preserve generated Next.js version-specific agent rules."
+    },
+    {
+      "path": "contracts/chain_duel_mainnet/Cargo.lock",
+      "purpose": "Implement independently verified game inputs, settlement, fixed fee allocations and exclusive bounded administrator controls."
+    },
+    {
+      "path": "contracts/chain_duel_mainnet/Cargo.toml",
+      "purpose": "Implement independently verified game inputs, settlement, fixed fee allocations and exclusive bounded administrator controls."
+    },
+    {
+      "path": "contracts/chain_duel_mainnet/rust-toolchain.toml",
+      "purpose": "Implement independently verified game inputs, settlement, fixed fee allocations and exclusive bounded administrator controls."
+    },
+    {
+      "path": "contracts/chain_duel_mainnet/src/lib.rs",
+      "purpose": "Implement independently verified game inputs, settlement, fixed fee allocations and exclusive bounded administrator controls."
+    },
+    {
+      "path": "contracts/chain_duel_mainnet/src/test.rs",
+      "purpose": "Implement independently verified game inputs, settlement, fixed fee allocations and exclusive bounded administrator controls."
+    },
+    {
+      "path": "contracts/chain_duel_mainnet/src/verification.rs",
+      "purpose": "Implement independently verified game inputs, settlement, fixed fee allocations and exclusive bounded administrator controls."
+    },
+    {
+      "path": "contracts/pulse_replay/Cargo.lock",
+      "purpose": "Deterministically reconstruct unchanged Pulse/IEEE-754/RNG/VEX-7 rules and validate replay resources/parity."
+    },
+    {
+      "path": "contracts/pulse_replay/Cargo.toml",
+      "purpose": "Deterministically reconstruct unchanged Pulse/IEEE-754/RNG/VEX-7 rules and validate replay resources/parity."
+    },
+    {
+      "path": "contracts/pulse_replay/rust-toolchain.toml",
+      "purpose": "Deterministically reconstruct unchanged Pulse/IEEE-754/RNG/VEX-7 rules and validate replay resources/parity."
+    },
+    {
+      "path": "contracts/pulse_replay/src/lib.rs",
+      "purpose": "Deterministically reconstruct unchanged Pulse/IEEE-754/RNG/VEX-7 rules and validate replay resources/parity."
+    },
+    {
+      "path": "contracts/pulse_replay/src/test.rs",
+      "purpose": "Deterministically reconstruct unchanged Pulse/IEEE-754/RNG/VEX-7 rules and validate replay resources/parity."
+    },
+    {
+      "path": "contracts/pulse_replay/test-vectors.json",
+      "purpose": "Deterministically reconstruct unchanged Pulse/IEEE-754/RNG/VEX-7 rules and validate replay resources/parity."
+    },
+    {
+      "path": "contracts/pulse_replay/test_snapshots/test/compiled_wasm_resource_probe.1.json",
+      "purpose": "Deterministically reconstruct unchanged Pulse/IEEE-754/RNG/VEX-7 rules and validate replay resources/parity."
+    },
+    {
+      "path": "docs/stellar-independent-verification-files.json",
+      "purpose": "List every implementation/evidence path with its review purpose."
+    },
+    {
+      "path": "docs/stellar-independent-verification-review.md",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "docs/stellar-mainnet-deployments/README.md",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "docs/stellar-mainnet-deployments/db-before.json",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "docs/stellar-mainnet-deployments/preflight-latest.json",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "docs/stellar-mainnet-deployments/preflight.json",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "docs/stellar-mainnet-deployments/prepared-mainnet.json",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "docs/stellar-mainnet-deployments/preview-db-before.json",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "docs/stellar-mainnet-deployments/production-association-check.json",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "docs/stellar-mainnet-migration-checklist.md",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "docs/stellar-mainnet-security-review.md",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "docs/stellar-player-controlled-signing.md",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "docs/stellar-verified-deployments/browser-evidence.json",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "docs/stellar-verified-deployments/browser/wallet-390.png",
+      "purpose": "Preserve public Testnet browser evidence of the verified result or responsive wallet."
+    },
+    {
+      "path": "docs/stellar-verified-deployments/browser/winner-result.png",
+      "purpose": "Preserve public Testnet browser evidence of the verified result or responsive wallet."
+    },
+    {
+      "path": "docs/stellar-verified-deployments/legacy-score-audit.rs.txt",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "docs/stellar-verified-deployments/preview-configuration.json",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "docs/stellar-verified-deployments/production-associations-after.json",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "docs/stellar-verified-deployments/resource-evidence.json",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "docs/stellar-verified-deployments/testnet-evidence.json",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "docs/stellar-verified-security-report.md",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "docs/stellar-verified-settlement-architecture.md",
+      "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
+    },
+    {
+      "path": "package.json",
+      "purpose": "Document and run the guarded Stellar network, verification and deployment configuration."
+    },
+    {
+      "path": "scripts/stellar-build.mjs",
+      "purpose": "Build, prepare, inspect or test controlled Stellar deployments; keep Mainnet signing/cutover gated."
+    },
+    {
+      "path": "scripts/stellar-mainnet-db-audit.mjs",
+      "purpose": "Build, prepare, inspect or test controlled Stellar deployments; keep Mainnet signing/cutover gated."
+    },
+    {
+      "path": "scripts/stellar-mainnet-deploy.mjs",
+      "purpose": "Build, prepare, inspect or test controlled Stellar deployments; keep Mainnet signing/cutover gated."
+    },
+    {
+      "path": "scripts/stellar-mainnet-deployment.mjs",
+      "purpose": "Build, prepare, inspect or test controlled Stellar deployments; keep Mainnet signing/cutover gated."
+    },
+    {
+      "path": "scripts/stellar-mainnet-deployment.test.mjs",
+      "purpose": "Build, prepare, inspect or test controlled Stellar deployments; keep Mainnet signing/cutover gated."
+    },
+    {
+      "path": "scripts/stellar-mainnet-postgres-test.mjs",
+      "purpose": "Build, prepare, inspect or test controlled Stellar deployments; keep Mainnet signing/cutover gated."
+    },
+    {
+      "path": "scripts/stellar-mainnet-preflight.mjs",
+      "purpose": "Build, prepare, inspect or test controlled Stellar deployments; keep Mainnet signing/cutover gated."
+    },
+    {
+      "path": "scripts/stellar-pulse-vectors.mjs",
+      "purpose": "Build, prepare, inspect or test controlled Stellar deployments; keep Mainnet signing/cutover gated."
+    },
+    {
+      "path": "scripts/stellar-verified-browser-qa.mjs",
+      "purpose": "Build, prepare, inspect or test controlled Stellar deployments; keep Mainnet signing/cutover gated."
+    },
+    {
+      "path": "scripts/stellar-verified-preview.mjs",
+      "purpose": "Build, prepare, inspect or test controlled Stellar deployments; keep Mainnet signing/cutover gated."
+    },
+    {
+      "path": "scripts/stellar-verified-testnet.mjs",
+      "purpose": "Build, prepare, inspect or test controlled Stellar deployments; keep Mainnet signing/cutover gated."
+    },
+    {
+      "path": "src/app/api/bot/route.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/app/api/bridge/route.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/app/api/duels/[id]/entry/route.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/app/api/duels/join/route.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/app/api/duels/route.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/app/api/invites/[id]/route.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/app/api/matches/[id]/submit/route.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/app/api/matchmaking/route.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/app/api/networks/history/route.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/app/api/networks/route.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/app/api/treasury/withdraw/route.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/app/api/wallet/recover/route.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/app/api/wallet/send/route.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/app/api/wallet/trustline/route.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/app/api/wallet/vault/migration-plan/route.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/app/api/wallet/vault/route.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/app/dashboard/page.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/app/duel/[code]/page.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/app/how-to-play/page.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/app/layout.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/app/page.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/app/play/page.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/app/players/[username]/page.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/app/profile/page.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/app/rules/page.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/app/terms/page.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/app/transactions/page.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/app/wallet/page.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/components/admin/treasury-panel.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/components/auth/sign-in-panel.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/components/bridge/bridge-panel.tsx",
+      "purpose": "Preserve Stellar bridge behavior with client-controlled signing and explicit Stellar network context."
+    },
+    {
+      "path": "src/components/game/arena.tsx",
+      "purpose": "Sign legal gameplay inputs, read the pinned game independently and display verified outcomes/fee allocations."
+    },
+    {
+      "path": "src/components/game/match-stage.tsx",
+      "purpose": "Sign legal gameplay inputs, read the pinned game independently and display verified outcomes/fee allocations."
+    },
+    {
+      "path": "src/components/game/result.tsx",
+      "purpose": "Sign legal gameplay inputs, read the pinned game independently and display verified outcomes/fee allocations."
+    },
+    {
+      "path": "src/components/invite-inbox.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/components/landing/activity.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/components/lists.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/components/networks/network-provider.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/components/play/challenge-section.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/components/play/computer-panel.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/components/play/create-duel.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/components/play/join-duel.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/components/play/queue-panel.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/components/play/stake-picker.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/components/settings-panel.tsx",
+      "purpose": "Preserve existing product flows while showing the correct Stellar currency, network, client signing or financial history."
+    },
+    {
+      "path": "src/components/wallet/player-vault-setup.tsx",
+      "purpose": "Provide browser-held signing/recovery, client envelope validation and independent chain reads."
+    },
+    {
+      "path": "src/components/wallet/wallet-panel.tsx",
+      "purpose": "Provide browser-held signing/recovery, client envelope validation and independent chain reads."
+    },
+    {
+      "path": "src/lib/api/client.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/lib/api/stake.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/lib/api/stellar-context.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/lib/api/views.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/lib/auth/stellar.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/lib/bridge/config.ts",
+      "purpose": "Preserve Stellar bridge behavior with client-controlled signing and explicit Stellar network context."
+    },
+    {
+      "path": "src/lib/bridge/service.ts",
+      "purpose": "Preserve Stellar bridge behavior with client-controlled signing and explicit Stellar network context."
+    },
+    {
+      "path": "src/lib/bridge/stellar.ts",
+      "purpose": "Preserve Stellar bridge behavior with client-controlled signing and explicit Stellar network context."
+    },
+    {
+      "path": "src/lib/config/env.ts",
+      "purpose": "Pin approved Stellar contracts/rules, correct network assets and explorer links."
+    },
+    {
+      "path": "src/lib/config/stellar-verification.ts",
+      "purpose": "Pin approved Stellar contracts/rules, correct network assets and explorer links."
+    },
+    {
+      "path": "src/lib/config/stellar.ts",
+      "purpose": "Pin approved Stellar contracts/rules, correct network assets and explorer links."
+    },
+    {
+      "path": "src/lib/db/drivers.ts",
+      "purpose": "Add versioned Stellar financial/vault metadata without rewriting existing wallets, games or Arc records."
+    },
+    {
+      "path": "src/lib/db/repositories/duel.ts",
+      "purpose": "Add versioned Stellar financial/vault metadata without rewriting existing wallets, games or Arc records."
+    },
+    {
+      "path": "src/lib/db/repositories/economy.ts",
+      "purpose": "Add versioned Stellar financial/vault metadata without rewriting existing wallets, games or Arc records."
+    },
+    {
+      "path": "src/lib/db/repositories/identity.ts",
+      "purpose": "Add versioned Stellar financial/vault metadata without rewriting existing wallets, games or Arc records."
+    },
+    {
+      "path": "src/lib/db/repositories/stellar-finance.ts",
+      "purpose": "Add versioned Stellar financial/vault metadata without rewriting existing wallets, games or Arc records."
+    },
+    {
+      "path": "src/lib/db/stellar-migrations.ts",
+      "purpose": "Add versioned Stellar financial/vault metadata without rewriting existing wallets, games or Arc records."
+    },
+    {
+      "path": "src/lib/db/stellar-verification-migrations.ts",
+      "purpose": "Add versioned Stellar financial/vault metadata without rewriting existing wallets, games or Arc records."
+    },
+    {
+      "path": "src/lib/db/types.ts",
+      "purpose": "Add versioned Stellar financial/vault metadata without rewriting existing wallets, games or Arc records."
+    },
+    {
+      "path": "src/lib/explorer.ts",
+      "purpose": "Pin approved Stellar contracts/rules, correct network assets and explorer links."
+    },
+    {
+      "path": "src/lib/services/accounts.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/lib/services/admin.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/lib/services/duel.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/lib/services/escrow.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/lib/services/match.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/lib/services/matchmaking.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/lib/services/player-authority.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/lib/services/player-vault.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/lib/services/profile.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/lib/services/treasury.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/lib/services/wallet-history.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/lib/services/wallet.ts",
+      "purpose": "Coordinate authenticated Stellar operations and idempotent profiles/history from verified chain state."
+    },
+    {
+      "path": "src/lib/stellar/authorization.ts",
+      "purpose": "Validate network/asset/authorization, independently verified Pulse state and exact successful financial receipts."
+    },
+    {
+      "path": "src/lib/stellar/contract.ts",
+      "purpose": "Validate network/asset/authorization, independently verified Pulse state and exact successful financial receipts."
+    },
+    {
+      "path": "src/lib/stellar/escrow-validation.ts",
+      "purpose": "Validate network/asset/authorization, independently verified Pulse state and exact successful financial receipts."
+    },
+    {
+      "path": "src/lib/stellar/intents.ts",
+      "purpose": "Validate network/asset/authorization, independently verified Pulse state and exact successful financial receipts."
+    },
+    {
+      "path": "src/lib/stellar/payments.ts",
+      "purpose": "Validate network/asset/authorization, independently verified Pulse state and exact successful financial receipts."
+    },
+    {
+      "path": "src/lib/stellar/player-authority.ts",
+      "purpose": "Validate network/asset/authorization, independently verified Pulse state and exact successful financial receipts."
+    },
+    {
+      "path": "src/lib/stellar/pulse-codec.ts",
+      "purpose": "Validate network/asset/authorization, independently verified Pulse state and exact successful financial receipts."
+    },
+    {
+      "path": "src/lib/stellar/pulse-state.ts",
+      "purpose": "Validate network/asset/authorization, independently verified Pulse state and exact successful financial receipts."
+    },
+    {
+      "path": "src/lib/stellar/server.ts",
+      "purpose": "Validate network/asset/authorization, independently verified Pulse state and exact successful financial receipts."
+    },
+    {
+      "path": "src/lib/stellar/shared.ts",
+      "purpose": "Validate network/asset/authorization, independently verified Pulse state and exact successful financial receipts."
+    },
+    {
+      "path": "src/lib/stellar/verified-contract.ts",
+      "purpose": "Validate network/asset/authorization, independently verified Pulse state and exact successful financial receipts."
+    },
+    {
+      "path": "src/lib/stellar/wallet.ts",
+      "purpose": "Validate network/asset/authorization, independently verified Pulse state and exact successful financial receipts."
+    },
+    {
+      "path": "src/lib/wallet/client.ts",
+      "purpose": "Provide browser-held signing/recovery, client envelope validation and independent chain reads."
+    },
+    {
+      "path": "src/lib/wallet/escrow-client.ts",
+      "purpose": "Provide browser-held signing/recovery, client envelope validation and independent chain reads."
+    },
+    {
+      "path": "src/lib/wallet/migration-plan.ts",
+      "purpose": "Provide browser-held signing/recovery, client envelope validation and independent chain reads."
+    },
+    {
+      "path": "src/lib/wallet/public-config.ts",
+      "purpose": "Provide browser-held signing/recovery, client envelope validation and independent chain reads."
+    },
+    {
+      "path": "src/lib/wallet/signer.ts",
+      "purpose": "Provide browser-held signing/recovery, client envelope validation and independent chain reads."
+    },
+    {
+      "path": "src/lib/wallet/vault-crypto.ts",
+      "purpose": "Provide browser-held signing/recovery, client envelope validation and independent chain reads."
+    },
+    {
+      "path": "src/lib/wallet/vault-signing.ts",
+      "purpose": "Provide browser-held signing/recovery, client envelope validation and independent chain reads."
+    },
+    {
+      "path": "src/lib/wallet/vault-storage.ts",
+      "purpose": "Provide browser-held signing/recovery, client envelope validation and independent chain reads."
+    },
+    {
+      "path": "src/lib/wallet/vault-types.ts",
+      "purpose": "Provide browser-held signing/recovery, client envelope validation and independent chain reads."
+    },
+    {
+      "path": "src/lib/wallet/verified-match-view.ts",
+      "purpose": "Provide browser-held signing/recovery, client envelope validation and independent chain reads."
+    },
+    {
+      "path": "src/lib/wallet/verified-pulse.ts",
+      "purpose": "Provide browser-held signing/recovery, client envelope validation and independent chain reads."
+    },
+    {
+      "path": "src/proxy.ts",
+      "purpose": "Apply existing authenticated request protections to the added Stellar wallet APIs."
+    },
+    {
+      "path": "tests/network-routing.test.ts",
+      "purpose": "Verify custody, authorization, receipts, network routing, preserved records or settlement attack rejection."
+    },
+    {
+      "path": "tests/setup.ts",
+      "purpose": "Verify custody, authorization, receipts, network routing, preserved records or settlement attack rejection."
+    },
+    {
+      "path": "tests/stellar-client-custody.test.ts",
+      "purpose": "Verify custody, authorization, receipts, network routing, preserved records or settlement attack rejection."
+    },
+    {
+      "path": "tests/stellar-mainnet-config.test.ts",
+      "purpose": "Verify custody, authorization, receipts, network routing, preserved records or settlement attack rejection."
+    },
+    {
+      "path": "tests/stellar-mainnet-match.test.ts",
+      "purpose": "Verify custody, authorization, receipts, network routing, preserved records or settlement attack rejection."
+    },
+    {
+      "path": "tests/stellar-mainnet-migration.test.ts",
+      "purpose": "Verify custody, authorization, receipts, network routing, preserved records or settlement attack rejection."
+    },
+    {
+      "path": "tests/stellar-mainnet-postgres.test.ts",
+      "purpose": "Verify custody, authorization, receipts, network routing, preserved records or settlement attack rejection."
+    },
+    {
+      "path": "tests/stellar-mainnet-wallet.test.ts",
+      "purpose": "Verify custody, authorization, receipts, network routing, preserved records or settlement attack rejection."
+    },
+    {
+      "path": "tests/stellar-player-authority.test.ts",
+      "purpose": "Verify custody, authorization, receipts, network routing, preserved records or settlement attack rejection."
+    },
+    {
+      "path": "tests/stellar-player-vault.test.ts",
+      "purpose": "Verify custody, authorization, receipts, network routing, preserved records or settlement attack rejection."
+    },
+    {
+      "path": "tests/stellar-pulse-codec.test.ts",
+      "purpose": "Verify custody, authorization, receipts, network routing, preserved records or settlement attack rejection."
+    },
+    {
+      "path": "tests/stellar-rpc-timeout.test.ts",
+      "purpose": "Verify custody, authorization, receipts, network routing, preserved records or settlement attack rejection."
+    },
+    {
+      "path": "tests/stellar-verified-match.test.ts",
+      "purpose": "Verify custody, authorization, receipts, network routing, preserved records or settlement attack rejection."
+    },
+    {
+      "path": "tests/stellar-verified-receipts.test.ts",
+      "purpose": "Verify custody, authorization, receipts, network routing, preserved records or settlement attack rejection."
+    }
+  ]
+}

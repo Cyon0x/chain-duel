@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-24T13:27:46.567Z",
+  "readOnly": true,
+  "submitted": false,
+  "deploymentFingerprint": "8db8ab72feb0f71a830f702044c4f913cd326199e29ce7bbbffd066304ccaecd",
+  "identity": {
+    "admin": "GCQKVXWIQHVGUOUHZR2O6YBWBNNPKIYH5AWQHXHF3EYRHM73WIWVSK7K",
+    "networkPassphrase": "Public Global Stellar Network ; September 2015",
+    "wasmSha256": "568423719488d72c0db8ffe20e5cbb474d86064476fff85f89f47cc5b36ead29",
+    "sourceSha256": "f34730f5146a430370f216bcbb122a870c88f519338d3b1bd82526cedada805d",
+    "saltHex": "ff0a375952a450347bdf0b4eb2e9ca2dbf8981dc41305b386448b333ee990d36",
+    "contractId": "CDXREXTONCUJ7IAZOSC6J3HK2JV7VPTMEFKGDGDQF3ZEDOXWJNTFXTUK",
+    "constructor": {
+      "admin": "GCQKVXWIQHVGUOUHZR2O6YBWBNNPKIYH5AWQHXHF3EYRHM73WIWVSK7K",
+      "treasury": "GCQKVXWIQHVGUOUHZR2O6YBWBNNPKIYH5AWQHXHF3EYRHM73WIWVSK7K",
+      "token": "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75",
+      "fee_bps": 1000,
+      "max_entry": "100000000000",
+      "max_payout": "200000000000",
+      "min_treasury_balance": "1000000000"
+    }
+  },
+  "sourceHashes": {
+    "contracts/chain_duel_mainnet/src/lib.rs": "a2f51b474aa2e614753f6767099304cb4a1e9d852ab1208713cb5baddad80ab9",
+    "contracts/chain_duel_mainnet/src/test.rs": "74de4587c88d12c88b3cf933795ea94b22cca9481a7d951027f9a3b99eebcbbd",
+    "contracts/chain_duel_mainnet/Cargo.toml": "03c1e41095fa17c5f9593096f6cfe3312fc873214c652e8a796ee7ebfddd1188",
+    "contracts/chain_duel_mainnet/Cargo.lock": "b91e7f0e96855152a54dbc0deed801dafded762fcacc163e8cb8b38504dadba2",
+    "contracts/chain_duel_mainnet/rust-toolchain.toml": "fc7cfab9a268fadc2e10b4f9c07549ff3f6fb756984def6724a4347e9fb15b32",
+    "scripts/stellar-build.mjs": "9eeeda323db136194c4df0d1581e3b49c76a4178393c6872d0cb79f7dbf66dbc"
+  },
+  "artifact": {
+    "path": "contracts/chain_duel_mainnet/target/wasm32v1-none/release/chain_duel_mainnet.wasm",
+    "bytes": 23227,
+    "sha256": "568423719488d72c0db8ffe20e5cbb474d86064476fff85f89f47cc5b36ead29"
+  },
+  "initialAccount": {
+    "address": "GCQKVXWIQHVGUOUHZR2O6YBWBNNPKIYH5AWQHXHF3EYRHM73WIWVSK7K",
+    "xlmBalance": "54.8267381",
+    "reserveXlm": "1.0000000",
+    "availableBeforeFeesXlm": "53.8267381",
+    "nativeSellingLiabilities": "0.0000000",
+    "usdcTrustline": false,
+    "usdcBalance": "0.0000000",
+    "baseReserveXlm": "0.5000000",
+    "sequence": "281932446562254848",
+    "ledger": 65648162,
+    "checkedAt": "2026-11-24T13:27:44.697Z"
+  },
+  "currentAccount": {
+    "address": "GCQKVXWIQHVGUOUHZR2O6YBWBNNPKIYH5AWQHXHF3EYRHM73WIWVSK7K",
+    "xlmBalance": "54.8267381",
+    "reserveXlm": "1.0000000",
+    "availableBeforeFeesXlm": "53.8267381",
+    "nativeSellingLiabilities": "0.0000000",
+    "usdcTrustline": false,
+    "usdcBalance": "0.0000000",
+    "baseReserveXlm": "0.5000000",
+    "sequence": "281932446562254848",
+    "ledger": 65648162,
+    "checkedAt": "2026-11-24T13:27:44.697Z"
+  },
+  "uploadFeeXlm": "31.1815911",
+  "constructorFeeXlm": "3.2963986",
+  "constructorIsLocalEstimate": true,
+  "trustlineFeeXlm": "0.0001000",
+  "reserveAfterTrustlineXlm": "1.5000000",
+  "estimatedRemainingExpenditureXlm": "34.4780897",
+  "maxSpendXlm": "40.0000000",
+  "committedMaximumFeesXlm": "0.0000000",
+  "existingLedgerEntries": {
+    "code": null,
+    "instance": null,
+    "latestLedger": 65648162
+  },
+  "deploymentAuthorized": true,
+  "settlementTrustDecisionPending": true,
+  "publicMainnetGamingEnabled": false
+}

@@ -1,0 +1,31 @@
+[package]
+name = "pulse_replay"
+version = "1.0.0"
+edition = "2021"
+rust-version = "1.92"
+description = "Independent replay of Chain Duel's existing Pulse rules; read-only resource probe"
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+probe = []
+
+[dependencies]
+soroban-sdk = { version = "=28.0.0" }
+softfloat = { version = "=1.0.0" }
+
+[dev-dependencies]
+soroban-sdk = { version = "=28.0.0", features = ["testutils"] }
+serde_json = { version = "=1.0.151" }
+sha2 = { version = "0.10" }
+
+[profile.release]
+overflow-checks = true
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "symbols"

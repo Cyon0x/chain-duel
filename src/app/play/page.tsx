@@ -7,6 +7,8 @@ import { getSessionUser } from "@/lib/auth/session";
 import { dashboardFor } from "@/lib/services/profile";
 import { ECONOMY, formatXlm } from "@/lib/config/game";
 import { MatchRowItem } from "@/components/lists";
+import { publicStellarConfig } from "@/lib/config/stellar";
+import { financialSymbol } from "@/lib/stellar/shared";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,7 @@ export default async function PlayPage() {
   if (session.profile?.onboarding_complete !== 1) redirect("/onboarding");
 
   const data = await dashboardFor(session);
+  const symbol = publicStellarConfig(session.user.id).asset.symbol;
 
   return (
     <div className="flex flex-col gap-8 pt-2">
@@ -28,7 +31,7 @@ export default async function PlayPage() {
           </p>
         </div>
         <div className="inline-flex items-center gap-2 text-sm text-muted">
-          <Icon name="layers" size={16} />Default entry <span className="numeric text-accent">{formatXlm(ECONOMY.defaultEntryStroops)} XLM</span>
+          <Icon name="layers" size={16} />Default entry <span className="numeric text-accent">{formatXlm(ECONOMY.defaultEntryStroops)} {symbol}</span>
         </div>
       </header>
 
@@ -43,7 +46,7 @@ export default async function PlayPage() {
                 <div>
                   <p className="text-sm font-medium capitalize">{game.mode === "bot" ? "Computer duel" : "Duel"} · {game.status}</p>
                   <p className="numeric mt-1 text-xs text-dim">
-                    {game.demo ? "Demo" : `${formatXlm(game.entry_stroops)} XLM`}
+                    {game.demo ? "Demo" : `${formatXlm(game.entry_stroops, 7)} ${financialSymbol(game)}`}
                   </p>
                 </div>
                 <Link href={`/match/${game.id}`} className="focus-ring text-sm font-medium text-accent">

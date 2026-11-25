@@ -1,0 +1,2278 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-24T13:01:15.147Z",
+  "readOnly": true,
+  "baselineCommit": "89eb64284399d1fdfbe03eafa00614dc4e5bec50",
+  "designatedWallet": "GCQKVXWIQHVGUOUHZR2O6YBWBNNPKIYH5AWQHXHF3EYRHM73WIWVSK7K",
+  "secureSignerMatches": true,
+  "mainnet": {
+    "rpc": "https://mainnet.sorobanrpc.com",
+    "horizon": "https://horizon.stellar.org",
+    "passphrase": "Public Global Stellar Network ; September 2015",
+    "protocolVersion": 30,
+    "latestLedger": 65647843,
+    "baseReserveXlm": "0.5000000",
+    "deploymentWallet": {
+      "exists": true,
+      "address": "GCQKVXWIQHVGUOUHZR2O6YBWBNNPKIYH5AWQHXHF3EYRHM73WIWVSK7K",
+      "sequence": "281932446562254848",
+      "xlmBalance": "54.8267381",
+      "reserveXlm": "1.0000000",
+      "nativeSellingLiabilities": "0.0000000",
+      "availableBeforeFeesXlm": "53.8267381",
+      "subentries": 0,
+      "sponsoring": 0,
+      "sponsored": 0,
+      "thresholds": {
+        "low_threshold": 0,
+        "med_threshold": 0,
+        "high_threshold": 0
+      },
+      "signers": [
+        {
+          "weight": 1,
+          "key": "GCQKVXWIQHVGUOUHZR2O6YBWBNNPKIYH5AWQHXHF3EYRHM73WIWVSK7K",
+          "type": "ed25519_public_key"
+        }
+      ],
+      "usdcTrustline": false,
+      "usdcBalance": "0.0000000",
+      "usdcAuthorized": null,
+      "usdcSellingLiabilities": "0.0000000"
+    },
+    "controlledPlayerWallet": {
+      "exists": true,
+      "address": "GBGDTBOXVZ4GIDDRISY5FGXYY7XCWCCK3FRHJHSVFEZMWA3ZZ2HUALTK",
+      "sequence": "281825269948350469",
+      "xlmBalance": "1.5010107",
+      "reserveXlm": "1.5000000",
+      "nativeSellingLiabilities": "0.0000000",
+      "availableBeforeFeesXlm": "0.0010107",
+      "subentries": 1,
+      "sponsoring": 0,
+      "sponsored": 0,
+      "thresholds": {
+        "low_threshold": 0,
+        "med_threshold": 0,
+        "high_threshold": 0
+      },
+      "signers": [
+        {
+          "weight": 1,
+          "key": "GBGDTBOXVZ4GIDDRISY5FGXYY7XCWCCK3FRHJHSVFEZMWA3ZZ2HUALTK",
+          "type": "ed25519_public_key"
+        }
+      ],
+      "usdcTrustline": true,
+      "usdcBalance": "0.0000000",
+      "usdcAuthorized": true,
+      "usdcSellingLiabilities": "0.0000000"
+    },
+    "officialUsdc": {
+      "issuer": "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+      "contractId": "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75",
+      "documentation": "https://developers.circle.com/stablecoins/usdc-contract-addresses",
+      "decimals": {
+        "verified": true,
+        "value": 7
+      },
+      "symbol": {
+        "verified": true,
+        "value": "USDC"
+      },
+      "name": {
+        "verified": true,
+        "value": "USDC:GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
+      },
+      "issuerAdmin": {
+        "verified": true,
+        "value": "CCPLJV7AKKFIE4LXFVUWZXDI2HNLEC7U3CQHAMVDLYHQFGMGVTCR4D5W"
+      }
+    },
+    "feeStats": {
+      "sorobanInclusionFee": {
+        "max": "200",
+        "min": "100",
+        "mode": "200",
+        "p10": "200",
+        "p20": "200",
+        "p30": "200",
+        "p40": "200",
+        "p50": "200",
+        "p60": "200",
+        "p70": "200",
+        "p80": "200",
+        "p90": "200",
+        "p95": "200",
+        "p99": "200",
+        "transactionCount": "2918",
+        "ledgerCount": 50
+      },
+      "inclusionFee": {
+        "max": "30018",
+        "min": "100",
+        "mode": "100",
+        "p10": "100",
+        "p20": "100",
+        "p30": "100",
+        "p40": "100",
+        "p50": "100",
+        "p60": "6541",
+        "p70": "6541",
+        "p80": "15009",
+        "p90": "15009",
+        "p95": "15009",
+        "p99": "30018",
+        "transactionCount": "4387",
+        "ledgerCount": 10
+      },
+      "latestLedger": 65647843
+    }
+  },
+  "existingTestnetDeployments": [
+    {
+      "network": "testnet",
+      "contractId": "CBBDWEWBBQVQXNYUJ4FA6C2CXXUVDAJSNUOVPZNKTQWK5P2EON7KEGMZ",
+      "get_config": {
+        "verified": true,
+        "value": {
+          "admin": "GCQKVXWIQHVGUOUHZR2O6YBWBNNPKIYH5AWQHXHF3EYRHM73WIWVSK7K",
+          "bot_enabled": true,
+          "fee_bps": 1000,
+          "max_entry": "2500000000",
+          "max_payout": "5000000000",
+          "min_treasury_balance": "1000000000",
+          "paused": false,
+          "token": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+          "treasury": "GCQKVXWIQHVGUOUHZR2O6YBWBNNPKIYH5AWQHXHF3EYRHM73WIWVSK7K"
+        }
+      },
+      "get_bot_liquidity": {
+        "verified": true,
+        "value": "3680000000"
+      },
+      "get_accrued_fees": {
+        "verified": true,
+        "value": "2443500000"
+      },
+      "get_locked_escrow": {
+        "verified": true,
+        "value": "250000000"
+      },
+      "get_contract_balance": {
+        "verified": true,
+        "value": "6373500000"
+      }
+    },
+    {
+      "network": "testnet",
+      "contractId": "CD3EW4ENWDYGOGQGBJ7G2NU2YV4MLGSQW7CEIBZOYR2NQ4NJ7ZIOZ6FA",
+      "get_config": {
+        "verified": true,
+        "value": {
+          "admin": "GCQKVXWIQHVGUOUHZR2O6YBWBNNPKIYH5AWQHXHF3EYRHM73WIWVSK7K",
+          "bot_enabled": true,
+          "fee_bps": 1000,
+          "max_entry": "100000000000",
+          "max_payout": "200000000000",
+          "min_treasury_balance": "1000000000",
+          "paused": false,
+          "token": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+          "treasury": "GCQKVXWIQHVGUOUHZR2O6YBWBNNPKIYH5AWQHXHF3EYRHM73WIWVSK7K"
+        }
+      },
+      "get_bot_liquidity": {
+        "verified": true,
+        "value": "149500000000"
+      },
+      "get_accrued_fees": {
+        "verified": true,
+        "value": "46742000000"
+      },
+      "get_locked_escrow": {
+        "verified": true,
+        "value": "0"
+      },
+      "get_contract_balance": {
+        "verified": true,
+        "value": "196242000000"
+      }
+    }
+  ],
+  "existingArtifact": {
+    "path": "contracts/chain_duel/target/wasm32v1-none/release/chain_duel.wasm",
+    "bytes": 19890,
+    "sha256": "7d2c9ea7766c58daf60f8959ebbc05b5792cb78f1ca32ddf9c9b50707d66a0c5"
+  },
+  "testnetReferences": [
+    {
+      "file": "README.md",
+      "line": 7,
+      "purpose": "Stellar application/configuration",
+      "text": "out-score each other. Entries are escrowed on **Stellar Testnet** by a **Soroban** contract, and"
+    },
+    {
+      "file": "README.md",
+      "line": 20,
+      "purpose": "Stellar application/configuration",
+      "text": "- [Live Testnet deployment](#live-testnet-deployment)"
+    },
+    {
+      "file": "README.md",
+      "line": 32,
+      "purpose": "Stellar application/configuration",
+      "text": "- [Testnet setup](#testnet-setup)"
+    },
+    {
+      "file": "README.md",
+      "line": 40,
+      "purpose": "Stellar application/configuration",
+      "text": "## Live Testnet deployment"
+    },
+    {
+      "file": "README.md",
+      "line": 44,
+      "purpose": "Stellar application/configuration",
+      "text": "| Network | Stellar Testnet (`Test SDF Network ; September 2015`) |"
+    },
+    {
+      "file": "README.md",
+      "line": 45,
+      "purpose": "Stellar application/configuration",
+      "text": "| Escrow contract (new entries) | `CD3EW4ENWDYGOGQGBJ7G2NU2YV4MLGSQW7CEIBZOYR2NQ4NJ7ZIOZ6FA` |"
+    },
+    {
+      "file": "README.md",
+      "line": 46,
+      "purpose": "Stellar application/configuration",
+      "text": "| XLM token (SAC) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |"
+    },
+    {
+      "file": "README.md",
+      "line": 48,
+      "purpose": "Stellar application/configuration",
+      "text": "| Explorer | https://stellar.expert/explorer/testnet/contract/CD3EW4ENWDYGOGQGBJ7G2NU2YV4MLGSQW7CEIBZOYR2NQ4NJ7ZIOZ6FA |"
+    },
+    {
+      "file": "README.md",
+      "line": 50,
+      "purpose": "Stellar application/configuration",
+      "text": "The contract is live, the bot treasury is funded with real Testnet XLM, and a full"
+    },
+    {
+      "file": "README.md",
+      "line": 53,
+      "purpose": "Stellar application/configuration",
+      "text": "> Testnet XLM has no real-world value. Do not treat this deployment as real-money."
+    },
+    {
+      "file": "README.md",
+      "line": 56,
+      "purpose": "Stellar application/configuration",
+      "text": "> retain their original escrow, `CBBDWEWBBQVQXNYUJ4FA6C2CXXUVDAJSNUOVPZNKTQWK5P2EON7KEGMZ`,"
+    },
+    {
+      "file": "README.md",
+      "line": 199,
+      "purpose": "Stellar application/configuration",
+      "text": "confirmed before Stellar confirms it, and confirmed rows link to the real Testnet explorer page"
+    },
+    {
+      "file": "README.md",
+      "line": 291,
+      "purpose": "Stellar application/configuration",
+      "text": "real Testnet XLM via `fund_bot_pool`."
+    },
+    {
+      "file": "README.md",
+      "line": 363,
+      "purpose": "Stellar application/configuration",
+      "text": "Testnet bootstrap below."
+    },
+    {
+      "file": "README.md",
+      "line": 377,
+      "purpose": "Stellar application/configuration",
+      "text": "| `npm run stellar:verify` | Read the deployed contract back from Testnet |"
+    },
+    {
+      "file": "README.md",
+      "line": 383,
+      "purpose": "Stellar application/configuration",
+      "text": "## Testnet setup"
+    },
+    {
+      "file": "README.md",
+      "line": 409,
+      "purpose": "Stellar application/configuration",
+      "text": "Production: **https://chain-duel.vercel.app** (Stellar Testnet, Neon Postgres, Google + X"
+    },
+    {
+      "file": "README.md",
+      "line": 441,
+      "purpose": "Stellar application/configuration",
+      "text": "# opt-in live suites: spend real Testnet XLM against the deployed contract"
+    },
+    {
+      "file": "README.md",
+      "line": 507,
+      "purpose": "Stellar application/configuration",
+      "text": "deployment continues on Testnet without contract or economic changes."
+    },
+    {
+      "file": "README.md",
+      "line": 515,
+      "purpose": "Stellar application/configuration",
+      "text": "Testnet wallet in this deployment."
+    },
+    {
+      "file": "docs/security.md",
+      "line": 112,
+      "purpose": "documentation/history",
+      "text": "- The admin wallet is a hot key by design for Testnet settlement. For production, move settlement"
+    },
+    {
+      "file": ".env.example",
+      "line": 31,
+      "purpose": "Stellar application/configuration",
+      "text": "# testnet | futurenet | mainnet | local"
+    },
+    {
+      "file": ".env.example",
+      "line": 32,
+      "purpose": "Stellar application/configuration",
+      "text": "STELLAR_NETWORK=testnet"
+    },
+    {
+      "file": ".env.example",
+      "line": 34,
+      "purpose": "Stellar application/configuration",
+      "text": "# STELLAR_RPC_URL=https://soroban-testnet.stellar.org"
+    },
+    {
+      "file": ".env.example",
+      "line": 35,
+      "purpose": "Stellar application/configuration",
+      "text": "# STELLAR_HORIZON_URL=https://horizon-testnet.stellar.org"
+    },
+    {
+      "file": ".env.example",
+      "line": 36,
+      "purpose": "Stellar application/configuration",
+      "text": "# STELLAR_NETWORK_PASSPHRASE=Test SDF Network ; September 2015"
+    },
+    {
+      "file": ".env.example",
+      "line": 44,
+      "purpose": "Stellar application/configuration",
+      "text": "CHAIN_DUEL_TOKEN_ID=CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
+    },
+    {
+      "file": ".env.example",
+      "line": 72,
+      "purpose": "Stellar application/configuration",
+      "text": "# Server-side Circle API key; use separate Preview/Testnet and Production keys."
+    },
+    {
+      "file": "src/lib/services/duel.ts",
+      "line": 197,
+      "purpose": "Stellar application/configuration",
+      "text": "// what keeps it honestly separated from Testnet results."
+    },
+    {
+      "file": "docs/stake-system.md",
+      "line": 23,
+      "purpose": "documentation/history",
+      "text": "`CBBDWEWBBQVQXNYUJ4FA6C2CXXUVDAJSNUOVPZNKTQWK5P2EON7KEGMZ`"
+    },
+    {
+      "file": "docs/stake-system.md",
+      "line": 25,
+      "purpose": "documentation/history",
+      "text": "`CD3EW4ENWDYGOGQGBJ7G2NU2YV4MLGSQW7CEIBZOYR2NQ4NJ7ZIOZ6FA`"
+    },
+    {
+      "file": "docs/stake-system.md",
+      "line": 33,
+      "purpose": "documentation/history",
+      "text": "response. This avoids SDK 17.2 eagerly decoding a Testnet ledger-header extension"
+    },
+    {
+      "file": "docs/stake-system.md",
+      "line": 41,
+      "purpose": "documentation/history",
+      "text": "It verifies Testnet and the existing admin, preserves the token/treasury/fee,"
+    },
+    {
+      "file": "docs/stake-system.md",
+      "line": 63,
+      "purpose": "documentation/history",
+      "text": "- Opt-in live suites use actual Stellar Testnet funds and hashes; UI and unit"
+    },
+    {
+      "file": "docs/stake-system.md",
+      "line": 66,
+      "purpose": "documentation/history",
+      "text": "### Recorded Testnet verification — 8 November 2026"
+    },
+    {
+      "file": "docs/stake-system.md",
+      "line": 81,
+      "purpose": "documentation/history",
+      "text": "Live tests use funded disposable Testnet wallets. External"
+    },
+    {
+      "file": "docs/stake-system.md",
+      "line": 87,
+      "purpose": "documentation/history",
+      "text": "Postgres persistence and Testnet escrow. Desktop/mobile checks passed for all"
+    },
+    {
+      "file": "docs/multichain-release-report.md",
+      "line": 31,
+      "purpose": "documentation/history",
+      "text": "Production Stellar gaming remains **Testnet**. It was not moved to Mainnet."
+    },
+    {
+      "file": "docs/multichain-release-report.md",
+      "line": 100,
+      "purpose": "documentation/history",
+      "text": "Stellar gaming remains Testnet."
+    },
+    {
+      "file": "docs/multichain-release-report.md",
+      "line": 177,
+      "purpose": "documentation/history",
+      "text": "XLM games remain Testnet with PostgreSQL available. All non-bridge environment"
+    },
+    {
+      "file": "docs/stellar.md",
+      "line": 10,
+      "purpose": "documentation/history",
+      "text": "| `testnet` (default) | `https://soroban-testnet.stellar.org` | `Test SDF Network ; September 2015` |"
+    },
+    {
+      "file": "docs/stellar.md",
+      "line": 11,
+      "purpose": "documentation/history",
+      "text": "| `futurenet` | `https://rpc-futurenet.stellar.org` | `Test SDF Future Network ; October 2022` |"
+    },
+    {
+      "file": "docs/stellar.md",
+      "line": 16,
+      "purpose": "documentation/history",
+      "text": "`STELLAR_NETWORK_PASSPHRASE`. Explorer links are derived from the network, so a Testnet"
+    },
+    {
+      "file": "docs/stellar.md",
+      "line": 17,
+      "purpose": "documentation/history",
+      "text": "transaction always links to `stellar.expert/explorer/testnet/tx/<hash>`."
+    },
+    {
+      "file": "docs/stellar.md",
+      "line": 19,
+      "purpose": "documentation/history",
+      "text": "Native XLM Stellar Asset Contract (Testnet): `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC`."
+    },
+    {
+      "file": "scripts/deploy-contract.mjs",
+      "line": 2,
+      "purpose": "operational script",
+      "text": "* Builds and deploys the Chain Duel escrow contract to Stellar Testnet."
+    },
+    {
+      "file": "scripts/deploy-contract.mjs",
+      "line": 13,
+      "purpose": "operational script",
+      "text": "import { ECONOMY, NATIVE_XLM_SAC_TESTNET, WASM_PATH, loadEnvFile, stellar, upsertEnvFile, friendbot } from \"./lib.mjs\";"
+    },
+    {
+      "file": "scripts/deploy-contract.mjs",
+      "line": 25,
+      "purpose": "operational script",
+      "text": "const network = env.STELLAR_NETWORK || \"testnet\";"
+    },
+    {
+      "file": "scripts/deploy-contract.mjs",
+      "line": 33,
+      "purpose": "operational script",
+      "text": "await friendbot(admin).catch((error) => console.warn(`Friendbot: ${error.message}`));"
+    },
+    {
+      "file": "scripts/deploy-contract.mjs",
+      "line": 81,
+      "purpose": "operational script",
+      "text": "console.log(`  https://stellar.expert/explorer/testnet/contract/${contractId}`);"
+    },
+    {
+      "file": "docs/stellar-mainnet-migration-checklist.md",
+      "line": 8,
+      "purpose": "documentation/history",
+      "text": "- The existing Stellar implementation is **XLM / Stellar Testnet / 90% winner and"
+    },
+    {
+      "file": "docs/stellar-mainnet-migration-checklist.md",
+      "line": 14,
+      "purpose": "documentation/history",
+      "text": "- Original Testnet escrow: `CBBDWEWBBQVQXNYUJ4FA6C2CXXUVDAJSNUOVPZNKTQWK5P2EON7KEGMZ`."
+    },
+    {
+      "file": "docs/stellar-mainnet-migration-checklist.md",
+      "line": 15,
+      "purpose": "documentation/history",
+      "text": "- Testnet stake revision: `CD3EW4ENWDYGOGQGBJ7G2NU2YV4MLGSQW7CEIBZOYR2NQ4NJ7ZIOZ6FA`."
+    },
+    {
+      "file": "docs/stellar-mainnet-migration-checklist.md",
+      "line": 16,
+      "purpose": "documentation/history",
+      "text": "- Testnet native XLM SAC: `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC`."
+    },
+    {
+      "file": "docs/stellar-mainnet-migration-checklist.md",
+      "line": 38,
+      "purpose": "documentation/history",
+      "text": "to Testnet. It needs public runtime configuration and the prepared transaction's"
+    },
+    {
+      "file": "docs/stellar-mainnet-migration-checklist.md",
+      "line": 39,
+      "purpose": "documentation/history",
+      "text": "actual network, including legacy Testnet recovery."
+    },
+    {
+      "file": "docs/stellar-mainnet-migration-checklist.md",
+      "line": 51,
+      "purpose": "documentation/history",
+      "text": "- [x] Identify existing contract source, Testnet IDs, token, SDKs and signer."
+    },
+    {
+      "file": "docs/stellar-mainnet-migration-checklist.md",
+      "line": 54,
+      "purpose": "documentation/history",
+      "text": "- [ ] Record Testnet references by purpose: active configuration, recovery,"
+    },
+    {
+      "file": "docs/stellar-mainnet-migration-checklist.md",
+      "line": 56,
+      "purpose": "documentation/history",
+      "text": "- [ ] Verify both existing Testnet deployments and their actual configuration."
+    },
+    {
+      "file": "docs/stellar-mainnet-migration-checklist.md",
+      "line": 110,
+      "purpose": "documentation/history",
+      "text": "- [ ] Preserve old Testnet escrow, refunds, settlements and explorer URLs."
+    },
+    {
+      "file": "docs/bridge-deployments/owner-flow-mainnet.json",
+      "line": 172,
+      "purpose": "documentation/history",
+      "text": "\"Persistent isolated Preview backend and preserved Stellar Testnet configuration\","
+    },
+    {
+      "file": "docs/bridge-deployments/owner-flow-mainnet.json",
+      "line": 362,
+      "purpose": "documentation/history",
+      "text": "\"Persistent isolated Preview backend and preserved Stellar Testnet configuration\","
+    },
+    {
+      "file": "docs/bridge-deployments/owner-flow-mainnet.json",
+      "line": 411,
+      "purpose": "documentation/history",
+      "text": "\"stellarGamingNetwork\": \"Stellar Testnet\","
+    },
+    {
+      "file": "docs/bridge-deployments/owner-flow-mainnet.json",
+      "line": 429,
+      "purpose": "documentation/history",
+      "text": "\"stellarGamingNetwork\": \"Stellar Testnet\","
+    },
+    {
+      "file": "docs/bridge-deployments/owner-flow-mainnet.json",
+      "line": 435,
+      "purpose": "documentation/history",
+      "text": "\"stellarGamingNetwork\": \"testnet\","
+    },
+    {
+      "file": "docs/bridge-deployments/owner-flow-mainnet.json",
+      "line": 455,
+      "purpose": "documentation/history",
+      "text": "\"Persistent Production backend and preserved Stellar Testnet configuration\","
+    },
+    {
+      "file": "contracts/chain_duel/src/lib.rs",
+      "line": 109,
+      "purpose": "Stellar application/configuration",
+      "text": "/// Stellar Asset Contract used for entries and payouts (native XLM SAC on Testnet)."
+    },
+    {
+      "file": "tests/live-flows.test.ts",
+      "line": 3,
+      "purpose": "test fixture",
+      "text": "* escrow contract on Stellar Testnet."
+    },
+    {
+      "file": "tests/live-flows.test.ts",
+      "line": 5,
+      "purpose": "test fixture",
+      "text": "* Opt in explicitly — it spends real Testnet XLM:"
+    },
+    {
+      "file": "tests/live-flows.test.ts",
+      "line": 64,
+      "purpose": "test fixture",
+      "text": "async function friendbot(address: string): Promise<void> {"
+    },
+    {
+      "file": "tests/live-flows.test.ts",
+      "line": 65,
+      "purpose": "test fixture",
+      "text": "const response = await fetch(`https://friendbot.stellar.org?addr=${address}`);"
+    },
+    {
+      "file": "tests/live-flows.test.ts",
+      "line": 67,
+      "purpose": "test fixture",
+      "text": "if (!response.ok && !/already/i.test(text)) throw new Error(`friendbot failed: ${text.slice(0, 200)}`);"
+    },
+    {
+      "file": "tests/live-flows.test.ts",
+      "line": 139,
+      "purpose": "test fixture",
+      "text": "await friendbot(alpha.address);"
+    },
+    {
+      "file": "tests/live-flows.test.ts",
+      "line": 140,
+      "purpose": "test fixture",
+      "text": "await friendbot(beta.address);"
+    },
+    {
+      "file": "tests/live-flows.test.ts",
+      "line": 188,
+      "purpose": "test fixture",
+      "text": "await friendbot(alpha.address);"
+    },
+    {
+      "file": "tests/live-flows.test.ts",
+      "line": 189,
+      "purpose": "test fixture",
+      "text": "await friendbot(beta.address);"
+    },
+    {
+      "file": "tests/live-flows.test.ts",
+      "line": 258,
+      "purpose": "test fixture",
+      "text": "await friendbot(alpha.address);"
+    },
+    {
+      "file": "scripts/stellar-mainnet-preflight.mjs",
+      "line": 16,
+      "purpose": "operational script",
+      "text": "const TESTNET_RPC = \"https://soroban-testnet.stellar.org\";"
+    },
+    {
+      "file": "scripts/stellar-mainnet-preflight.mjs",
+      "line": 104,
+      "purpose": "operational script",
+      "text": "stage = \"existing Testnet deployments\";"
+    },
+    {
+      "file": "scripts/stellar-mainnet-preflight.mjs",
+      "line": 105,
+      "purpose": "operational script",
+      "text": "const testnet = new rpc.Server(TESTNET_RPC);"
+    },
+    {
+      "file": "scripts/stellar-mainnet-preflight.mjs",
+      "line": 106,
+      "purpose": "operational script",
+      "text": "const testnetSource = await testnet.getAccount(ADMIN);"
+    },
+    {
+      "file": "scripts/stellar-mainnet-preflight.mjs",
+      "line": 107,
+      "purpose": "operational script",
+      "text": "const testnetIds = [...new Set([env.CHAIN_DUEL_CONTRACT_ID, env.CHAIN_DUEL_STAKE_CONTRACT_ID].filter(Boolean))];"
+    },
+    {
+      "file": "scripts/stellar-mainnet-preflight.mjs",
+      "line": 108,
+      "purpose": "operational script",
+      "text": "const deployments = await Promise.all(testnetIds.map(async contractId => {"
+    },
+    {
+      "file": "scripts/stellar-mainnet-preflight.mjs",
+      "line": 110,
+      "purpose": "operational script",
+      "text": "const values = await Promise.all(methods.map(method => readContract(testnet, Networks.TESTNET, testnetSource, contractId, method)));"
+    },
+    {
+      "file": "scripts/stellar-mainnet-preflight.mjs",
+      "line": 111,
+      "purpose": "operational script",
+      "text": "return { network: \"testnet\", contractId, ...Object.fromEntries(methods.map((method, i) => [method, values[i]])) };"
+    },
+    {
+      "file": "scripts/stellar-mainnet-preflight.mjs",
+      "line": 114,
+      "purpose": "operational script",
+      "text": "const referencePattern = \"testnet|Testnet|Test SDF|futurenet|Futurenet|friendbot|CDLZFC3|CBBDWEW|CD3EW4E|GBBD47IF\";"
+    },
+    {
+      "file": "scripts/stellar-mainnet-preflight.mjs",
+      "line": 129,
+      "purpose": "operational script",
+      "text": "existingTestnetDeployments: deployments,"
+    },
+    {
+      "file": "scripts/stellar-mainnet-preflight.mjs",
+      "line": 131,
+      "purpose": "operational script",
+      "text": "testnetReferences: references,"
+    },
+    {
+      "file": "scripts/stellar-mainnet-preflight.mjs",
+      "line": 153,
+      "purpose": "operational script",
+      "text": "testnetDeploymentsChecked: deployments.length, referenceCount: references.length, uploadQuote: report.uploadQuote ?? null }));"
+    },
+    {
+      "file": "tests/escrow-validation.test.ts",
+      "line": 8,
+      "purpose": "test fixture",
+      "text": "const contractId = \"CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC\";"
+    },
+    {
+      "file": "tests/escrow-validation.test.ts",
+      "line": 27,
+      "purpose": "test fixture",
+      "text": "for (const options of [{ id: \"b2\".repeat(32) }, { mode: 1 as const }, { method: \"fund_bot_pool\" }, { contract: \"CBBDWEWBBQVQXNYUJ4FA6C2CXXUVDAJSNUOVPZNKTQWK5P2EON7KEGMZ\" }]) {"
+    },
+    {
+      "file": "docs/multichain-operations.md",
+      "line": 14,
+      "purpose": "documentation/history",
+      "text": "The audited production deployment runs Stellar **Testnet**, with 90% paid to the"
+    },
+    {
+      "file": "docs/multichain-operations.md",
+      "line": 28,
+      "purpose": "documentation/history",
+      "text": "`https://explorer.arc.io`; Testnet is chain 5042002. ERC-20 USDC at"
+    },
+    {
+      "file": "docs/multichain-operations.md",
+      "line": 56,
+      "purpose": "documentation/history",
+      "text": "- `CIRCLE_API_KEY`, server-only; live key for Mainnet, test key for Preview/Testnet."
+    },
+    {
+      "file": "docs/multichain-operations.md",
+      "line": 58,
+      "purpose": "documentation/history",
+      "text": "- `ARC_NETWORK=mainnet|testnet` and `ARC_WALLETS_ENABLED=true` after real testing."
+    },
+    {
+      "file": "docs/multichain-operations.md",
+      "line": 145,
+      "purpose": "documentation/history",
+      "text": "directions on Mainnet and Testnet. The implementation uses the published"
+    },
+    {
+      "file": "docs/multichain-operations.md",
+      "line": 207,
+      "purpose": "documentation/history",
+      "text": "active and verified in Production; existing Stellar gaming remains Testnet. The release report"
+    },
+    {
+      "file": "docs/bridge-owner-validation.md",
+      "line": 44,
+      "purpose": "documentation/history",
+      "text": "were preserved. Existing Stellar XLM games remain Testnet."
+    },
+    {
+      "file": "scripts/stellar-regression.mjs",
+      "line": 19,
+      "purpose": "operational script",
+      "text": "\"scripts/setup-testnet.mjs\","
+    },
+    {
+      "file": "tests/live-treasury.test.ts",
+      "line": 3,
+      "purpose": "test fixture",
+      "text": "* Chain Duel server, the deployed Soroban contract and Stellar Testnet."
+    },
+    {
+      "file": "tests/live-treasury.test.ts",
+      "line": 5,
+      "purpose": "test fixture",
+      "text": "* Opt in explicitly — it spends real Testnet XLM:"
+    },
+    {
+      "file": "tests/live-treasury.test.ts",
+      "line": 81,
+      "purpose": "test fixture",
+      "text": "async function friendbot(address: string): Promise<void> {"
+    },
+    {
+      "file": "tests/live-treasury.test.ts",
+      "line": 82,
+      "purpose": "test fixture",
+      "text": "const response = await fetch(`https://friendbot.stellar.org?addr=${address}`);"
+    },
+    {
+      "file": "tests/live-treasury.test.ts",
+      "line": 84,
+      "purpose": "test fixture",
+      "text": "if (!response.ok && !/already/i.test(text)) throw new Error(`friendbot failed: ${text.slice(0, 200)}`);"
+    },
+    {
+      "file": "tests/live-treasury.test.ts",
+      "line": 114,
+      "purpose": "test fixture",
+      "text": "`https://horizon-testnet.stellar.org/accounts/${address}/transactions?order=desc&limit=20`,"
+    },
+    {
+      "file": "tests/live-treasury.test.ts",
+      "line": 132,
+      "purpose": "test fixture",
+      "text": "const response = await fetch(`https://horizon-testnet.stellar.org/accounts/${address}`);"
+    },
+    {
+      "file": "tests/live-treasury.test.ts",
+      "line": 239,
+      "purpose": "test fixture",
+      "text": "await friendbot(player.address);"
+    },
+    {
+      "file": "tests/arc-config.test.ts",
+      "line": 17,
+      "purpose": "test fixture",
+      "text": "it(\"keeps official Mainnet distinct from Testnet\", () => {"
+    },
+    {
+      "file": "tests/arc-config.test.ts",
+      "line": 19,
+      "purpose": "test fixture",
+      "text": "expect(ARC_NETWORKS[\"arc-testnet\"].id).toBe(5042002);"
+    },
+    {
+      "file": "tests/arc-config.test.ts",
+      "line": 30,
+      "purpose": "test fixture",
+      "text": "it(\"rejects Testnet Circle credentials on Mainnet\", () => {"
+    },
+    {
+      "file": "tests/arc-config.test.ts",
+      "line": 58,
+      "purpose": "test fixture",
+      "text": "expect(() => validateArcRequest({ networkId: \"arc-testnet\", currency: \"USDC\" })).toThrow();"
+    },
+    {
+      "file": "src/lib/services/wallet.ts",
+      "line": 14,
+      "purpose": "Stellar application/configuration",
+      "text": "fundTestnetAccount,"
+    },
+    {
+      "file": "src/lib/services/wallet.ts",
+      "line": 61,
+      "purpose": "Stellar application/configuration",
+      "text": "network: { id: string; label: string; isTestnet: boolean; explorerUrl: string };"
+    },
+    {
+      "file": "src/lib/services/wallet.ts",
+      "line": 116,
+      "purpose": "Stellar application/configuration",
+      "text": "network: { id: net.id, label: net.label, isTestnet: net.isTestnet, explorerUrl: net.explorerUrl },"
+    },
+    {
+      "file": "src/lib/services/wallet.ts",
+      "line": 214,
+      "purpose": "Stellar application/configuration",
+      "text": "net.isTestnet ? \"This wallet has no Testnet balance yet. Deposit XLM first, then try again.\" : \"This wallet is not funded on Stellar Mainnet yet. Deposit XLM to activate it.\","
+    },
+    {
+      "file": "src/lib/services/wallet.ts",
+      "line": 486,
+      "purpose": "Stellar application/configuration",
+      "text": "/** Testnet faucet: only for an unfunded account, and only on Testnet. */"
+    },
+    {
+      "file": "src/lib/services/wallet.ts",
+      "line": 490,
+      "purpose": "Stellar application/configuration",
+      "text": "if (!net.isTestnet) {"
+    },
+    {
+      "file": "src/lib/services/wallet.ts",
+      "line": 491,
+      "purpose": "Stellar application/configuration",
+      "text": "throw new ChainDuelError(\"The Testnet faucet is not available on this network.\", \"no_friendbot\", 400);"
+    },
+    {
+      "file": "src/lib/services/wallet.ts",
+      "line": 495,
+      "purpose": "Stellar application/configuration",
+      "text": "throw new ChainDuelError(\"This wallet already has a Testnet balance.\", \"already_funded\");"
+    },
+    {
+      "file": "src/lib/services/wallet.ts",
+      "line": 506,
+      "purpose": "Stellar application/configuration",
+      "text": "metadata: { source: \"friendbot\", address: wallet.address },"
+    },
+    {
+      "file": "src/lib/services/wallet.ts",
+      "line": 509,
+      "purpose": "Stellar application/configuration",
+      "text": "const result = await fundTestnetAccount(wallet.address).then("
+    },
+    {
+      "file": "src/lib/services/wallet.ts",
+      "line": 528,
+      "purpose": "Stellar application/configuration",
+      "text": "return { funded: true, message: \"Testnet XLM added to your wallet.\" };"
+    },
+    {
+      "file": "scripts/fund-treasury.mjs",
+      "line": 3,
+      "purpose": "operational script",
+      "text": "* matches have real Testnet liquidity to pay out from."
+    },
+    {
+      "file": "scripts/fund-treasury.mjs",
+      "line": 31,
+      "purpose": "operational script",
+      "text": "\"--network\", env.STELLAR_NETWORK ?? \"testnet\","
+    },
+    {
+      "file": "tests/escrow-routing.test.ts",
+      "line": 9,
+      "purpose": "test fixture",
+      "text": "const original = \"CBBDWEWBBQVQXNYUJ4FA6C2CXXUVDAJSNUOVPZNKTQWK5P2EON7KEGMZ\";"
+    },
+    {
+      "file": "tests/escrow-routing.test.ts",
+      "line": 10,
+      "purpose": "test fixture",
+      "text": "const replacement = \"CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC\";"
+    },
+    {
+      "file": "docs/stellar-protected-files.json",
+      "line": 32,
+      "purpose": "documentation/history",
+      "text": "\"scripts/setup-testnet.mjs\": \"effb9fc06fed701ac040360de6c906cc74e2c983b91ce53bfb86faf3ab5fdf4e\","
+    },
+    {
+      "file": "tests/arc-circle.test.ts",
+      "line": 23,
+      "purpose": "test fixture",
+      "text": "vi.stubEnv(\"ARC_NETWORK\", \"testnet\");"
+    },
+    {
+      "file": "tests/live-deployed.test.ts",
+      "line": 51,
+      "purpose": "test fixture",
+      "text": "expect(health.body.network).toBe(\"testnet\");"
+    },
+    {
+      "file": "tests/arc-authority.test.ts",
+      "line": 39,
+      "purpose": "test fixture",
+      "text": "vi.stubEnv(\"ARC_NETWORK\", \"testnet\");"
+    },
+    {
+      "file": "tests/arc-authority.test.ts",
+      "line": 68,
+      "purpose": "test fixture",
+      "text": "VALUES(?,?, 'arc-testnet',?,'USDC',?,6,?,?,'private','pulse','joined',?,'500000','unit-seed',60000,?,?)`,"
+    },
+    {
+      "file": "scripts/deploy-stake-contract.mjs",
+      "line": 18,
+      "purpose": "operational script",
+      "text": "assert(env.STELLAR_NETWORK === \"testnet\", \"This rollout script is restricted to Stellar Testnet.\");"
+    },
+    {
+      "file": "scripts/deploy-stake-contract.mjs",
+      "line": 33,
+      "purpose": "operational script",
+      "text": "const config = JSON.parse(cli([\"contract\", \"invoke\", \"--id\", originalContract, \"--network\", \"testnet\", \"--send\", \"no\", \"--\", \"get_config\"]));"
+    },
+    {
+      "file": "scripts/deploy-stake-contract.mjs",
+      "line": 43,
+      "purpose": "operational script",
+      "text": "const output = cli([\"contract\", \"deploy\", \"--wasm\", WASM_PATH, \"--network\", \"testnet\", \"--\", \"--admin\", admin, \"--treasury\", config.treasury, \"--token\", config.token, \"--fee_bps\", String(config.fee_bps), \"--max_entry\", String(ECONOMY.maxEntryStroops), \"--max_payout\", String(ECONOMY.maxPayoutStroops), \"--min_treasury_balance\", String(config.min_treasury_balance)]);"
+    },
+    {
+      "file": "scripts/deploy-stake-contract.mjs",
+      "line": 46,
+      "purpose": "operational script",
+      "text": "const deployedConfig = JSON.parse(cli([\"contract\", \"invoke\", \"--id\", contractId, \"--network\", \"testnet\", \"--send\", \"no\", \"--\", \"get_config\"]));"
+    },
+    {
+      "file": "scripts/deploy-stake-contract.mjs",
+      "line": 49,
+      "purpose": "operational script",
+      "text": "const receipt = { network: \"testnet\", originalContract, contractId, wasmSha256, deployedAt: new Date().toISOString(), config: deployedConfig };"
+    },
+    {
+      "file": "tests/stellar-mainnet-config.test.ts",
+      "line": 6,
+      "purpose": "test fixture",
+      "text": "const legacy = \"CD3EW4ENWDYGOGQGBJ7G2NU2YV4MLGSQW7CEIBZOYR2NQ4NJ7ZIOZ6FA\";"
+    },
+    {
+      "file": "tests/stellar-mainnet-config.test.ts",
+      "line": 37,
+      "purpose": "test fixture",
+      "text": "expect(stellarNetwork(\"testnet\")).toMatchObject({ networkPassphrase: Networks.TESTNET, rpcUrl: \"https://soroban-testnet.stellar.org\", horizonUrl: \"https://horizon-testnet.stellar.org\" });"
+    },
+    {
+      "file": "tests/stellar-mainnet-config.test.ts",
+      "line": 38,
+      "purpose": "test fixture",
+      "text": "expect(contractId(\"testnet\")).toBe(legacy);"
+    },
+    {
+      "file": "tests/stellar-mainnet-config.test.ts",
+      "line": 39,
+      "purpose": "test fixture",
+      "text": "expect(tokenContractId(\"testnet\")).toBe(STELLAR_TESTNET_XLM);"
+    },
+    {
+      "file": "tests/stellar-mainnet-config.test.ts",
+      "line": 42,
+      "purpose": "test fixture",
+      "text": "it.each([\"CBBDWEWBBQVQXNYUJ4FA6C2CXXUVDAJSNUOVPZNKTQWK5P2EON7KEGMZ\", legacy, STELLAR_TESTNET_XLM, STELLAR_MAINNET_USDC])(\"rejects %s as the Mainnet game escrow\", async id => {"
+    },
+    {
+      "file": "tests/stellar-mainnet-config.test.ts",
+      "line": 54,
+      "purpose": "test fixture",
+      "text": "it.each([[\"STELLAR_RPC_URL\", \"https://soroban-testnet.stellar.org\"], [\"STELLAR_HORIZON_URL\", \"https://horizon-testnet.stellar.org\"], [\"STELLAR_NETWORK_PASSPHRASE\", Networks.TESTNET]])(\"rejects incompatible %s\", async (name, value) => {"
+    },
+    {
+      "file": "tests/stellar-mainnet-config.test.ts",
+      "line": 69,
+      "purpose": "test fixture",
+      "text": "it.each([{ networkId: \"stellar-testnet\", currency: \"XLM\" }, { networkId: \"stellar-mainnet\", currency: \"XLM\" }, { currency: \"USDC\" }, {}])(\"rejects stale or missing Mainnet financial context: %j\", async body => {"
+    },
+    {
+      "file": "tests/stellar-mainnet-config.test.ts",
+      "line": 77,
+      "purpose": "test fixture",
+      "text": "expect(() => assertStellarRequest({ networkId: \"stellar-testnet\", currency: \"XLM\" }, { game: { stellar_network: \"testnet\", currency: \"XLM\", token_contract_id: STELLAR_TESTNET_XLM } })).not.toThrow();"
+    },
+    {
+      "file": "tests/stellar-mainnet-migration.test.ts",
+      "line": 20,
+      "purpose": "test fixture",
+      "text": "const wallet = await createWallet(database, { userId: user.id, address: \"GBGDTBOXVZ4GIDDRISY5FGXYY7XCWCCK3FRHJHSVFEZMWA3ZZ2HUALTK\", provider: \"chain-duel-managed\", custody: \"managed\", isPrimary: true, network: \"testnet\" });"
+    },
+    {
+      "file": "tests/stellar-mainnet-migration.test.ts",
+      "line": 30,
+      "purpose": "test fixture",
+      "text": "expect(old).toEqual({ stellar_network: \"testnet\", currency: \"XLM\", token_contract_id: STELLAR_TESTNET_XLM, entry_stroops: 250_000_000, protocol_fee_bps: 1000, ecosystem_fee_bps: 0, protocol_fee_stroops: 50_000_000 });"
+    },
+    {
+      "file": "tests/stellar-mainnet-migration.test.ts",
+      "line": 37,
+      "purpose": "test fixture",
+      "text": "await enqueue(database, { userId: user.id, gameType: \"pulse_duel\", entryStroops: 250_000_000, demo: false, expiresAt: new Date(Date.now() + 60000).toISOString(), stellarNetwork: \"testnet\", currency: \"XLM\" });"
+    },
+    {
+      "file": "tests/arc-escrow.test.ts",
+      "line": 46,
+      "purpose": "test fixture",
+      "text": "vi.stubEnv(\"ARC_NETWORK\", \"testnet\");"
+    },
+    {
+      "file": "tests/arc-escrow.test.ts",
+      "line": 94,
+      "purpose": "test fixture",
+      "text": "network_id: \"arc-testnet\","
+    },
+    {
+      "file": "tests/stellar-mainnet-wallet.test.ts",
+      "line": 38,
+      "purpose": "test fixture",
+      "text": "const wallet = await createWallet(database, { userId: user.id, address: player.publicKey(), custody, provider: custody === \"managed\" ? \"chain-duel-managed\" : \"freighter\", network: \"testnet\", isPrimary: true });"
+    },
+    {
+      "file": "tests/stellar-mainnet-wallet.test.ts",
+      "line": 61,
+      "purpose": "test fixture",
+      "text": "it(\"reuses the existing encrypted Testnet key for Mainnet USDC and records its true currency\", async () => {"
+    },
+    {
+      "file": "tests/stellar-mainnet-wallet.test.ts",
+      "line": 90,
+      "purpose": "test fixture",
+      "text": "await expect(startTransfer({ userId, ...request, networkId: \"stellar-testnet\" })).rejects.toThrow(/different network/);"
+    },
+    {
+      "file": "tests/bridge.test.ts",
+      "line": 78,
+      "purpose": "test fixture",
+      "text": "const USDC = new Asset(\"USDC\", \"GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5\").contractId("
+    },
+    {
+      "file": "tests/bridge.test.ts",
+      "line": 86,
+      "purpose": "test fixture",
+      "text": "source_network: fromArc ? \"arc-testnet\" : \"stellar-testnet\","
+    },
+    {
+      "file": "tests/bridge.test.ts",
+      "line": 87,
+      "purpose": "test fixture",
+      "text": "destination_network: fromArc ? \"stellar-testnet\" : \"arc-testnet\","
+    },
+    {
+      "file": "tests/bridge.test.ts",
+      "line": 107,
+      "purpose": "test fixture",
+      "text": "const a = CCTP_ADDRESSES.testnet;"
+    },
+    {
+      "file": "tests/bridge.test.ts",
+      "line": 197,
+      "purpose": "test fixture",
+      "text": "ARC_NETWORK: \"testnet\","
+    },
+    {
+      "file": "tests/bridge.test.ts",
+      "line": 242,
+      "purpose": "test fixture",
+      "text": "networkId: \"stellar-testnet\","
+    },
+    {
+      "file": "tests/bridge.test.ts",
+      "line": 243,
+      "purpose": "test fixture",
+      "text": "networkName: \"Stellar Testnet\","
+    },
+    {
+      "file": "tests/bridge.test.ts",
+      "line": 257,
+      "purpose": "test fixture",
+      "text": "\"INSERT INTO bridge_steps(id,bridge_id,phase,network_id,target,status,idempotency_key,created_at,updated_at) VALUES(?,?,'source_approval','stellar-testnet',?,'confirmed',?,?,?)\","
+    },
+    {
+      "file": "tests/bridge.test.ts",
+      "line": 271,
+      "purpose": "test fixture",
+      "text": "\"INSERT INTO bridge_steps(id,bridge_id,phase,network_id,target,calldata,status,challenge_id,idempotency_key,created_at,updated_at) VALUES(?,?,?,'arc-testnet',?,'0x1234','awaiting_approval','expired-circle-challenge',?,?,?)\","
+    },
+    {
+      "file": "tests/bridge.test.ts",
+      "line": 272,
+      "purpose": "test fixture",
+      "text": "[stepId, transfer.id, phase, phase === \"source_approval\" ? ARC_USDC : CCTP_ADDRESSES.testnet.arcMessenger, idempotencyKey, timestamp, timestamp],"
+    },
+    {
+      "file": "tests/bridge.test.ts",
+      "line": 350,
+      "purpose": "test fixture",
+      "text": "\"INSERT INTO bridge_steps(id,bridge_id,phase,network_id,target,calldata,status,idempotency_key,created_at,updated_at) VALUES(?,?,?,'arc-testnet',?,'0x1234',?,?,?,?)\","
+    },
+    {
+      "file": "tests/bridge.test.ts",
+      "line": 351,
+      "purpose": "test fixture",
+      "text": "[crypto.randomUUID(), transfer.id, phase, CCTP_ADDRESSES.testnet.arcMessenger, status, crypto.randomUUID(), timestamp, timestamp],"
+    },
+    {
+      "file": "scripts/arc-deploy.mjs",
+      "line": 19,
+      "purpose": "operational script",
+      "text": "if (![\"mainnet\", \"testnet\"].includes(network)) throw new Error(\"ARC_NETWORK must be mainnet or testnet.\");"
+    },
+    {
+      "file": "scripts/arc-deploy.mjs",
+      "line": 21,
+      "purpose": "operational script",
+      "text": "const rpcUrl = network === \"mainnet\" ? \"https://rpc.mainnet.arc.io\" : \"https://rpc.testnet.arc.io\";"
+    },
+    {
+      "file": "scripts/arc-deploy.mjs",
+      "line": 22,
+      "purpose": "operational script",
+      "text": "const explorer = network === \"mainnet\" ? \"https://explorer.arc.io\" : \"https://explorer.testnet.arc.io\";"
+    },
+    {
+      "file": "scripts/verify-deployment.mjs",
+      "line": 2,
+      "purpose": "operational script",
+      "text": "* Reads the deployed contract back from Stellar Testnet and prints its"
+    },
+    {
+      "file": "scripts/verify-deployment.mjs",
+      "line": 22,
+      "purpose": "operational script",
+      "text": "\"--network\", env.STELLAR_NETWORK ?? \"testnet\","
+    },
+    {
+      "file": "scripts/verify-deployment.mjs",
+      "line": 31,
+      "purpose": "operational script",
+      "text": "console.log(`explorer: https://stellar.expert/explorer/testnet/contract/${contractId}\\n`);"
+    },
+    {
+      "file": "docs/arc-deployments/final-engineering-review.md",
+      "line": 46,
+      "purpose": "documentation/history",
+      "text": "- 23 original Soroban tests and five funded Stellar Testnet flows passed."
+    },
+    {
+      "file": "tests/stellar-mainnet-match.test.ts",
+      "line": 34,
+      "purpose": "test fixture",
+      "text": "await identity.createWallet(database, { userId: user.id, address, custody: \"external\", provider: \"freighter\", network: \"testnet\", isPrimary: true });"
+    },
+    {
+      "file": "tests/wallet.test.ts",
+      "line": 25,
+      "purpose": "test fixture",
+      "text": "fundTestnetAccount: vi.fn(async () => ({ hash: \"fund-hash\", ledger: 42 })),"
+    },
+    {
+      "file": "tests/wallet.test.ts",
+      "line": 36,
+      "purpose": "test fixture",
+      "text": "const NET = { networkPassphrase: \"Test SDF Network ; September 2015\" };"
+    },
+    {
+      "file": "tests/wallet.test.ts",
+      "line": 50,
+      "purpose": "test fixture",
+      "text": "network: \"testnet\","
+    },
+    {
+      "file": "tests/wallet.test.ts",
+      "line": 140,
+      "purpose": "test fixture",
+      "text": "await expect(startTransfer({ userId, destination: DESTINATION, amountXlm: \"1\" })).rejects.toThrow(/no Testnet balance/i);"
+    },
+    {
+      "file": "tests/wallet.test.ts",
+      "line": 272,
+      "purpose": "test fixture",
+      "text": "describe(\"testnet faucet\", () => {"
+    },
+    {
+      "file": "tests/wallet.test.ts",
+      "line": 275,
+      "purpose": "test fixture",
+      "text": "await expect(fundOwnWallet(userId)).rejects.toThrow(/already has a Testnet balance/i);"
+    },
+    {
+      "file": "scripts/lib.mjs",
+      "line": 31,
+      "purpose": "operational script",
+      "text": "export const NATIVE_XLM_SAC_TESTNET = \"CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC\";"
+    },
+    {
+      "file": "scripts/lib.mjs",
+      "line": 32,
+      "purpose": "operational script",
+      "text": "export const FRIENDBOT_URL = \"https://friendbot.stellar.org\";"
+    },
+    {
+      "file": "scripts/lib.mjs",
+      "line": 87,
+      "purpose": "operational script",
+      "text": "export async function friendbot(address) {"
+    },
+    {
+      "file": "scripts/seed.mjs",
+      "line": 54,
+      "purpose": "operational script",
+      "text": "console.log(\"\\nDone. These accounts are demo-mode only: they cannot stake real Testnet funds.\");"
+    },
+    {
+      "file": "tests/live-stake.test.ts",
+      "line": 3,
+      "purpose": "test fixture",
+      "text": "* escrow contract on Stellar Testnet. Proves that the selected stake (preset or"
+    },
+    {
+      "file": "tests/live-stake.test.ts",
+      "line": 7,
+      "purpose": "test fixture",
+      "text": "* Opt in explicitly — it spends real Testnet XLM:"
+    },
+    {
+      "file": "tests/live-stake.test.ts",
+      "line": 61,
+      "purpose": "test fixture",
+      "text": "async function friendbot(address: string): Promise<void> {"
+    },
+    {
+      "file": "tests/live-stake.test.ts",
+      "line": 62,
+      "purpose": "test fixture",
+      "text": "const response = await fetch(`https://friendbot.stellar.org?addr=${address}`);"
+    },
+    {
+      "file": "tests/live-stake.test.ts",
+      "line": 64,
+      "purpose": "test fixture",
+      "text": "if (!response.ok && !/already/i.test(text)) throw new Error(`friendbot failed: ${text.slice(0, 200)}`);"
+    },
+    {
+      "file": "tests/live-stake.test.ts",
+      "line": 70,
+      "purpose": "test fixture",
+      "text": "await friendbot(donor.publicKey());"
+    },
+    {
+      "file": "tests/live-stake.test.ts",
+      "line": 71,
+      "purpose": "test fixture",
+      "text": "const response = await fetch(`https://horizon-testnet.stellar.org/accounts/${donor.publicKey()}`);"
+    },
+    {
+      "file": "tests/live-stake.test.ts",
+      "line": 76,
+      "purpose": "test fixture",
+      "text": "const sent = await fetch(\"https://horizon-testnet.stellar.org/transactions\", { method: \"POST\", headers: { \"content-type\": \"application/x-www-form-urlencoded\" }, body: new URLSearchParams({ tx: payment.toXDR() }) });"
+    },
+    {
+      "file": "tests/live-stake.test.ts",
+      "line": 134,
+      "purpose": "test fixture",
+      "text": "await friendbot(alpha.address);"
+    },
+    {
+      "file": "tests/live-stake.test.ts",
+      "line": 135,
+      "purpose": "test fixture",
+      "text": "await friendbot(beta.address);"
+    },
+    {
+      "file": "tests/live-stake.test.ts",
+      "line": 175,
+      "purpose": "test fixture",
+      "text": "await friendbot(third.address);"
+    },
+    {
+      "file": "tests/live-stake.test.ts",
+      "line": 188,
+      "purpose": "test fixture",
+      "text": "const server = new rpc.Server(\"https://soroban-testnet.stellar.org\");"
+    },
+    {
+      "file": "scripts/setup-testnet.mjs",
+      "line": 2,
+      "purpose": "operational script",
+      "text": "* One-command Testnet bootstrap: create (or reuse) the admin/settlement key,"
+    },
+    {
+      "file": "scripts/setup-testnet.mjs",
+      "line": 6,
+      "purpose": "operational script",
+      "text": "*   node scripts/setup-testnet.mjs              # generate a key if needed"
+    },
+    {
+      "file": "scripts/setup-testnet.mjs",
+      "line": 7,
+      "purpose": "operational script",
+      "text": "*   CHAIN_DUEL_ADMIN_SECRET=S... node scripts/setup-testnet.mjs"
+    },
+    {
+      "file": "scripts/setup-testnet.mjs",
+      "line": 11,
+      "purpose": "operational script",
+      "text": "import { friendbot, loadEnvFile, upsertEnvFile } from \"./lib.mjs\";"
+    },
+    {
+      "file": "scripts/setup-testnet.mjs",
+      "line": 23,
+      "purpose": "operational script",
+      "text": "console.log(\"No CHAIN_DUEL_ADMIN_SECRET found — generated a fresh Testnet admin key.\");"
+    },
+    {
+      "file": "scripts/setup-testnet.mjs",
+      "line": 31,
+      "purpose": "operational script",
+      "text": "await friendbot(admin);"
+    },
+    {
+      "file": "scripts/setup-testnet.mjs",
+      "line": 45,
+      "purpose": "operational script",
+      "text": "STELLAR_NETWORK: \"testnet\","
+    },
+    {
+      "file": "scripts/setup-testnet.mjs",
+      "line": 58,
+      "purpose": "operational script",
+      "text": "STELLAR_NETWORK: \"testnet\","
+    },
+    {
+      "file": "scripts/setup-testnet.mjs",
+      "line": 60,
+      "purpose": "operational script",
+      "text": "CHAIN_DUEL_TOKEN_ID: env.CHAIN_DUEL_TOKEN_ID || \"CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC\","
+    },
+    {
+      "file": "scripts/setup-testnet.mjs",
+      "line": 69,
+      "purpose": "operational script",
+      "text": "console.log(`\\n✓ Testnet ready`);"
+    },
+    {
+      "file": "src/proxy.ts",
+      "line": 34,
+      "purpose": "Stellar application/configuration",
+      "text": "\"stellar-testnet\","
+    },
+    {
+      "file": "src/proxy.ts",
+      "line": 36,
+      "purpose": "Stellar application/configuration",
+      "text": "\"testnet\","
+    },
+    {
+      "file": "src/proxy.ts",
+      "line": 37,
+      "purpose": "Stellar application/configuration",
+      "text": "\"futurenet\","
+    },
+    {
+      "file": "tests/live-e2e.test.ts",
+      "line": 3,
+      "purpose": "test fixture",
+      "text": "* Soroban escrow contract on Stellar Testnet."
+    },
+    {
+      "file": "tests/live-e2e.test.ts",
+      "line": 5,
+      "purpose": "test fixture",
+      "text": "* Opt in explicitly — it spends real Testnet XLM:"
+    },
+    {
+      "file": "tests/live-e2e.test.ts",
+      "line": 69,
+      "purpose": "test fixture",
+      "text": "async function friendbot(address: string): Promise<void> {"
+    },
+    {
+      "file": "tests/live-e2e.test.ts",
+      "line": 70,
+      "purpose": "test fixture",
+      "text": "const response = await fetch(`https://friendbot.stellar.org?addr=${address}`);"
+    },
+    {
+      "file": "tests/live-e2e.test.ts",
+      "line": 72,
+      "purpose": "test fixture",
+      "text": "if (!response.ok && !/already/i.test(text)) throw new Error(`friendbot failed: ${text.slice(0, 200)}`);"
+    },
+    {
+      "file": "tests/live-e2e.test.ts",
+      "line": 75,
+      "purpose": "test fixture",
+      "text": "describe.runIf(LIVE)(\"live duel against Testnet escrow\", () => {"
+    },
+    {
+      "file": "tests/live-e2e.test.ts",
+      "line": 80,
+      "purpose": "test fixture",
+      "text": "await friendbot(alpha.address);"
+    },
+    {
+      "file": "tests/live-e2e.test.ts",
+      "line": 81,
+      "purpose": "test fixture",
+      "text": "await friendbot(beta.address);"
+    },
+    {
+      "file": "tests/live-e2e.test.ts",
+      "line": 83,
+      "purpose": "test fixture",
+      "text": "// Creator locks 25 XLM of real Testnet XLM into the contract."
+    },
+    {
+      "file": "tests/live-e2e.test.ts",
+      "line": 172,
+      "purpose": "test fixture",
+      "text": "await friendbot(player.address);"
+    },
+    {
+      "file": "docs/multichain-security-review.md",
+      "line": 49,
+      "purpose": "documentation/history",
+      "text": "- Five funded Stellar Testnet regression flows passed. A real isolated PostgreSQL"
+    },
+    {
+      "file": "docs/multichain-security-review.md",
+      "line": 121,
+      "purpose": "documentation/history",
+      "text": "The production application previously used Stellar Testnet with its original"
+    },
+    {
+      "file": "src/lib/explorer.ts",
+      "line": 3,
+      "purpose": "Stellar application/configuration",
+      "text": "* an unbound historical record retains Testnet."
+    },
+    {
+      "file": "src/lib/explorer.ts",
+      "line": 6,
+      "purpose": "Stellar application/configuration",
+      "text": "export const EXPLORER_BASE = stellarExplorerBase(\"testnet\");"
+    },
+    {
+      "file": "src/lib/explorer.ts",
+      "line": 8,
+      "purpose": "Stellar application/configuration",
+      "text": "export function txExplorerUrl(hash: string | null | undefined, network: StellarNetworkId = \"testnet\"): string | null {"
+    },
+    {
+      "file": "src/lib/explorer.ts",
+      "line": 13,
+      "purpose": "Stellar application/configuration",
+      "text": "export function accountExplorerUrl(address: string, network: StellarNetworkId = \"testnet\"): string {"
+    },
+    {
+      "file": "src/lib/explorer.ts",
+      "line": 17,
+      "purpose": "Stellar application/configuration",
+      "text": "export function contractExplorerUrl(id: string, network: StellarNetworkId = \"testnet\"): string {"
+    },
+    {
+      "file": "src/lib/config/env.ts",
+      "line": 21,
+      "purpose": "Stellar application/configuration",
+      "text": "STELLAR_NETWORK: z.enum([\"testnet\", \"futurenet\", \"mainnet\", \"local\"]).optional(),"
+    },
+    {
+      "file": "tests/stellar-submit.test.ts",
+      "line": 22,
+      "purpose": "test fixture",
+      "text": "const PASSPHRASE = \"Test SDF Network ; September 2015\";"
+    },
+    {
+      "file": "tests/stellar-submit.test.ts",
+      "line": 44,
+      "purpose": "test fixture",
+      "text": "const contract = new Contract(\"CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC\");"
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 15,
+      "purpose": "Stellar application/configuration",
+      "text": "friendbotUrl: string | null;"
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 17,
+      "purpose": "Stellar application/configuration",
+      "text": "isTestnet: boolean;"
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 21,
+      "purpose": "Stellar application/configuration",
+      "text": "testnet: {"
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 22,
+      "purpose": "Stellar application/configuration",
+      "text": "id: \"testnet\","
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 23,
+      "purpose": "Stellar application/configuration",
+      "text": "label: \"Stellar Testnet\","
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 24,
+      "purpose": "Stellar application/configuration",
+      "text": "rpcUrl: \"https://soroban-testnet.stellar.org\","
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 25,
+      "purpose": "Stellar application/configuration",
+      "text": "horizonUrl: \"https://horizon-testnet.stellar.org\","
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 26,
+      "purpose": "Stellar application/configuration",
+      "text": "networkPassphrase: \"Test SDF Network ; September 2015\","
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 27,
+      "purpose": "Stellar application/configuration",
+      "text": "explorerUrl: \"https://stellar.expert/explorer/testnet\","
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 28,
+      "purpose": "Stellar application/configuration",
+      "text": "friendbotUrl: \"https://friendbot.stellar.org\","
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 29,
+      "purpose": "Stellar application/configuration",
+      "text": "// Native XLM Stellar Asset Contract on Testnet."
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 30,
+      "purpose": "Stellar application/configuration",
+      "text": "nativeTokenContractId: \"CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC\","
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 31,
+      "purpose": "Stellar application/configuration",
+      "text": "isTestnet: true,"
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 33,
+      "purpose": "Stellar application/configuration",
+      "text": "futurenet: {"
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 34,
+      "purpose": "Stellar application/configuration",
+      "text": "id: \"futurenet\","
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 35,
+      "purpose": "Stellar application/configuration",
+      "text": "label: \"Stellar Futurenet\","
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 36,
+      "purpose": "Stellar application/configuration",
+      "text": "rpcUrl: \"https://rpc-futurenet.stellar.org\","
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 37,
+      "purpose": "Stellar application/configuration",
+      "text": "horizonUrl: \"https://horizon-futurenet.stellar.org\","
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 38,
+      "purpose": "Stellar application/configuration",
+      "text": "networkPassphrase: \"Test SDF Future Network ; October 2022\","
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 39,
+      "purpose": "Stellar application/configuration",
+      "text": "explorerUrl: \"https://stellar.expert/explorer/futurenet\","
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 40,
+      "purpose": "Stellar application/configuration",
+      "text": "friendbotUrl: \"https://friendbot-futurenet.stellar.org\","
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 41,
+      "purpose": "Stellar application/configuration",
+      "text": "nativeTokenContractId: \"CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC\","
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 42,
+      "purpose": "Stellar application/configuration",
+      "text": "isTestnet: true,"
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 51,
+      "purpose": "Stellar application/configuration",
+      "text": "friendbotUrl: null,"
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 53,
+      "purpose": "Stellar application/configuration",
+      "text": "isTestnet: false,"
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 61,
+      "purpose": "Stellar application/configuration",
+      "text": "explorerUrl: \"https://stellar.expert/explorer/testnet\","
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 62,
+      "purpose": "Stellar application/configuration",
+      "text": "friendbotUrl: \"http://localhost:8000/friendbot\","
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 64,
+      "purpose": "Stellar application/configuration",
+      "text": "isTestnet: true,"
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 70,
+      "purpose": "Stellar application/configuration",
+      "text": "const configured = env.STELLAR_NETWORK ?? \"testnet\";"
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 74,
+      "purpose": "Stellar application/configuration",
+      "text": "// Current overrides apply only to the current network. Legacy Testnet games"
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 79,
+      "purpose": "Stellar application/configuration",
+      "text": "if (/testnet|futurenet/i.test(env.STELLAR_RPC_URL ?? \"\") || /testnet|futurenet/i.test(env.STELLAR_HORIZON_URL ?? \"\")) throw new Error(\"Stellar Mainnet cannot use Testnet infrastructure.\");"
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 92,
+      "purpose": "Stellar application/configuration",
+      "text": "if (id && [rawEnv().CHAIN_DUEL_CONTRACT_ID, rawEnv().CHAIN_DUEL_STAKE_CONTRACT_ID, \"CBBDWEWBBQVQXNYUJ4FA6C2CXXUVDAJSNUOVPZNKTQWK5P2EON7KEGMZ\", \"CD3EW4ENWDYGOGQGBJ7G2NU2YV4MLGSQW7CEIBZOYR2NQ4NJ7ZIOZ6FA\", STELLAR_TESTNET_XLM, STELLAR_MAINNET_USDC].includes(id)) throw new Error(\"Mainnet requires its independently deployed Chain Duel escrow.\");"
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 119,
+      "purpose": "Stellar application/configuration",
+      "text": "if (network.id === \"testnet\" && rawEnv().STELLAR_NETWORK === \"mainnet\") return rawEnv().CHAIN_DUEL_TESTNET_TOKEN_ID?.trim() || STELLAR_TESTNET_XLM;"
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 120,
+      "purpose": "Stellar application/configuration",
+      "text": "const configured = network.id === (rawEnv().STELLAR_NETWORK ?? \"testnet\") ? rawEnv().CHAIN_DUEL_TOKEN_ID?.trim() : undefined;"
+    },
+    {
+      "file": "src/lib/config/stellar.ts",
+      "line": 155,
+      "purpose": "Stellar application/configuration",
+      "text": "isTestnet: net.isTestnet,"
+    },
+    {
+      "file": "src/lib/stellar/shared.ts",
+      "line": 2,
+      "purpose": "Stellar application/configuration",
+      "text": "export type StellarNetworkId = \"testnet\" | \"futurenet\" | \"mainnet\" | \"local\";"
+    },
+    {
+      "file": "src/lib/stellar/shared.ts",
+      "line": 8,
+      "purpose": "Stellar application/configuration",
+      "text": "export const STELLAR_TESTNET_XLM = \"CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC\";"
+    },
+    {
+      "file": "src/lib/stellar/shared.ts",
+      "line": 10,
+      "purpose": "Stellar application/configuration",
+      "text": "export const STELLAR_TESTNET_PASSPHRASE = \"Test SDF Network ; September 2015\";"
+    },
+    {
+      "file": "src/lib/stellar/shared.ts",
+      "line": 19,
+      "purpose": "Stellar application/configuration",
+      "text": "isTestnet: boolean;"
+    },
+    {
+      "file": "src/lib/stellar/shared.ts",
+      "line": 35,
+      "purpose": "Stellar application/configuration",
+      "text": "/** Missing context belongs to historical Testnet XLM, never to new Mainnet USDC. */"
+    },
+    {
+      "file": "src/lib/stellar/shared.ts",
+      "line": 37,
+      "purpose": "Stellar application/configuration",
+      "text": "return record.stellar_network ?? \"testnet\";"
+    },
+    {
+      "file": "src/lib/stellar/shared.ts",
+      "line": 45,
+      "purpose": "Stellar application/configuration",
+      "text": "return `https://stellar.expert/explorer/${network === \"mainnet\" ? \"public\" : \"testnet\"}`;"
+    },
+    {
+      "file": "src/lib/stellar/shared.ts",
+      "line": 49,
+      "purpose": "Stellar application/configuration",
+      "text": "return network === \"mainnet\" ? \"Stellar Mainnet\" : network === \"futurenet\" ? \"Stellar Futurenet\" : network === \"local\" ? \"Local Sandbox\" : \"Stellar Testnet\";"
+    },
+    {
+      "file": "src/lib/networks/arc.ts",
+      "line": 9,
+      "purpose": "Stellar application/configuration",
+      "text": "export type ArcNetworkId = \"arc-mainnet\" | \"arc-testnet\";"
+    },
+    {
+      "file": "src/lib/networks/arc.ts",
+      "line": 17,
+      "purpose": "Stellar application/configuration",
+      "text": "testnet: false,"
+    },
+    {
+      "file": "src/lib/networks/arc.ts",
+      "line": 19,
+      "purpose": "Stellar application/configuration",
+      "text": "\"arc-testnet\": {"
+    },
+    {
+      "file": "src/lib/networks/arc.ts",
+      "line": 21,
+      "purpose": "Stellar application/configuration",
+      "text": "name: \"Arc Testnet\","
+    },
+    {
+      "file": "src/lib/networks/arc.ts",
+      "line": 22,
+      "purpose": "Stellar application/configuration",
+      "text": "rpc: \"https://rpc.testnet.arc.io\","
+    },
+    {
+      "file": "src/lib/networks/arc.ts",
+      "line": 23,
+      "purpose": "Stellar application/configuration",
+      "text": "explorer: \"https://explorer.testnet.arc.io\","
+    },
+    {
+      "file": "src/lib/networks/arc.ts",
+      "line": 25,
+      "purpose": "Stellar application/configuration",
+      "text": "testnet: true,"
+    },
+    {
+      "file": "src/lib/networks/arc.ts",
+      "line": 37,
+      "purpose": "Stellar application/configuration",
+      "text": "testnet: config.testnet,"
+    },
+    {
+      "file": "src/lib/bridge/service.ts",
+      "line": 292,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "const base = transfer.source_network.endsWith(\"testnet\")"
+    },
+    {
+      "file": "src/lib/bridge/service.ts",
+      "line": 448,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "const addresses = CCTP_ADDRESSES[arcConfig().testnet ? \"testnet\" : \"mainnet\"];"
+    },
+    {
+      "file": "src/lib/bridge/cctp.ts",
+      "line": 13,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "testnet: {"
+    },
+    {
+      "file": "src/lib/bridge/fees.ts",
+      "line": 13,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "const base = arcConfig().testnet ? \"https://iris-api-sandbox.circle.com\" : \"https://iris-api.circle.com\";"
+    },
+    {
+      "file": "src/lib/bridge/evm.ts",
+      "line": 28,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "const addresses = CCTP_ADDRESSES[transfer.source_network.endsWith(\"testnet\") ? \"testnet\" : \"mainnet\"];"
+    },
+    {
+      "file": "src/lib/stellar/payments.ts",
+      "line": 218,
+      "purpose": "Stellar application/configuration",
+      "text": "/** Unfunded Testnet accounts can be created with Friendbot. */"
+    },
+    {
+      "file": "src/lib/stellar/payments.ts",
+      "line": 219,
+      "purpose": "Stellar application/configuration",
+      "text": "export async function fundTestnetAccount(address: string): Promise<{ hash: string | null; ledger: number | null }> {"
+    },
+    {
+      "file": "src/lib/stellar/payments.ts",
+      "line": 221,
+      "purpose": "Stellar application/configuration",
+      "text": "if (!net.friendbotUrl) {"
+    },
+    {
+      "file": "src/lib/stellar/payments.ts",
+      "line": 222,
+      "purpose": "Stellar application/configuration",
+      "text": "throw new StellarIntegrationError(\"Friendbot is only available on Testnet.\", \"no_friendbot\", 400);"
+    },
+    {
+      "file": "src/lib/stellar/payments.ts",
+      "line": 224,
+      "purpose": "Stellar application/configuration",
+      "text": "const response = await fetch(`${net.friendbotUrl}/?addr=${encodeURIComponent(address)}`, { method: \"GET\" });"
+    },
+    {
+      "file": "src/lib/stellar/payments.ts",
+      "line": 227,
+      "purpose": "Stellar application/configuration",
+      "text": "console.error(\"[chain-duel] friendbot failed:\", response.status, body.slice(0, 300));"
+    },
+    {
+      "file": "src/lib/stellar/payments.ts",
+      "line": 230,
+      "purpose": "Stellar application/configuration",
+      "text": "? \"That wallet already has a Testnet balance.\""
+    },
+    {
+      "file": "src/lib/stellar/payments.ts",
+      "line": 231,
+      "purpose": "Stellar application/configuration",
+      "text": ": \"The Testnet faucet is busy. Please try again.\","
+    },
+    {
+      "file": "src/lib/bridge/validation.ts",
+      "line": 16,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "const addresses = CCTP_ADDRESSES[transfer.source_network.endsWith(\"testnet\") ? \"testnet\" : \"mainnet\"];"
+    },
+    {
+      "file": "src/lib/db/stellar-migrations.ts",
+      "line": 38,
+      "purpose": "Stellar application/configuration",
+      "text": "const context = { stellar_network: \"TEXT NOT NULL DEFAULT 'testnet'\", currency: \"TEXT NOT NULL DEFAULT 'XLM'\" };"
+    },
+    {
+      "file": "src/lib/db/stellar-migrations.ts",
+      "line": 48,
+      "purpose": "Stellar application/configuration",
+      "text": "await tx.execute(\"UPDATE games SET protocol_fee_bps = fee_bps, protocol_fee_stroops = fee_stroops WHERE stellar_network = 'testnet' AND currency = 'XLM'\");"
+    },
+    {
+      "file": "src/lib/db/stellar-migrations.ts",
+      "line": 54,
+      "purpose": "Stellar application/configuration",
+      "text": "SELECT user_id,'testnet','XLM',total_earned_stroops,total_wagered_stroops,fees_paid_stroops FROM profiles"
+    },
+    {
+      "file": "src/lib/bridge/stellar.ts",
+      "line": 28,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "const testnet = arcConfig().testnet;"
+    },
+    {
+      "file": "src/lib/bridge/stellar.ts",
+      "line": 29,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "const passphrase = testnet ? Networks.TESTNET : Networks.PUBLIC;"
+    },
+    {
+      "file": "src/lib/bridge/stellar.ts",
+      "line": 30,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "const issuer = testnet"
+    },
+    {
+      "file": "src/lib/bridge/stellar.ts",
+      "line": 31,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "? \"GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5\""
+    },
+    {
+      "file": "src/lib/bridge/stellar.ts",
+      "line": 35,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "networkId: testnet ? (\"stellar-testnet\" as const) : (\"stellar-mainnet\" as const),"
+    },
+    {
+      "file": "src/lib/bridge/stellar.ts",
+      "line": 36,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "name: testnet ? \"Stellar Testnet\" : \"Stellar Mainnet\","
+    },
+    {
+      "file": "src/lib/bridge/stellar.ts",
+      "line": 41,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "rpcUrl: testnet ? \"https://soroban-testnet.stellar.org\" : \"https://mainnet.sorobanrpc.com\","
+    },
+    {
+      "file": "src/lib/bridge/stellar.ts",
+      "line": 42,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "horizonUrl: testnet ? \"https://horizon-testnet.stellar.org\" : \"https://horizon.stellar.org\","
+    },
+    {
+      "file": "src/lib/bridge/stellar.ts",
+      "line": 43,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "cctp: CCTP_ADDRESSES[testnet ? \"testnet\" : \"mainnet\"],"
+    },
+    {
+      "file": "src/lib/bridge/stellar.ts",
+      "line": 194,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "if (network.networkId === \"stellar-testnet\") return (await stellarBridgeRpc()).sendTransaction(tx);"
+    },
+    {
+      "file": "src/lib/stellar/server.ts",
+      "line": 72,
+      "purpose": "Stellar application/configuration",
+      "text": "| \"no_friendbot\""
+    },
+    {
+      "file": "src/lib/stellar/server.ts",
+      "line": 275,
+      "purpose": "Stellar application/configuration",
+      "text": "// NOT_FOUND means the transaction never reached a ledger. Testnet RPC"
+    },
+    {
+      "file": "src/lib/stellar/server.ts",
+      "line": 505,
+      "purpose": "Stellar application/configuration",
+      "text": "if (!net.friendbotUrl) return false;"
+    },
+    {
+      "file": "src/lib/stellar/server.ts",
+      "line": 506,
+      "purpose": "Stellar application/configuration",
+      "text": "const response = await fetch(`${net.friendbotUrl}/?addr=${encodeURIComponent(address)}`, {"
+    },
+    {
+      "file": "src/lib/stellar/server.ts",
+      "line": 514,
+      "purpose": "Stellar application/configuration",
+      "text": "// entire ledger header, whose new Testnet SCP extension is not supported by"
+    },
+    {
+      "file": "docs/multichain-audit.md",
+      "line": 35,
+      "purpose": "documentation/history",
+      "text": "The existing `www.chainduel.site/api/health` reports Stellar **Testnet**, PostgreSQL,"
+    },
+    {
+      "file": "docs/multichain-audit.md",
+      "line": 59,
+      "purpose": "documentation/history",
+      "text": "`https://rpc.mainnet.arc.io`, explorer `https://explorer.arc.io`, and Testnet"
+    },
+    {
+      "file": "docs/multichain-audit.md",
+      "line": 60,
+      "purpose": "documentation/history",
+      "text": "chain ID **5042002**, RPC `https://rpc.testnet.arc.io`. Native gas is USDC at"
+    },
+    {
+      "file": "docs/multichain-audit.md",
+      "line": 75,
+      "purpose": "documentation/history",
+      "text": "Mainnet and Testnet. Stellar requires its documented forwarder/address encoding"
+    },
+    {
+      "file": "src/lib/bridge/config.ts",
+      "line": 21,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "stellarNetwork: arc.testnet ? \"Stellar Testnet\" : \"Stellar Mainnet\","
+    },
+    {
+      "file": "src/lib/bridge/types.ts",
+      "line": 3,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "export type BridgeNetwork = \"stellar-mainnet\" | \"stellar-testnet\" | \"arc-mainnet\" | \"arc-testnet\";"
+    },
+    {
+      "file": "src/lib/arc/config.ts",
+      "line": 7,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "if (selected !== \"mainnet\" && selected !== \"testnet\")"
+    },
+    {
+      "file": "src/lib/arc/config.ts",
+      "line": 8,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "throw new Error(\"ARC_NETWORK must be mainnet or testnet.\");"
+    },
+    {
+      "file": "src/lib/arc/config.ts",
+      "line": 9,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "const networkId: ArcNetworkId = selected === \"mainnet\" ? \"arc-mainnet\" : \"arc-testnet\";"
+    },
+    {
+      "file": "src/lib/arc/config.ts",
+      "line": 46,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "testnet,"
+    },
+    {
+      "file": "src/lib/arc/config.ts",
+      "line": 58,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "testnet,"
+    },
+    {
+      "file": "src/lib/arc/api.ts",
+      "line": 5,
+      "purpose": "independent Arc/CCTP environment",
+      "text": "networkId: z.enum([\"arc-mainnet\", \"arc-testnet\"]),"
+    },
+    {
+      "file": "src/app/dashboard/page.tsx",
+      "line": 49,
+      "purpose": "Stellar application/configuration",
+      "text": "<p className=\"mt-1 text-xs text-dim\">{network.id === \"mainnet\" ? `${data.balanceXlm ?? \"—\"} XLM for network fees and reserves` : \"Native Testnet balance\"}</p>"
+    },
+    {
+      "file": "src/app/terms/page.tsx",
+      "line": 23,
+      "purpose": "Stellar application/configuration",
+      "text": "The game, smart contract and backend are provided as-is, without warranty. {network.isTestnet ? \"Testnet assets carry no real-world value and may be reset by the network at any time.\" : \"Mainnet stakes and payouts use official Stellar USDC; network fees and account reserves are paid in XLM.\"}"
+    },
+    {
+      "file": "src/app/layout.tsx",
+      "line": 97,
+      "purpose": "Stellar application/configuration",
+      "text": "isTestnet={network.isTestnet}"
+    },
+    {
+      "file": "src/app/layout.tsx",
+      "line": 128,
+      "purpose": "Stellar application/configuration",
+      "text": "Stellar · {network.asset.symbol}. Arc · USDC. {network.isTestnet ? \"Stellar Testnet assets carry no real-world value.\" : \"Independent ecosystems, one Chain Duel account.\"}"
+    },
+    {
+      "file": "src/app/rules/page.tsx",
+      "line": 71,
+      "purpose": "Stellar application/configuration",
+      "text": "Stellar duels use {network.asset.symbol} on {network.label}. {network.isTestnet ? \"Testnet assets have no real-world value and may be reset by the network.\" : \"USDC stakes and rewards use Circle’s official Stellar asset. Stellar network fees and account reserves use XLM.\"}"
+    },
+    {
+      "file": "src/app/profile/page.tsx",
+      "line": 77,
+      "purpose": "Stellar application/configuration",
+      "text": "<p className=\"mt-1 text-xs text-dim\">{network.id === \"mainnet\" ? `${data.balanceXlm ?? \"—\"} XLM for network fees and reserves` : \"Native Testnet balance, live from Horizon\"}</p>"
+    },
+    {
+      "file": "src/components/wallet/wallet-panel.tsx",
+      "line": 21,
+      "purpose": "Stellar application/configuration",
+      "text": "network: { id: string; label: string; isTestnet: boolean; explorerUrl: string };"
+    },
+    {
+      "file": "src/components/wallet/wallet-panel.tsx",
+      "line": 304,
+      "purpose": "Stellar application/configuration",
+      "text": "{wallet.network.isTestnet && wallet.balance.available && !wallet.balance.exists ? ("
+    },
+    {
+      "file": "src/components/wallet/wallet-panel.tsx",
+      "line": 307,
+      "purpose": "Stellar application/configuration",
+      "text": "This wallet is not on-chain yet. Add Testnet XLM to start playing staked duels."
+    },
+    {
+      "file": "src/components/wallet/wallet-panel.tsx",
+      "line": 310,
+      "purpose": "Stellar application/configuration",
+      "text": "Fund with Testnet XLM"
+    },
+    {
+      "file": "src/components/wallet/wallet-panel.tsx",
+      "line": 365,
+      "purpose": "Stellar application/configuration",
+      "text": "Use {wallet.network.label}. {mainnet ? \"USDC requires its authorized trustline; keep XLM for network fees and reserves.\" : \"Only send Testnet XLM to this Testnet wallet.\"}"
+    },
+    {
+      "file": "src/components/wallet/wallet-panel.tsx",
+      "line": 503,
+      "purpose": "Stellar application/configuration",
+      "text": "{relativeTime(transfer.created_at)} · {stellarNetworkLabel(transfer.stellar_network ?? \"testnet\")}"
+    },
+    {
+      "file": "src/components/bridge/bridge-panel.tsx",
+      "line": 130,
+      "purpose": "independent Arc/CCTP environment",
+      "text": ": `https://${network.endsWith(\"testnet\") ? \"stellar.expert/explorer/testnet\" : \"stellar.expert/explorer/public\"}/tx/${hash.replace(/^0x/, \"\")}`;"
+    },
+    {
+      "file": "src/lib/wallet/public-config.ts",
+      "line": 13,
+      "purpose": "Stellar application/configuration",
+      "text": "* environment fallback to Testnet and no access to signing/encryption secrets. */"
+    },
+    {
+      "file": "src/components/lists.tsx",
+      "line": 112,
+      "purpose": "Stellar application/configuration",
+      "text": "network = \"testnet\","
+    },
+    {
+      "file": "src/lib/wallet/client.ts",
+      "line": 19,
+      "purpose": "Stellar application/configuration",
+      "text": "if (config.id === \"futurenet\") return Networks.FUTURENET;"
+    },
+    {
+      "file": "src/lib/wallet/client.ts",
+      "line": 176,
+      "purpose": "Stellar application/configuration",
+      "text": "`Your wallet is on a different network. Switch it to ${expected.startsWith(\"Public Global\") ? \"Stellar Mainnet\" : expected.startsWith(\"Test SDF Network\") ? \"Stellar Testnet\" : config.label}.`,"
+    },
+    {
+      "file": "src/components/site-header.tsx",
+      "line": 84,
+      "purpose": "Stellar application/configuration",
+      "text": "export function SiteHeader({ networkLabel, isTestnet, providers }: {"
+    },
+    {
+      "file": "src/components/site-header.tsx",
+      "line": 86,
+      "purpose": "Stellar application/configuration",
+      "text": "isTestnet: boolean;"
+    },
+    {
+      "file": "src/components/site-header.tsx",
+      "line": 134,
+      "purpose": "Stellar application/configuration",
+      "text": "<span className=\"sr-only\">{networkLabel}{isTestnet ? \" · Testnet\" : \"\"}</span><NetworkSelector />"
+    },
+    {
+      "file": "src/app/api/wallet/fund/route.ts",
+      "line": 7,
+      "purpose": "Stellar application/configuration",
+      "text": "/** Testnet faucet top-up for the player's own unfunded wallet. */"
+    }
+  ],
+  "uploadQuote": {
+    "path": "contracts/chain_duel_mainnet/target/wasm32v1-none/release/chain_duel_mainnet.wasm",
+    "wasmBytes": 23227,
+    "wasmSha256": "568423719488d72c0db8ffe20e5cbb474d86064476fff85f89f47cc5b36ead29",
+    "inclusionFeeUnits": "100",
+    "resourceFeeUnits": "311814911",
+    "totalFeeUnits": "311815011",
+    "totalFeeXlm": "31.1815011",
+    "simulatedAtLedger": 65647844,
+    "submitted": false
+  }
+}

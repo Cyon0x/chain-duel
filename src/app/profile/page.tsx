@@ -7,6 +7,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { dashboardFor, matchHistory } from "@/lib/services/profile";
 import { formatXlm } from "@/lib/config/game";
 import { truncateAddress, accountExplorerUrl } from "@/lib/explorer";
+import { publicStellarConfig } from "@/lib/config/stellar";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,8 @@ export default async function ProfilePage() {
   const data = await dashboardFor(session);
   const history = await matchHistory(session.user.id);
   const profile = data.profile;
+  const network = publicStellarConfig(session.user.id);
+  const symbol = network.asset.symbol;
   const winRate = profile.games_played ? Math.round((profile.wins / profile.games_played) * 100) : 0;
   const human = history.matches.filter((match) => match.mode !== "bot");
   const bot = history.matches.filter((match) => match.mode === "bot");
@@ -47,8 +50,8 @@ export default async function ProfilePage() {
           <Stat label="Losses" value={profile.losses} />
           <Stat label="Win rate" value={`${winRate}%`} />
           <Stat label="Streak" value={profile.current_streak} hint={`Best ${profile.best_streak}`} />
-          <Stat label="Earned" value={`${formatXlm(profile.total_earned_stroops)}`} hint="XLM" tone="accent" />
-          <Stat label="Fees paid" value={`${formatXlm(profile.fees_paid_stroops)}`} hint="XLM" />
+          <Stat label="Earned" value={`${formatXlm(profile.total_earned_stroops)}`} hint={symbol} tone="accent" />
+          <Stat label="Fees paid" value={`${formatXlm(profile.fees_paid_stroops)}`} hint={symbol} />
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
@@ -56,7 +59,7 @@ export default async function ProfilePage() {
             <p className="eyebrow">Wallet</p>
             {data.wallet ? (
               <a
-                href={accountExplorerUrl(data.wallet.address)}
+                href={accountExplorerUrl(data.wallet.address, network.id)}
                 target="_blank"
                 rel="noreferrer"
                 className="focus-ring numeric mt-1.5 block truncate text-sm text-accent hover:underline"
@@ -70,8 +73,8 @@ export default async function ProfilePage() {
           </div>
           <div className="panel-flat px-4 py-3">
             <p className="eyebrow">Balance</p>
-            <p className="numeric mt-1.5 text-lg font-semibold text-accent">{data.balanceXlm ?? "—"} XLM</p>
-            <p className="mt-1 text-xs text-dim">Native Testnet balance, live from Horizon</p>
+            <p className="numeric mt-1.5 text-lg font-semibold text-accent">{data.balanceToken ?? "—"} {symbol}</p>
+            <p className="mt-1 text-xs text-dim">{network.id === "mainnet" ? `${data.balanceXlm ?? "—"} XLM for network fees and reserves` : "Native Testnet balance, live from Horizon"}</p>
           </div>
         </div>
       </Panel>

@@ -1,9 +1,11 @@
 import { Panel } from "@/components/ui";
 import { PULSE_DUEL } from "@/lib/config/game";
+import { publicStellarConfig } from "@/lib/config/stellar";
 
 export const metadata = { title: "Game Rules — Chain Duel" };
 
 export default function RulesPage() {
+  const network = publicStellarConfig();
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 pt-2">
       <header>
@@ -38,7 +40,7 @@ export default function RulesPage() {
           <h2 className="text-base font-semibold text-ink">4. Escrow and settlement</h2>
           <p className="mt-2">
             Both entries are locked in the Chain Duel escrow contract before the duel begins. On settlement the contract
-            pays the winner and retains the protocol fee in basis points. Settlement is idempotent: a match can be settled
+            pays the winner and retains {network.id === "mainnet" ? "separate 5% protocol and 5% ecosystem allocations" : "the protocol fee in basis points"}. Settlement is idempotent: a match can be settled
             at most once.
           </p>
         </section>
@@ -64,10 +66,9 @@ export default function RulesPage() {
           </p>
         </section>
         <section>
-          <h2 className="text-base font-semibold text-ink">8. Testnet</h2>
+          <h2 className="text-base font-semibold text-ink">8. Network and assets</h2>
           <p className="mt-2">
-            Chain Duel runs on Stellar Testnet. Testnet assets have no real-world value and the protocol makes no
-            guarantee of value, uptime or finality beyond what the Testnet provides.
+            Stellar duels use {network.asset.symbol} on {network.label}. {network.isTestnet ? "Testnet assets have no real-world value and may be reset by the network." : "USDC stakes and rewards use Circle’s official Stellar asset. Stellar network fees and account reserves use XLM."}
           </p>
         </section>
       </Panel>

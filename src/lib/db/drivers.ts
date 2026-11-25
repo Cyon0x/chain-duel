@@ -1,4 +1,5 @@
 import type { SqlDialect, SqlDriver } from "./types";
+import { ensureStellarFinancialSchema } from "./stellar-migrations";
 
 function normalizeParam(value: unknown): string | number | bigint | null | Uint8Array {
   if (value === undefined || value === null) return null;
@@ -77,6 +78,9 @@ export class SqliteDriver implements SqlDriver {
     const driver = new SqliteDriver(db);
     for (const migration of migrations) {
       db.exec(applyDialectTokens(migration, "sqlite"));
+    }
+    if (migrations.length) {
+      await ensureStellarFinancialSchema(driver);
     }
     return driver;
   }
@@ -165,6 +169,9 @@ export class PostgresDriver implements SqlDriver {
     );
     for (const migration of migrations) {
       await pool.query(applyDialectTokens(migration, "postgres"));
+    }
+    if (migrations.length) {
+      await ensureStellarFinancialSchema(driver);
     }
     return driver;
   }

@@ -189,7 +189,7 @@ export function SignInPanel({
         <div className="mt-4">
           {!busy ? (
             <p className="mb-2 text-center text-xs text-dim">
-              No stake, no wallet needed. Demo results never touch Testnet balances or rating.
+              No stake, no wallet needed. Demo results never touch wallet balances or rating.
             </p>
           ) : null}
           <Button variant="secondary" className="w-full" loading={demoLoading} disabled={busy} onClick={startDemo}>

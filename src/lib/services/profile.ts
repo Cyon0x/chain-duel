@@ -22,6 +22,9 @@ import { ACHIEVEMENTS } from "../game/rating";
 import { getAccountBalance } from "../stellar/server";
 import { onChainEscrowAvailable } from "./escrow";
 import { botAvailability } from "./treasury";
+import { profileWithCurrentFinance } from "../db/repositories/stellar-finance";
+import { publicStellarConfig, stellarGamingAllowed } from "../config/stellar";
+import { ECONOMY } from "../config/game";
 import type { SessionUser } from "../auth/session";
 
 export interface AchievementView {
@@ -43,6 +46,7 @@ export interface DashboardData {
   profile: ProfileRow;
   wallet: WalletRow | null;
   balanceXlm: string | null;
+  balanceToken?: string | null;
   rank: number;
   recentMatches: MatchRow[];
   activeGames: GameRow[];
@@ -68,15 +72,18 @@ export async function dashboardFor(session: SessionUser): Promise<DashboardData>
   ]);
 
   let balanceXlm: string | null = null;
+  let balanceToken: string | null = null;
   if (wallet) {
     try {
-      balanceXlm = (await getAccountBalance(wallet.address)).xlm;
+      const balance = await getAccountBalance(wallet.address);
+      balanceXlm = balance.xlm;
+      balanceToken = publicStellarConfig().asset.symbol === "USDC" ? balance.usdc ?? "0" : balance.xlm;
     } catch {
       balanceXlm = null;
     }
   }
 
-  const bot = await botAvailability(50_000_000).catch(() => ({
+  const bot = await botAvailability(ECONOMY.defaultEntryStroops, userId).catch(() => ({
     available: false,
     reason: "Computer matches are temporarily unavailable.",
     botLiquidityStroops: 0,
@@ -85,9 +92,10 @@ export async function dashboardFor(session: SessionUser): Promise<DashboardData>
   }));
 
   return {
-    profile,
+    profile: await profileWithCurrentFinance(database, profile),
     wallet,
     balanceXlm,
+    balanceToken,
     rank,
     recentMatches: matches,
     activeGames,
@@ -96,7 +104,7 @@ export async function dashboardFor(session: SessionUser): Promise<DashboardData>
       new Set(achievements.filter((entry) => entry.unlocked_at).map((entry) => entry.code)),
     ),
     bot: { available: bot.available, reason: bot.reason },
-    escrowAvailable: onChainEscrowAvailable(),
+    escrowAvailable: onChainEscrowAvailable() && stellarGamingAllowed(userId),
   };
 }
 
@@ -125,7 +133,7 @@ export async function publicProfile(
     listAchievements(database, profile.user_id),
   ]);
   return {
-    profile,
+    profile: await profileWithCurrentFinance(database, profile),
     walletAddress: wallet?.address ?? null,
     rank,
     matches,

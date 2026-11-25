@@ -20,6 +20,7 @@ export function bridgeAvailability(userId?: string | null) {
     maxAmountUsdc: validationMode ? "0.10" : null,
     stellarNetwork: arc.testnet ? "Stellar Testnet" : "Stellar Mainnet",
     stellarGamingNetwork: stellarNetwork().label,
+    stellarGamingAsset: stellarNetwork().id === "mainnet" ? "USDC" : "XLM",
     arcNetwork: arc.name,
     environmentsMatch: true,
     reason: validationMode

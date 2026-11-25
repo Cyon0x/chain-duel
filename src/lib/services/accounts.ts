@@ -14,6 +14,7 @@ import {
   usernameTaken,
 } from "../db/repositories/identity";
 import { generateManagedWallet } from "../stellar/wallet";
+import { playerControlledSigningEnabled } from "../config/stellar-verification";
 import { stellarNetwork } from "../config/stellar";
 import { rawEnv } from "../config/env";
 import type { AuthProvider, UserRow } from "../db/types";
@@ -137,7 +138,7 @@ export async function signInWithProvider(input: {
     authProvider: input.provider,
     providerAccountId: input.providerAccountId,
   });
-  await provisionManagedWallet(database, user.id);
+  if (!playerControlledSigningEnabled()) await provisionManagedWallet(database, user.id);
   await createProfile(database, {
     userId: user.id,
     username: await uniqueUsername(input.displayName ?? input.email ?? "duelist"),
@@ -150,7 +151,7 @@ export async function signInWithProvider(input: {
 export async function signInDemo(displayName?: string): Promise<{ userId: string; created: boolean }> {
   const database = await db();
   const user = await createUser(database, { authProvider: "demo", providerAccountId: newId("demo") });
-  await provisionManagedWallet(database, user.id);
+  if (!playerControlledSigningEnabled()) await provisionManagedWallet(database, user.id);
   await createProfile(database, {
     userId: user.id,
     username: await uniqueUsername(displayName ?? "recruit"),

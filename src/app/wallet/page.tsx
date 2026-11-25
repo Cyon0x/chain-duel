@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function WalletPage() {
   const session = await getSessionUser();
   if (!session) redirect("/login?next=/wallet");
+  if (!session.primaryWallet) return <div className="mx-auto max-w-2xl px-4 py-8"><h1 className="text-display text-2xl">Your Stellar wallet</h1><p className="mt-3 text-sm text-muted">Complete the wallet backup above to keep signing under your control.</p></div>;
 
   const overview = await walletOverview(session.user.id);
 
@@ -18,7 +19,7 @@ export default async function WalletPage() {
           <p className="eyebrow">Wallet</p>
           <h1 className="text-display mt-2 text-4xl">Your Wallet</h1>
           <p className="mt-2 max-w-lg text-sm text-muted">
-            Deposit, send and track XLM. This is your own wallet — Chain Duel never exposes a secret key.
+            Deposit, send and track {overview.currency === "USDC" ? "USDC and XLM" : "XLM"}. This is your own wallet — Chain Duel never exposes a secret key.
           </p>
         </div>
       </div>

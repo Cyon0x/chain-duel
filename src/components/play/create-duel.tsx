@@ -6,7 +6,8 @@ import { Badge, Button, ButtonLink, Panel } from "@/components/ui";
 import { StakePicker } from "./stake-picker";
 import { ArenaQrCode } from "./arena-qr";
 import { EscrowStatus } from "@/components/escrow-status";
-import { post } from "@/lib/api/client";
+import { postStellar } from "@/lib/api/client";
+import { financialSymbol } from "@/lib/stellar/shared";
 import { runEscrow, type EscrowStep } from "@/lib/wallet/escrow-client";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/components/providers";
@@ -58,7 +59,7 @@ export function CreateDuelPanel({
     setError(null);
     setStep("preparing");
     try {
-      const creation = await post<DuelCreationResponse>("/api/duels", {
+      const creation = await postStellar<DuelCreationResponse>("/api/duels", {
         mode,
         entryXlm: demo ? 0 : entry,
         demo,
@@ -71,6 +72,7 @@ export function CreateDuelPanel({
         address: session.walletAddress ?? "",
         role: "creator",
         onStep: setStep,
+        financial: creation.game,
       });
 
       if (autoStart || mode === "bot") {
@@ -151,12 +153,12 @@ export function CreateDuelPanel({
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <div className="panel-flat px-3.5 py-2.5">
             <p className="eyebrow">Entry</p>
-            <p className="numeric mt-1 text-sm">{created.game.demo ? "Demo" : `${formatXlm(created.game.entry_stroops)} XLM`}</p>
+            <p className="numeric mt-1 text-sm">{created.game.demo ? "Demo" : `${formatXlm(created.game.entry_stroops, 7)} ${financialSymbol(created.game)}`}</p>
           </div>
           <div className="panel-flat px-3.5 py-2.5">
             <p className="eyebrow">Prize pool</p>
             <p className="numeric mt-1 text-sm">
-              {created.game.demo ? "—" : `${formatXlm(created.game.entry_stroops * 2)} XLM`}
+              {created.game.demo ? "—" : `${formatXlm(created.game.entry_stroops * 2, 7)} ${financialSymbol(created.game)}`}
             </p>
           </div>
           <div className="panel-flat px-3.5 py-2.5">

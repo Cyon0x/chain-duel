@@ -1,19 +1,24 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import Link from "next/link";
 import { Badge, Button } from "@/components/ui";
 import { usePreferences } from "@/components/providers";
 import { signTransactionXdr, walletError } from "@/lib/wallet/client";
 import { formatXlm } from "@/lib/config/game";
+import type { StellarAssetSymbol, StellarNetworkId } from "@/lib/stellar/shared";
+import { stellarNetworkLabel } from "@/lib/stellar/shared";
 
 export interface WalletOverviewView {
+  playerControlledSigning?: boolean;
   address: string;
   provider: string;
   custody: "external" | "managed";
   label: string | null;
   canSignServerSide: boolean;
+  currency?: StellarAssetSymbol;
+  depositHistoryAvailable?: boolean;
   network: { id: string; label: string; isTestnet: boolean; explorerUrl: string };
   balance: {
     address: string;
@@ -23,6 +28,11 @@ export interface WalletOverviewView {
     reserveXlm: string;
     subentries: number;
     available: boolean;
+    usdc?: string;
+    spendableUsdc?: string;
+    usdcTrustline?: boolean;
+    usdcAuthorized?: boolean;
+    baseReserveXlm?: string;
   };
   explorerUrl: string;
   transfers: Array<{
@@ -37,6 +47,8 @@ export interface WalletOverviewView {
     created_at: string;
     confirmed_at: string | null;
     error: string | null;
+    currency?: StellarAssetSymbol;
+    stellar_network?: StellarNetworkId;
   }>;
 }
 
@@ -76,9 +88,29 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
   const [receipt, setReceipt] = useState<string | null>(null);
   const [funding, setFunding] = useState(false);
   const [form, setForm] = useState({ destination: "", amountXlm: "", memo: "" });
+  const [currency, setCurrency] = useState<StellarAssetSymbol>(initial.currency ?? (initial.network.id === "mainnet" ? "USDC" : "XLM"));
+  const transferRequest = useRef<{ key: string; id: string } | null>(null);
+  const trustlineRequest = useRef<string | null>(null);
+  const [trustlineBusy, setTrustlineBusy] = useState(false);
+  const [recovering, setRecovering] = useState<string | null>(null);
+  const mainnet = wallet.network.id === "mainnet" || wallet.currency === "USDC";
+  const balanceSymbol = mainnet ? "USDC" : "XLM";
+  const spendableText = currency === "USDC" ? wallet.balance.spendableUsdc ?? "0" : wallet.balance.spendableXlm;
 
   const busy = stage !== "idle" && stage !== "confirmed" && stage !== "failed";
-  const spendable = Number(wallet.balance.spendableXlm);
+  const spendable = Number(spendableText);
+
+  async function recover(transactionId: string) {
+    setRecovering(transactionId);
+    setError(null);
+    try {
+      const response = await fetch("/api/wallet/recover", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ transactionId }) });
+      const body = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(body.error ?? "The saved transfer could not be confirmed.");
+      await refresh();
+    } catch (caught) { setError(walletError(caught)); }
+    finally { setRecovering(null); }
+  }
 
   const refresh = useCallback(async () => {
     try {
@@ -101,14 +133,35 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
   }, [play, wallet.address]);
 
   const share = useCallback(async () => {
-    const text = `Send Testnet XLM to my Chain Duel wallet: ${wallet.address}`;
+    const text = `Send ${balanceSymbol} on ${wallet.network.label} to my Chain Duel wallet: ${wallet.address}`;
     try {
       if (navigator.share) await navigator.share({ title: "Chain Duel wallet", text });
       else await copy();
     } catch {
       // The player dismissed the share sheet: not an error.
     }
-  }, [copy, wallet.address]);
+  }, [balanceSymbol, copy, wallet.address, wallet.network.label]);
+
+  const enableUsdc = useCallback(async () => {
+    setTrustlineBusy(true);
+    setError(null);
+    try {
+      trustlineRequest.current ??= crypto.randomUUID();
+      const response = await fetch("/api/wallet/trustline", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ networkId: `stellar-${wallet.network.id}`, requestId: trustlineRequest.current }) });
+      const body = await response.json() as { mode?: string; transactionId?: string; xdr?: string; networkPassphrase?: string; error?: string };
+      if (!response.ok) throw new Error(body.error ?? "USDC setup could not be prepared.");
+      if (body.mode === "wallet-signature" && body.xdr && body.transactionId) {
+        const signedXdr = await signTransactionXdr(body.xdr, wallet.address, body.networkPassphrase);
+        const confirmed = await fetch("/api/wallet/trustline", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "confirm", transactionId: body.transactionId, signedXdr }) });
+        const result = await confirmed.json() as { error?: string };
+        if (!confirmed.ok) throw new Error(result.error ?? "USDC setup could not be confirmed.");
+      }
+      trustlineRequest.current = null;
+      play("transaction");
+      await refresh();
+    } catch (caught) { setError(walletError(caught)); }
+    finally { setTrustlineBusy(false); }
+  }, [play, refresh, wallet.address, wallet.network.id]);
 
   const fund = useCallback(async () => {
     setFunding(true);
@@ -131,10 +184,12 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
     setReceipt(null);
     setStage("preparing");
     try {
+      const key = JSON.stringify({ ...form, currency, networkId: wallet.network.id });
+      if (transferRequest.current?.key !== key) transferRequest.current = { key, id: crypto.randomUUID() };
       const response = await fetch("/api/wallet/send", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, currency, networkId: `stellar-${wallet.network.id}`, requestId: transferRequest.current.id }),
       });
       const body = (await response.json()) as
         | { mode: "confirmed"; txHash: string; explorerUrl: string }
@@ -147,13 +202,14 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
         setReceipt((body as { txHash: string }).txHash);
         play("transaction");
         setForm({ destination: "", amountXlm: "", memo: "" });
+        transferRequest.current = null;
         await refresh();
         return;
       }
 
-      const handoff = body as { transactionId: string; xdr: string };
+      const handoff = body as { transactionId: string; xdr: string; networkPassphrase: string };
       setStage("awaiting_wallet");
-      const signedXdr = await signTransactionXdr(handoff.xdr, wallet.address);
+      const signedXdr = await signTransactionXdr(handoff.xdr, wallet.address, handoff.networkPassphrase);
       setStage("submitting");
       const complete = await fetch("/api/wallet/send/complete", {
         method: "POST",
@@ -166,13 +222,14 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
       setReceipt(done.txHash ?? null);
       play("transaction");
       setForm({ destination: "", amountXlm: "", memo: "" });
+      transferRequest.current = null;
       await refresh();
     } catch (caught) {
       setStage("failed");
       setError(walletError(caught));
       play("wrong");
     }
-  }, [form, play, refresh, wallet.address]);
+  }, [currency, form, play, refresh, wallet.address, wallet.network.id]);
 
   const stageSteps = useMemo(
     () => ["preparing", "awaiting_wallet", "signing", "submitting", "confirming", "confirmed"] as const,
@@ -190,12 +247,12 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
         <div className="relative flex flex-col gap-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="eyebrow">Available balance</p>
+              <p className="eyebrow">Wallet balance</p>
               <p className="numeric mt-2 text-4xl font-semibold sm:text-5xl">
                 {wallet.balance.available ? (
                   <>
-                    {Number(wallet.balance.xlm).toLocaleString("en-US", { maximumFractionDigits: 7 })}
-                    <span className="ml-2 text-lg text-muted">XLM</span>
+                    {Number(mainnet ? wallet.balance.usdc ?? "0" : wallet.balance.xlm).toLocaleString("en-US", { maximumFractionDigits: 7 })}
+                    <span className="ml-2 text-lg text-muted">{balanceSymbol}</span>
                   </>
                 ) : (
                   <span className="text-2xl text-muted">Balance unavailable</span>
@@ -203,7 +260,7 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
               </p>
               <p className="mt-2 text-xs text-dim">
                 {wallet.balance.available
-                  ? `${wallet.balance.spendableXlm} XLM sendable · ${wallet.balance.reserveXlm} XLM account reserve`
+                  ? mainnet ? `${wallet.balance.spendableUsdc ?? "0"} USDC sendable · ${wallet.balance.xlm} XLM for network fees · ${wallet.balance.reserveXlm} XLM account reserve` : `${wallet.balance.spendableXlm} XLM sendable · ${wallet.balance.reserveXlm} XLM account reserve`
                   : "Stellar is unreachable right now. Your address is still valid for deposits."}
               </p>
             </div>
@@ -233,10 +290,11 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
             </a>
           </div>
 
-          {wallet.custody === "managed" ? (
+          {wallet.playerControlledSigning ? (
+            <p className="text-xs leading-relaxed text-dim">Your device or external wallet authorizes transfers. Keep your encrypted recovery backup and recovery code safe.</p>
+          ) : wallet.custody === "managed" ? (
             <p className="text-xs leading-relaxed text-dim">
-              Chain Duel created this wallet for you and signs for it on request — you never handle a secret key. It is
-              yours alone: nobody else can spend from it.
+              Chain Duel created this wallet for you. Transfers require authorization from your account.
             </p>
           ) : (
             <p className="text-xs leading-relaxed text-dim">
@@ -255,6 +313,14 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
               </Button>
             </div>
           ) : null}
+          {mainnet && wallet.balance.available && !wallet.balance.usdcTrustline ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent-soft px-4 py-3">
+              <p className="text-xs text-muted">Enable official USDC before receiving stakes or rewards. This reserves another {wallet.balance.baseReserveXlm ?? "0.5"} XLM and pays a Stellar network fee.</p>
+              <Button size="sm" loading={trustlineBusy} disabled={!wallet.balance.exists || busy} onClick={enableUsdc}>Enable USDC</Button>
+            </div>
+          ) : null}
+          {mainnet && wallet.balance.usdcTrustline && !wallet.balance.usdcAuthorized ? <p role="status" className="text-xs text-warning">The USDC issuer has not authorized this wallet&apos;s trustline.</p> : null}
+          {tab === "receive" && error ? <p role="alert" className="text-xs text-danger">{error}</p> : null}
         </div>
       </section>
 
@@ -283,7 +349,7 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
         {tab === "receive" ? (
           <div className="mt-5 flex flex-col gap-3">
             <p className="text-sm text-muted">
-              Deposit XLM from any Stellar wallet or exchange by sending to your address. It arrives in a few seconds.
+              Deposit {mainnet ? "official Stellar USDC or XLM" : "XLM"} from a Stellar wallet or exchange by sending to your address. XLM pays network fees and activates the account.
             </p>
             <div className="rounded-2xl border border-line bg-surface px-4 py-3">
               <p className="eyebrow">Your deposit address</p>
@@ -298,7 +364,7 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
               </Button>
             </div>
             <p className="text-xs text-dim">
-              Only send XLM on {wallet.network.label}. Other assets or networks cannot be recovered.
+              Use {wallet.network.label}. {mainnet ? "USDC requires its authorized trustline; keep XLM for network fees and reserves." : "Only send Testnet XLM to this Testnet wallet."}
             </p>
           </div>
         ) : (
@@ -309,6 +375,7 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
               if (!busy) void send();
             }}
           >
+            {mainnet ? <label className="flex flex-col gap-1.5"><span className="eyebrow">Asset</span><select className="focus-ring h-11 rounded-xl border border-line bg-surface px-3 text-sm" value={currency} disabled={busy} onChange={event => setCurrency(event.target.value as StellarAssetSymbol)}><option value="USDC">USDC</option><option value="XLM">XLM</option></select></label> : null}
             <label className="flex flex-col gap-1.5">
               <span className="eyebrow">Destination address</span>
               <input
@@ -322,7 +389,7 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
               />
             </label>
             <label className="flex flex-col gap-1.5">
-              <span className="eyebrow">Amount (XLM)</span>
+              <span className="eyebrow">Amount ({currency})</span>
               <div className="flex gap-2">
                 <input
                   required
@@ -335,13 +402,13 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={() => setForm((f) => ({ ...f, amountXlm: wallet.balance.spendableXlm }))}
+                  onClick={() => setForm((f) => ({ ...f, amountXlm: spendableText }))}
                   disabled={!wallet.balance.available || spendable <= 0}
                 >
                   Max
                 </Button>
               </div>
-              <span className="text-xs text-dim">Up to {wallet.balance.spendableXlm} XLM sendable</span>
+              <span className="text-xs text-dim">Up to {spendableText} {currency} sendable · network fee paid in XLM</span>
             </label>
             <label className="flex flex-col gap-1.5">
               <span className="eyebrow">Memo (optional)</span>
@@ -355,7 +422,7 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
             </label>
 
             <Button type="submit" loading={busy} disabled={busy || !wallet.balance.available}>
-              {wallet.custody === "managed" ? "Send XLM" : "Sign & send XLM"}
+              {wallet.custody === "managed" ? `Send ${currency}` : `Sign & send ${currency}`}
             </Button>
 
             {busy ? (
@@ -406,6 +473,7 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
             All transactions →
           </Link>
         </div>
+        {wallet.depositHistoryAvailable === false ? <p role="status" className="mt-3 text-xs text-warning">Recent wallet deposits could not be refreshed. Try again shortly or view the wallet on the explorer.</p> : null}
         {wallet.transfers.length === 0 ? (
           <div className="mt-4 rounded-2xl border border-dashed border-line-strong px-4 py-8 text-center">
             <p className="text-sm text-muted">No transfers yet</p>
@@ -434,8 +502,9 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
                   </p>
                   <p className="numeric mt-0.5 truncate text-xs text-dim">
                     {transfer.destination ? shortAddress(transfer.destination) : wallet.address} ·{" "}
-                    {relativeTime(transfer.created_at)}
+                    <time dateTime={transfer.created_at} suppressHydrationWarning>{relativeTime(transfer.created_at)}</time> · {stellarNetworkLabel(transfer.stellar_network ?? "testnet")}
                   </p>
+                  {transfer.stellar_network === "mainnet" && transfer.tx_hash && transfer.status !== "confirmed" ? <Button size="sm" variant="ghost" loading={recovering === transfer.id} disabled={Boolean(recovering)} onClick={() => recover(transfer.id)}>Retry confirmation</Button> : null}
                 </div>
                 <div className="text-right">
                   <p
@@ -445,7 +514,7 @@ export function WalletPanel({ initial }: { initial: WalletOverviewView }) {
                     )}
                   >
                     {transfer.direction === "in" ? "+" : "−"}
-                    {formatXlm(transfer.amount_stroops, 4)}
+                    {formatXlm(transfer.amount_stroops, 7)} {transfer.currency ?? "XLM"}
                   </p>
                   <p
                     className={clsx(

@@ -1,8 +1,9 @@
 import "server-only";
 import { db } from "../db";
-import { createTransaction, updateTransaction, listTransactionsForUser } from "../db/repositories/economy";
+import { createTransaction, updateTransaction, listTransactionsForUser, findTransaction } from "../db/repositories/economy";
 import type { GameRow, TransactionKind, TransactionRow } from "../db/types";
-import { explorerTxUrl, legacyContractId } from "../config/stellar";
+import { explorerTxUrl, legacyContractId, stellarNetwork } from "../config/stellar";
+import { financialNetwork, type StellarNetworkId } from "../stellar/shared";
 import { findGameEscrowContract } from "../db/repositories/duel";
 import {
   StellarIntegrationError,
@@ -16,6 +17,8 @@ import {
   MODE,
   contractConfigured,
   getAccruedFees,
+  getProtocolFees,
+  getEcosystemFees,
   getBotLiquidity,
   getContractBalance,
   getLockedEscrow,
@@ -30,6 +33,7 @@ import {
 } from "../stellar/contract";
 import { ECONOMY, stroopsToXlm } from "../config/game";
 import { ChainDuelError } from "./errors";
+import { stellarVerificationEnabled } from "../config/stellar-verification";
 
 export type EscrowHandoff =
   | { mode: "offchain"; confirmed: true; transactionId: string }
@@ -42,8 +46,8 @@ export type EscrowHandoff =
       networkPassphrase: string;
     };
 
-export function onChainEscrowAvailable(): boolean {
-  return contractConfigured() && settlementPublicKey() !== null;
+export function onChainEscrowAvailable(networkId?: StellarNetworkId): boolean {
+  return contractConfigured(networkId) && settlementPublicKey() !== null;
 }
 
 /** New games are bound at creation; unbound historical games use their original escrow. */
@@ -54,11 +58,11 @@ export async function gameEscrowContractId(gameId: string): Promise<string> {
 }
 
 /** Ledger-based expiry, ~5s per ledger with headroom for slow confirms. */
-export async function ledgerForTimestamp(iso: string): Promise<number> {
+export async function ledgerForTimestamp(iso: string, networkId?: StellarNetworkId): Promise<number> {
   const now = Date.now();
   const target = new Date(iso).getTime();
   const deltaMs = Math.max(target - now, 60_000);
-  const current = await latestLedger();
+  const current = await latestLedger(networkId);
   return current + Math.ceil(deltaMs / 5_000) + 40;
 }
 
@@ -67,11 +71,12 @@ async function markConfirmed(
   result: { hash: string; ledger: number | null },
 ): Promise<void> {
   const database = await db();
+  const transaction = await findTransaction(database, transactionId);
   await updateTransaction(database, transactionId, {
     status: "confirmed",
     txHash: result.hash,
     ledger: result.ledger,
-    explorerUrl: explorerTxUrl(result.hash),
+    explorerUrl: explorerTxUrl(result.hash, transaction?.stellar_network),
     confirmedAt: new Date().toISOString(),
     error: null,
   });
@@ -139,7 +144,7 @@ export async function lockEntry(input: {
   });
 
   if (demo) return { mode: "offchain", confirmed: true, transactionId: transaction.id };
-  if (!onChainEscrowAvailable() || !input.game.contract_game_id) {
+  if (!onChainEscrowAvailable(financialNetwork(input.game)) || !input.game.contract_game_id) {
     await markFailed(transaction.id, "Escrow contract is not configured.");
     throw new StellarIntegrationError(
       "Escrow is unavailable: the Chain Duel contract is not configured on this deployment.",
@@ -151,8 +156,11 @@ export async function lockEntry(input: {
   if (input.custody === "managed" && input.keypair) {
     try {
       await updateTransaction(database, transaction.id, { status: "signing" });
-      const expiryLedger = await ledgerForTimestamp(input.game.expires_at);
+      const expiryLedger = await ledgerForTimestamp(input.game.expires_at, financialNetwork(input.game));
+      await updateTransaction(database, transaction.id, { metadata: { gameCode: input.game.code, expiryLedger } });
       const result = await invokeWithKeypair({
+        networkId: financialNetwork(input.game),
+        intentId: transaction.id,
         escrowContractId: await gameEscrowContractId(input.game.id),
         keypair: input.keypair,
         method: "create_game",
@@ -172,8 +180,10 @@ export async function lockEntry(input: {
     }
   }
 
-  const expiryLedger = await ledgerForTimestamp(input.game.expires_at);
+  const expiryLedger = await ledgerForTimestamp(input.game.expires_at, financialNetwork(input.game));
+  await updateTransaction(database, transaction.id, { metadata: { gameCode: input.game.code, expiryLedger } });
   const prepared = await prepareCreateGame({
+    networkId: financialNetwork(input.game),
     escrowContractId: await gameEscrowContractId(input.game.id),
     creator: input.address,
     gameIdHex: input.game.contract_game_id,
@@ -181,13 +191,13 @@ export async function lockEntry(input: {
     entryStroops: input.game.entry_stroops,
     expiryLedger,
   });
-  await updateTransaction(database, transaction.id, { status: "awaiting_wallet" });
+  await updateTransaction(database, transaction.id, { status: "awaiting_wallet", preparedHash: prepared.hash });
   return {
     mode: "wallet-signature",
     confirmed: false,
     transactionId: transaction.id,
     xdr: prepared.xdr,
-    networkPassphrase: (await import("../config/stellar")).stellarNetwork().networkPassphrase,
+    networkPassphrase: stellarNetwork(financialNetwork(input.game)).networkPassphrase,
   };
 }
 
@@ -215,7 +225,7 @@ export async function lockJoin(input: {
   });
 
   if (demo) return { mode: "offchain", confirmed: true, transactionId: transaction.id };
-  if (!onChainEscrowAvailable() || !input.game.contract_game_id) {
+  if (!onChainEscrowAvailable(financialNetwork(input.game)) || !input.game.contract_game_id) {
     await markFailed(transaction.id, "Escrow contract is not configured.");
     throw new StellarIntegrationError(
       "Escrow is unavailable: the Chain Duel contract is not configured on this deployment.",
@@ -228,6 +238,8 @@ export async function lockJoin(input: {
     try {
       await updateTransaction(database, transaction.id, { status: "signing" });
       const result = await invokeWithKeypair({
+        networkId: financialNetwork(input.game),
+        intentId: transaction.id,
         escrowContractId: await gameEscrowContractId(input.game.id),
         keypair: input.keypair,
         method: "join_game",
@@ -242,17 +254,18 @@ export async function lockJoin(input: {
   }
 
   const prepared = await prepareJoinGame({
+    networkId: financialNetwork(input.game),
     escrowContractId: await gameEscrowContractId(input.game.id),
     player: input.address,
     gameIdHex: input.game.contract_game_id,
   });
-  await updateTransaction(database, transaction.id, { status: "awaiting_wallet" });
+  await updateTransaction(database, transaction.id, { status: "awaiting_wallet", preparedHash: prepared.hash });
   return {
     mode: "wallet-signature",
     confirmed: false,
     transactionId: transaction.id,
     xdr: prepared.xdr,
-    networkPassphrase: (await import("../config/stellar")).stellarNetwork().networkPassphrase,
+    networkPassphrase: stellarNetwork(financialNetwork(input.game)).networkPassphrase,
   };
 }
 
@@ -262,9 +275,14 @@ export async function submitWalletSigned(input: {
   signedXdr: string;
 }): Promise<{ txHash: string; ledger: number | null }> {
   const database = await db();
-  await updateTransaction(database, input.transactionId, { status: "submitting" });
+  const transaction = await findTransaction(database, input.transactionId);
+  if (!transaction) throw new ChainDuelError("The signing transaction is unavailable.", "not_found", 404);
+  const envelope = (await import("@stellar/stellar-sdk")).TransactionBuilder.fromXDR(input.signedXdr, stellarNetwork(transaction.stellar_network).networkPassphrase);
+  const hash = Buffer.from(envelope.hash()).toString("hex");
+  if (transaction.tx_hash && transaction.tx_hash !== hash) throw new ChainDuelError("A different signed transaction was already submitted for this entry.", "intent_mismatch", 409);
+  await updateTransaction(database, input.transactionId, { status: "submitting", txHash: hash });
   try {
-    const result = await submitSignedXdr(input.signedXdr);
+    const result = await submitSignedXdr(input.signedXdr, transaction.stellar_network);
     await markConfirmed(input.transactionId, result);
     return { txHash: result.hash, ledger: result.ledger };
   } catch (error) {
@@ -290,8 +308,9 @@ export interface SettlementOutcome {
 
 /** Starts the duel on chain so the escrow is provably locked as ACTIVE. */
 export async function beginOnChainGame(game: GameRow): Promise<string | null> {
-  if (game.demo || !game.contract_game_id || !onChainEscrowAvailable()) return null;
-  const result = await serverStartGame(game.contract_game_id, await gameEscrowContractId(game.id));
+  if (game.demo) return null;
+  if (!game.contract_game_id || !onChainEscrowAvailable(financialNetwork(game))) throw new StellarIntegrationError("This duel's funded escrow is unavailable.", "not_configured");
+  const result = await serverStartGame(game.contract_game_id, await gameEscrowContractId(game.id), financialNetwork(game));
   return result.hash;
 }
 
@@ -300,20 +319,26 @@ export async function settleOnChain(input: {
   winnerAddress: string;
   playerOneScore: number;
   playerTwoScore: number;
+  playerOneCombo?: number;
+  playerTwoCombo?: number;
   resultHashHex: string;
 }): Promise<SettlementOutcome> {
-  if (input.game.demo || !input.game.contract_game_id || !onChainEscrowAvailable()) {
+  if (input.game.demo) {
     return { txHash: null, ledger: null, mode: "offchain" };
   }
+  if (!input.game.contract_game_id || !onChainEscrowAvailable(financialNetwork(input.game))) throw new StellarIntegrationError("This duel's funded escrow is unavailable.", "not_configured");
   // No ledger writes happen here: the winner payout and protocol fee rows are
   // written once, inside the settlement transaction, so one chain settlement
   // can never produce duplicate or misattributed history entries.
   const result = await serverSettleGame({
+    networkId: financialNetwork(input.game),
     escrowContractId: await gameEscrowContractId(input.game.id),
     gameIdHex: input.game.contract_game_id,
     winner: input.winnerAddress,
     playerOneScore: input.playerOneScore,
     playerTwoScore: input.playerTwoScore,
+    playerOneCombo: input.playerOneCombo,
+    playerTwoCombo: input.playerTwoCombo,
     resultHashHex: input.resultHashHex,
   });
   return { txHash: result.hash, ledger: result.ledger, mode: "onchain" };
@@ -323,6 +348,8 @@ export interface TreasurySnapshot {
   available: boolean;
   botLiquidityStroops: number;
   accruedFeesStroops: number;
+  protocolFeesStroops?: number;
+  ecosystemFeesStroops?: number;
   lockedEscrowStroops: number;
   contractBalanceStroops: number;
   paused: boolean;
@@ -369,6 +396,8 @@ export async function treasurySnapshot(): Promise<TreasurySnapshot> {
     available: true,
     botLiquidityStroops: aggregate.botLiquidity,
     accruedFeesStroops: aggregate.accruedFees,
+    protocolFeesStroops: aggregate.protocolFees,
+    ecosystemFeesStroops: aggregate.ecosystemFees,
     lockedEscrowStroops: aggregate.lockedEscrow,
     contractBalanceStroops: aggregate.contractBalance,
     paused: config?.paused ?? false,
@@ -393,17 +422,22 @@ export async function treasurySnapshot(): Promise<TreasurySnapshot> {
 }
 
 async function readAggregates() {
-  const [botLiquidity, accruedFees, lockedEscrow, contractBalance] = await Promise.all([
-    getBotLiquidity().catch(() => 0n),
-    getAccruedFees().catch(() => 0n),
-    getLockedEscrow().catch(() => 0n),
-    getContractBalance().catch(() => 0n),
+  const read = <T>(operation: Promise<T>): Promise<T | bigint> => stellarNetwork().id === "mainnet" || stellarVerificationEnabled() ? operation : operation.catch(() => 0n);
+  const [botLiquidity, accruedFees, lockedEscrow, contractBalance, protocolFees, ecosystemFees] = await Promise.all([
+    read(getBotLiquidity()),
+    read(getAccruedFees()),
+    read(getLockedEscrow()),
+    read(getContractBalance()),
+    read(getProtocolFees()),
+    read(getEcosystemFees()),
   ]);
   return {
     botLiquidity: Number(botLiquidity),
     accruedFees: Number(accruedFees),
     lockedEscrow: Number(lockedEscrow),
     contractBalance: Number(contractBalance),
+    protocolFees: Number(protocolFees),
+    ecosystemFees: Number(ecosystemFees),
   };
 }
 

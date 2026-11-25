@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Badge, Button, Input, Panel, SectionHeader } from "@/components/ui";
 import { post } from "@/lib/api/client";
+import { useNetwork } from "@/components/networks/network-provider";
 
 interface TreasuryDashboard {
   contractConfigured: boolean;
@@ -14,6 +16,8 @@ interface TreasuryDashboard {
     available: boolean;
     botLiquidityStroops: number;
     accruedFeesStroops: number;
+    protocolFeesStroops?: number;
+    ecosystemFeesStroops?: number;
     lockedEscrowStroops: number;
     contractBalanceStroops: number;
     paused: boolean;
@@ -52,24 +56,34 @@ interface TreasuryDashboard {
 }
 
 export function TreasuryPanel({ dashboard }: { dashboard: TreasuryDashboard }) {
+  const router = useRouter();
+  const { stellar } = useNetwork();
+  const symbol = stellar.asset.symbol;
+  const mainnet = stellar.id === "mainnet" || stellar.verification?.version === 1;
+  const [allocation, setAllocation] = useState<"protocol" | "ecosystem">("protocol");
+  const request = useRef<{ key: string; id: string } | null>(null);
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const snapshot = dashboard.snapshot;
-  const maxWithdraw = xlm(snapshot.accruedFeesStroops);
+  const maxWithdraw = xlm(mainnet ? allocation === "ecosystem" ? snapshot.ecosystemFeesStroops ?? 0 : snapshot.protocolFeesStroops ?? 0 : snapshot.accruedFeesStroops);
 
   async function withdraw() {
     setBusy(true);
     setError(null);
     setResult(null);
     try {
+      const key = `${allocation}:${amount}:${stellar.networkId}`;
+      if (request.current?.key !== key) request.current = { key, id: crypto.randomUUID() };
       const response = await post<{ txHash: string; explorerUrl: string; remaining: string }>(
         "/api/treasury/withdraw",
-        { amountXlm: Number(amount) },
+        { amount, kind: allocation, networkId: stellar.networkId, currency: symbol, requestId: request.current.id },
       );
-      setResult(`Withdrawn. Remaining accrued fees: ${response.remaining} XLM.`);
+      setResult(`Withdrawn to ${dashboard.adminWallet}. Remaining ${allocation} fees: ${response.remaining} ${symbol}.`);
       setAmount("");
+      request.current = null;
+      router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Withdrawal failed.");
     } finally {
@@ -80,11 +94,12 @@ export function TreasuryPanel({ dashboard }: { dashboard: TreasuryDashboard }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-        <Metric label="Contract balance" value={`${xlm(snapshot.contractBalanceStroops)} XLM`} />
-        <Metric label="Bot liquidity" value={`${xlm(snapshot.botLiquidityStroops)} XLM`} tone="accent" />
-        <Metric label="Accrued fees" value={`${xlm(snapshot.accruedFeesStroops)} XLM`} tone="success" />
-        <Metric label="Locked escrow" value={`${xlm(snapshot.lockedEscrowStroops)} XLM`} />
+        <Metric label="Contract balance" value={`${xlm(snapshot.contractBalanceStroops)} ${symbol}`} />
+        <Metric label="Bot liquidity" value={`${xlm(snapshot.botLiquidityStroops)} ${symbol}`} tone="accent" />
+        <Metric label="Accrued fees" value={`${xlm(snapshot.accruedFeesStroops)} ${symbol}`} tone="success" />
+        <Metric label="Locked escrow" value={`${xlm(snapshot.lockedEscrowStroops)} ${symbol}`} />
       </div>
+      {mainnet ? <div className="grid grid-cols-2 gap-3"><Metric label="Protocol allocation" value={`${xlm(snapshot.protocolFeesStroops ?? 0)} ${symbol}`} /><Metric label="Ecosystem allocation" value={`${xlm(snapshot.ecosystemFeesStroops ?? 0)} ${symbol}`} /></div> : null}
 
       <Panel className="flex flex-col gap-4 px-5 py-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -112,21 +127,22 @@ export function TreasuryPanel({ dashboard }: { dashboard: TreasuryDashboard }) {
           <Detail label="Contract admin" value={snapshot.adminAddress ?? "—"} />
         </div>
         <div className="grid gap-2 text-xs sm:grid-cols-4">
-          <Detail label="Min treasury balance" value={`${xlm(dashboard.limits.minTreasuryBalanceStroops)} XLM`} />
-          <Detail label="Max bot entry" value={`${xlm(dashboard.limits.maxBotEntryStroops)} XLM`} />
-          <Detail label="Max payout" value={`${xlm(dashboard.limits.maxPayoutStroops)} XLM`} />
-          <Detail label="Daily bot liability" value={`${xlm(dashboard.limits.dailyBotLiabilityStroops)} XLM`} />
+          <Detail label="Min treasury balance" value={`${xlm(dashboard.limits.minTreasuryBalanceStroops)} ${symbol}`} />
+          <Detail label="Max bot entry" value={`${xlm(dashboard.limits.maxBotEntryStroops)} ${symbol}`} />
+          <Detail label="Max payout" value={`${xlm(dashboard.limits.maxPayoutStroops)} ${symbol}`} />
+          <Detail label="Daily bot liability" value={`${xlm(dashboard.limits.dailyBotLiabilityStroops)} ${symbol}`} />
         </div>
       </Panel>
 
       <Panel className="flex flex-col gap-4 px-5 py-5">
         <SectionHeader
-          title="Withdraw protocol revenue"
-          subtitle={`Only the admin wallet can withdraw, and funds are sent to the bound treasury address. Available: ${maxWithdraw} XLM`}
+          title={mainnet ? "Collect fee allocation" : "Withdraw protocol revenue"}
+          subtitle={`Only the designated wallet can collect these fees. Available ${allocation} allocation: ${maxWithdraw} ${symbol}`}
         />
+        {mainnet ? <label className="flex flex-col gap-1.5 text-sm"><span className="eyebrow">Allocation</span><select className="focus-ring h-11 rounded-xl border border-line bg-surface px-3" value={allocation} disabled={busy} onChange={event => setAllocation(event.target.value as "protocol" | "ecosystem")}><option value="protocol">Protocol · 5%</option><option value="ecosystem">Ecosystem · 5%</option></select></label> : null}
         <div className="flex flex-wrap items-end gap-3">
           <label className="min-w-[200px] flex-1">
-            <span className="eyebrow">Amount (XLM)</span>
+            <span className="eyebrow">Amount ({symbol})</span>
             <Input
               className="mt-1.5"
               value={amount}
@@ -160,9 +176,9 @@ export function TreasuryPanel({ dashboard }: { dashboard: TreasuryDashboard }) {
           <Panel className="flex flex-col gap-2 px-5 py-4 text-sm">
             <Row label="Bot wins" value={String(dashboard.totals.bot_wins)} />
             <Row label="Player wins" value={String(dashboard.totals.player_wins)} />
-            <Row label="Player rewards" value={`${xlm(dashboard.totals.player_rewards)} XLM`} />
-            <Row label="Treasury delta" value={`${xlm(dashboard.totals.treasury_delta)} XLM`} />
-            <Row label="Protocol fees" value={`${xlm(dashboard.totals.fees)} XLM`} />
+            <Row label="Player rewards" value={`${xlm(dashboard.totals.player_rewards)} ${symbol}`} />
+            <Row label="Treasury delta" value={`${xlm(dashboard.totals.treasury_delta)} ${symbol}`} />
+            <Row label={mainnet ? "Game fees" : "Protocol fees"} value={`${xlm(dashboard.totals.fees)} ${symbol}`} />
           </Panel>
           <div className="mt-3 flex flex-col gap-2">
             {dashboard.botMatches.slice(0, 8).map((row, index) => (
@@ -186,7 +202,7 @@ export function TreasuryPanel({ dashboard }: { dashboard: TreasuryDashboard }) {
                   <span className="text-muted">{field(row, "kind")}</span>
                   <span className={`numeric ${field(row, "direction") === "in" ? "text-success" : "text-ink"}`}>
                     {field(row, "direction") === "in" ? "+" : "−"}
-                    {xlm(Number(field(row, "amount_stroops")))} XLM
+                    {xlm(Number(field(row, "amount_stroops")))} {symbol}
                   </span>
                 </div>
               ))

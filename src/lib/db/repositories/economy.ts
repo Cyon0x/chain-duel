@@ -1,4 +1,6 @@
 import { newId, nowIso } from "../index";
+import { stellarNetwork } from "../../config/stellar";
+import type { StellarAssetSymbol, StellarNetworkId } from "../../stellar/shared";
 import type {
   AdminActionRow,
   SettingRow,
@@ -25,15 +27,23 @@ export async function createTransaction(
     address?: string | null;
     explorerUrl?: string | null;
     metadata?: unknown;
+    preparedHash?: string | null;
     demo?: boolean;
+    stellarNetwork?: StellarNetworkId;
+    currency?: StellarAssetSymbol;
+    allocation?: "protocol" | "ecosystem";
+    feeAmountStroops?: number;
   },
 ): Promise<TransactionRow> {
   const id = input.id ?? newId("txn");
   const timestamp = nowIso();
+  const game = input.gameId ? await db.one<{ stellar_network: StellarNetworkId; currency: StellarAssetSymbol }>("SELECT stellar_network,currency FROM games WHERE id = ?", [input.gameId]) : null;
+  const network = input.stellarNetwork ?? game?.stellar_network ?? stellarNetwork().id;
+  const currency = input.currency ?? game?.currency ?? (network === "mainnet" ? "USDC" : "XLM");
   await db.execute(
     `INSERT INTO transactions (id, user_id, game_id, kind, direction, amount_stroops, status, tx_hash, address,
-       explorer_url, metadata, demo, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       explorer_url, metadata, demo, created_at, updated_at,stellar_network,currency,allocation,fee_amount_stroops,prepared_hash)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING`,
     [
       id,
       input.userId ?? null,
@@ -49,6 +59,7 @@ export async function createTransaction(
       input.demo ? 1 : 0,
       timestamp,
       timestamp,
+      network, currency, input.allocation ?? null, input.feeAmountStroops ?? 0, input.preparedHash ?? null,
     ],
   );
   const row = await db.one<TransactionRow>("SELECT * FROM transactions WHERE id = ?", [id]);
@@ -91,6 +102,8 @@ export async function updateTransaction(
     explorerUrl?: string | null;
     confirmedAt?: string | null;
     address?: string | null;
+    metadata?: unknown;
+    preparedHash?: string | null;
   },
 ): Promise<void> {
   const assignments: string[] = [];
@@ -103,6 +116,8 @@ export async function updateTransaction(
     explorer_url: patch.explorerUrl,
     confirmed_at: patch.confirmedAt,
     address: patch.address,
+    metadata: patch.metadata === undefined ? undefined : JSON.stringify(patch.metadata),
+    prepared_hash: patch.preparedHash,
   };
   for (const [column, value] of Object.entries(map)) {
     if (value !== undefined) {
@@ -156,12 +171,14 @@ export async function recordTreasuryTransaction(
     gameId?: string | null;
     actor?: string | null;
     metadata?: unknown;
+    stellarNetwork?: StellarNetworkId;
+    currency?: StellarAssetSymbol;
   },
 ): Promise<TreasuryTransactionRow> {
   const id = newId("trs");
   await db.execute(
-    `INSERT INTO treasury_transactions (id, kind, direction, amount_stroops, balance_after_stroops, tx_hash, game_id, actor, metadata, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO treasury_transactions (id, kind, direction, amount_stroops, balance_after_stroops, tx_hash, game_id, actor, metadata, created_at,stellar_network,currency)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       input.kind,
@@ -173,6 +190,8 @@ export async function recordTreasuryTransaction(
       input.actor ?? null,
       input.metadata ? JSON.stringify(input.metadata) : null,
       nowIso(),
+      input.stellarNetwork ?? stellarNetwork().id,
+      input.currency ?? ((input.stellarNetwork ?? stellarNetwork().id) === "mainnet" ? "USDC" : "XLM"),
     ],
   );
   const row = await db.one<TreasuryTransactionRow>(
@@ -186,18 +205,19 @@ export async function recordTreasuryTransaction(
 export async function listTreasuryTransactions(
   db: SqlDriver,
   limit = 40,
+  network: StellarNetworkId = stellarNetwork().id,
 ): Promise<TreasuryTransactionRow[]> {
   return db.query<TreasuryTransactionRow>(
-    "SELECT * FROM treasury_transactions ORDER BY created_at DESC LIMIT ?",
-    [limit],
+    "SELECT * FROM treasury_transactions WHERE stellar_network = ? ORDER BY created_at DESC LIMIT ?",
+    [network, limit],
   );
 }
 
-export async function botLiabilitySince(db: SqlDriver, sinceIso: string): Promise<number> {
+export async function botLiabilitySince(db: SqlDriver, sinceIso: string, network: StellarNetworkId = stellarNetwork().id): Promise<number> {
   const row = await db.one<{ total: number }>(
     `SELECT COALESCE(SUM(CASE WHEN treasury_delta_stroops < 0 THEN -treasury_delta_stroops ELSE 0 END), 0) AS total
-     FROM bot_matches WHERE created_at >= ?`,
-    [sinceIso],
+     FROM bot_matches WHERE created_at >= ? AND stellar_network = ?`,
+    [sinceIso, network],
   );
   return Number(row?.total ?? 0);
 }

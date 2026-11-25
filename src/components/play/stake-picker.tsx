@@ -4,6 +4,8 @@ import clsx from "clsx";
 import { useId, useState } from "react";
 import { Badge } from "@/components/ui";
 import { ECONOMY, formatXlm, parseStakeXlm, splitPool, xlmToStroops } from "@/lib/config/game";
+import { useNetwork } from "@/components/networks/network-provider";
+import { stellarPoolSplit } from "@/lib/stellar/shared";
 
 export interface StakeOption {
   xlm: number;
@@ -35,6 +37,8 @@ export function StakePicker({
   max?: number;
   min?: number;
 }) {
+  const { stellar } = useNetwork();
+  const symbol = stellar.asset.symbol;
   const presetAmounts = options.map((option) => option.xlm);
   const [customText, setCustomText] = useState(presetAmounts.includes(value) ? "" : String(value));
   const [customMode, setCustomMode] = useState(!presetAmounts.includes(value));
@@ -49,7 +53,7 @@ export function StakePicker({
     ? value : options.find((option) => demo || option.xlm <= maxXlm)?.xlm;
 
   const customParse = customMode ? parseStakeXlm(customText, { maxStroops, minStroops }) : null;
-  const customError = customParse && !customParse.ok ? customParse.error : null;
+  const customError = customParse && !customParse.ok ? customParse.error.replace(/\bXLM\b/g, symbol) : null;
   const effectiveXlm = customMode ? (customParse?.ok ? customParse.xlm : null) : value;
 
   function selectPreset(amount: number) {
@@ -66,7 +70,8 @@ export function StakePicker({
   }
 
   const poolStroops = effectiveXlm === null ? null : xlmToStroops(effectiveXlm) * 2;
-  const split = poolStroops === null ? null : splitPool(poolStroops, ECONOMY.feeBps);
+  const mainnetSplit = poolStroops === null || (stellar.id !== "mainnet" && !stellar.verification) ? null : stellarPoolSplit(poolStroops, stellar.feeSplit.protocolBps, stellar.feeSplit.ecosystemBps);
+  const split = poolStroops === null ? null : mainnetSplit ?? splitPool(poolStroops, ECONOMY.feeBps);
 
   return (
     <div className="flex flex-col gap-3">
@@ -114,7 +119,7 @@ export function StakePicker({
               tabIndex={tabAmount === option.xlm ? 0 : -1}
               disabled={disabled}
               onClick={() => selectPreset(option.xlm)}
-              title={disabled ? `Maximum stake is ${formatXlm(maxStroops)} XLM` : undefined}
+              title={disabled ? `Maximum stake is ${formatXlm(maxStroops)} ${symbol}` : undefined}
               className={clsx(
                 "focus-ring min-h-16 rounded-xl border px-2 py-2 text-center transition-colors max-[359px]:px-1",
                 selected ? "border-accent bg-accent-soft" : "border-line bg-surface hover:border-line-strong",
@@ -122,7 +127,7 @@ export function StakePicker({
               )}
             >
               <span className="numeric block text-base font-semibold max-[359px]:text-sm sm:text-lg">{formatXlm(xlmToStroops(option.xlm))}</span>
-              <span className="block text-xs text-dim">XLM</span>
+              <span className="block text-xs text-dim">{symbol}</span>
             </button>
           );
         })}
@@ -143,7 +148,7 @@ export function StakePicker({
             type="text"
             inputMode="decimal"
             autoComplete="off"
-            placeholder="Enter XLM amount"
+            placeholder={`Enter ${symbol} amount`}
             aria-invalid={Boolean(customError)}
             aria-describedby={errorId}
             className="stake-custom-input numeric h-full w-full min-w-0 border border-transparent bg-transparent text-base text-ink outline-none placeholder:text-dim"
@@ -151,7 +156,7 @@ export function StakePicker({
             onChange={(event) => updateCustom(event.target.value)}
             onFocus={() => updateCustom(customText)}
           />
-          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-dim">XLM</span>
+          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-dim">{symbol}</span>
         </div>
         {customError ? (
           <p id={errorId} role="alert" className="text-xs text-danger">
@@ -159,7 +164,7 @@ export function StakePicker({
           </p>
         ) : (
           <p id={errorId} className="text-xs text-dim">
-            Between {formatXlm(minStroops)} and {formatXlm(maxStroops)} XLM · up to 7 decimal places.
+            Between {formatXlm(minStroops)} and {formatXlm(maxStroops)} {symbol} · up to 7 decimal places.
           </p>
         )}
       </div>
@@ -169,7 +174,7 @@ export function StakePicker({
         <span className="flex items-center gap-2">
           {demo ? <Badge tone="neutral">No stake</Badge> : null}
           <span className="numeric font-semibold">
-            {demo || split === null ? "—" : `${formatXlm(split.payout + split.fee)} XLM`}
+            {demo || split === null ? "—" : `${formatXlm(split.payout + split.fee, 7)} ${symbol}`}
           </span>
         </span>
       </div>
@@ -179,8 +184,7 @@ export function StakePicker({
             "Enter a valid amount to see the payout split."
           ) : (
             <>
-              Winner receives {formatXlm(split.payout)} XLM · protocol fee {formatXlm(split.fee)} XLM (
-              {ECONOMY.feeBps / 100}%).
+              Winner receives {formatXlm(split.payout, 7)} {symbol} · {mainnetSplit ? <>protocol {formatXlm(mainnetSplit.protocol, 7)} {symbol} (5%) · ecosystem {formatXlm(mainnetSplit.ecosystem, 7)} {symbol} (5%)</> : <>protocol fee {formatXlm(split.fee, 7)} {symbol} ({ECONOMY.feeBps / 100}%)</>}.
             </>
           )}
         </p>

@@ -4,6 +4,9 @@ import { db } from "../db";
 import { loadWalletKey, primaryWallet } from "../db/repositories/identity";
 import { managedKeypair } from "../stellar/wallet";
 import type { WalletRow } from "../db/types";
+import { stellarNetwork } from "../config/stellar";
+import { ChainDuelError } from "../services/errors";
+import { playerControlledSigningEnabled } from "../config/stellar-verification";
 
 export interface SignerHandle {
   wallet: WalletRow;
@@ -20,11 +23,11 @@ export async function signerForUser(userId: string): Promise<SignerHandle | null
   const wallet = await primaryWallet(database, userId);
   if (!wallet) return null;
 
-  if (wallet.custody !== "managed") {
+  if (wallet.custody !== "managed" || playerControlledSigningEnabled()) {
     return {
       wallet,
       address: wallet.address,
-      custody: "external",
+      custody: wallet.custody,
       canSignServerSide: false,
       keypair: null,
     };
@@ -41,15 +44,13 @@ export async function signerForUser(userId: string): Promise<SignerHandle | null
     };
   }
 
+  const keypair = managedKeypair({ ciphertext: sealed.ciphertext, iv: sealed.iv, authTag: sealed.auth_tag });
+  if (stellarNetwork().id === "mainnet" && keypair.publicKey() !== wallet.address) throw new ChainDuelError("The managed wallet signer does not match its recorded address.", "wallet_key_mismatch", 503);
   return {
     wallet,
     address: wallet.address,
     custody: "managed",
     canSignServerSide: true,
-    keypair: managedKeypair({
-      ciphertext: sealed.ciphertext,
-      iv: sealed.iv,
-      authTag: sealed.auth_tag,
-    }),
+    keypair,
   };
 }

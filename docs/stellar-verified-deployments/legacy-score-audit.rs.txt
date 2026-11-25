@@ -1,0 +1,643 @@
+// Historical, undeployed signed-score candidate. Not the new verifier test suite.
+use super::*;
+extern crate std;
+use soroban_sdk::testutils::{Address as _, MockAuth, MockAuthInvoke};
+use soroban_sdk::{testutils::Ledger as _, token, xdr, IntoVal, String, TryFromVal};
+use std::rc::Rc;
+
+const UNIT: i128 = 10_000_000;
+const ADMIN: &str = "GCQKVXWIQHVGUOUHZR2O6YBWBNNPKIYH5AWQHXHF3EYRHM73WIWVSK7K";
+const PLAYER: &str = "GBGDTBOXVZ4GIDDRISY5FGXYY7XCWCCK3FRHJHSVFEZMWA3ZZ2HUALTK";
+const OTHER: &str = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF";
+
+fn address(env: &Env, value: &str) -> Address {
+    Address::from_string(&String::from_str(env, value))
+}
+fn id(env: &Env, value: u8) -> BytesN<32> {
+    BytesN::from_array(env, &[value; 32])
+}
+
+fn classic_account_with_trustline(env: &Env, who: &Address, asset: &xdr::Asset) {
+    let value: soroban_sdk::Val = who.into_val(env);
+    let account_id = match xdr::ScVal::try_from_val(env, &value).unwrap() {
+        xdr::ScVal::Address(xdr::ScAddress::Account(account)) => account,
+        _ => panic!("Expected a classic Stellar account"),
+    };
+    let account = xdr::AccountEntry {
+        account_id: account_id.clone(),
+        balance: 1000 * UNIT as i64,
+        seq_num: xdr::SequenceNumber(1),
+        num_sub_entries: 1,
+        inflation_dest: None,
+        flags: 0,
+        home_domain: Default::default(),
+        thresholds: xdr::Thresholds([1, 1, 1, 1]),
+        signers: Default::default(),
+        ext: xdr::AccountEntryExt::V0,
+    };
+    env.host()
+        .add_ledger_entry(
+            &Rc::new(xdr::LedgerKey::Account(xdr::LedgerKeyAccount {
+                account_id: account_id.clone(),
+            })),
+            &Rc::new(xdr::LedgerEntry {
+                last_modified_ledger_seq: 100,
+                data: xdr::LedgerEntryData::Account(account),
+                ext: xdr::LedgerEntryExt::V0,
+            }),
+            None,
+        )
+        .unwrap();
+    let trust_asset = match asset {
+        xdr::Asset::CreditAlphanum4(asset) => xdr::TrustLineAsset::CreditAlphanum4(asset.clone()),
+        xdr::Asset::CreditAlphanum12(asset) => xdr::TrustLineAsset::CreditAlphanum12(asset.clone()),
+        _ => panic!("Expected an issued asset"),
+    };
+    let trustline = xdr::TrustLineEntry {
+        account_id: account_id.clone(),
+        asset: trust_asset.clone(),
+        balance: 0,
+        limit: i64::MAX,
+        flags: 1,
+        ext: xdr::TrustLineEntryExt::V0,
+    };
+    env.host()
+        .add_ledger_entry(
+            &Rc::new(xdr::LedgerKey::Trustline(xdr::LedgerKeyTrustLine {
+                account_id,
+                asset: trust_asset,
+            })),
+            &Rc::new(xdr::LedgerEntry {
+                last_modified_ledger_seq: 100,
+                data: xdr::LedgerEntryData::Trustline(trustline),
+                ext: xdr::LedgerEntryExt::V0,
+            }),
+            None,
+        )
+        .unwrap();
+}
+
+// Existing public addresses in a simulated host. No signing key or real wallet
+// is generated, and no network transaction is submitted by this suite.
+fn world() -> (Env, Address, Address, Address, Address, Address) {
+    let mut env = Env::default();
+    env.set_config(soroban_sdk::testutils::EnvTestConfig {
+        capture_snapshot_at_drop: false,
+    });
+    env.mock_all_auths();
+    env.ledger().with_mut(|ledger| ledger.sequence_number = 100);
+    let admin = address(&env, ADMIN);
+    let p1 = address(&env, PLAYER);
+    let p2 = address(&env, OTHER);
+    let asset = env.register_stellar_asset_contract_v2(admin.clone());
+    let token = asset.address();
+    for who in [&admin, &p1, &p2] {
+        classic_account_with_trustline(&env, who, &asset.asset());
+    }
+    let minter = token::StellarAssetClient::new(&env, &token);
+    for who in [&admin, &p1, &p2] {
+        minter.mint(who, &(50_000 * UNIT));
+    }
+    let contract = env.register(
+        ChainDuel,
+        (
+            admin.clone(),
+            admin.clone(),
+            token.clone(),
+            1000_u32,
+            MAX_ENTRY,
+            2 * MAX_ENTRY,
+            100 * UNIT,
+        ),
+    );
+    (env, contract, token, admin, p1, p2)
+}
+
+fn pvp(env: &Env, contract: &Address, p1: &Address, p2: &Address, key: u8, entry: i128) {
+    let client = ChainDuelClient::new(env, contract);
+    client.create_game(p1, &id(env, key), &MODE_PVP, &entry, &500);
+    client.join_game(p2, &id(env, key));
+    client.start_game(&id(env, key));
+}
+
+fn settle_p1(env: &Env, contract: &Address, p1: &Address, key: u8) -> Game {
+    ChainDuelClient::new(env, contract).settle_game(
+        &id(env, key),
+        p1,
+        &90,
+        &10,
+        &10,
+        &2,
+        &id(env, 250),
+    )
+}
+
+#[test]
+fn all_administrative_roles_are_the_exact_designated_wallet() {
+    let (env, contract, token, admin, _, _) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    let config = client.get_config();
+    assert_eq!(config.admin, address(&env, ADMIN));
+    for recipient in [
+        config.treasury,
+        config.protocol_fee_recipient,
+        config.ecosystem_fee_recipient,
+        config.ecosystem_beneficiary,
+    ] {
+        assert_eq!(recipient, admin);
+    }
+    assert_eq!(config.token, token);
+    assert_eq!(
+        (
+            config.fee_bps,
+            config.protocol_fee_bps,
+            config.ecosystem_fee_bps
+        ),
+        (1000, 500, 500)
+    );
+    assert_eq!(client.get_contract_balance(), 0);
+}
+
+#[test]
+fn a_player_signature_alone_cannot_reserve_an_app_game_id_or_seat() {
+    let (env, contract, token, admin, _, _) = world();
+    // Selective SDK auth mocks use simulated contract accounts. Classic G
+    // account/trustline behavior is covered by all other fixture tests.
+    let p1 = Address::generate(&env);
+    let p2 = Address::generate(&env);
+    token::StellarAssetClient::new(&env, &token).mint(&p1, &(50_000 * UNIT));
+    token::StellarAssetClient::new(&env, &token).mint(&p2, &(50_000 * UNIT));
+    let client = ChainDuelClient::new(&env, &contract);
+    let game_id = id(&env, 33);
+    env.mock_auths(&[MockAuth {
+        address: &p1,
+        invoke: &MockAuthInvoke {
+            contract: &contract,
+            fn_name: "create_game",
+            args: (p1.clone(), game_id.clone(), MODE_PVP, MIN_ENTRY, 500_u32).into_val(&env),
+            sub_invokes: &[],
+        },
+    }]);
+    assert!(client
+        .try_create_game(&p1, &game_id, &MODE_PVP, &MIN_ENTRY, &500)
+        .is_err());
+    assert_eq!(token::Client::new(&env, &token).balance(&p1), 50_000 * UNIT);
+    env.mock_all_auths();
+    assert_eq!(client.get_config().admin, admin);
+    client.create_game(&p1, &game_id, &MODE_PVP, &MIN_ENTRY, &500);
+    env.mock_auths(&[MockAuth {
+        address: &p2,
+        invoke: &MockAuthInvoke {
+            contract: &contract,
+            fn_name: "join_game",
+            args: (p2.clone(), game_id.clone()).into_val(&env),
+            sub_invokes: &[],
+        },
+    }]);
+    assert!(client.try_join_game(&p2, &game_id).is_err());
+    assert_eq!(client.get_locked_escrow(), MIN_ENTRY);
+}
+
+#[test]
+fn a_100_usdc_pot_pays_90_and_accounts_for_two_independent_fives() {
+    let (env, contract, token, _, p1, p2) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    let balances = token::Client::new(&env, &token);
+    let before = balances.balance(&p1);
+    pvp(&env, &contract, &p1, &p2, 1, 50 * UNIT);
+    let result = settle_p1(&env, &contract, &p1, 1);
+    assert_eq!(
+        (result.payout, result.protocol_fee, result.ecosystem_fee),
+        (90 * UNIT, 5 * UNIT, 5 * UNIT)
+    );
+    assert_eq!(balances.balance(&p1), before - 50 * UNIT + 90 * UNIT);
+    assert_eq!(client.get_protocol_fees(), 5 * UNIT);
+    assert_eq!(client.get_ecosystem_fees(), 5 * UNIT);
+    assert_eq!(client.get_accrued_fees(), 10 * UNIT);
+    assert_eq!(client.get_locked_escrow(), 0);
+    assert_eq!(client.get_contract_balance(), 10 * UNIT);
+    assert_eq!(client.get_stats().volume, 100 * UNIT);
+}
+
+#[test]
+fn independent_fee_withdrawals_land_only_in_the_designated_wallet() {
+    let (env, contract, token, admin, p1, p2) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    pvp(&env, &contract, &p1, &p2, 1, 50 * UNIT);
+    settle_p1(&env, &contract, &p1, 1);
+    let balances = token::Client::new(&env, &token);
+    let before = balances.balance(&admin);
+    assert_eq!(client.withdraw_protocol_fees(&id(&env, 10), &(5 * UNIT)), 0);
+    assert_eq!(env.auths()[0].0, admin);
+    assert_eq!(client.get_ecosystem_fees(), 5 * UNIT);
+    assert_eq!(
+        client.withdraw_ecosystem_fees(&id(&env, 11), &(5 * UNIT)),
+        0
+    );
+    assert_eq!(env.auths()[0].0, admin);
+    assert_eq!(balances.balance(&admin), before + 10 * UNIT);
+    assert_eq!(client.get_contract_balance(), 0);
+}
+
+#[test]
+fn withdrawal_ids_cannot_be_replayed_or_reused_for_another_bucket() {
+    let (env, contract, token, admin, p1, p2) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    pvp(&env, &contract, &p1, &p2, 1, 50 * UNIT);
+    settle_p1(&env, &contract, &p1, 1);
+    client.withdraw_protocol_fees(&id(&env, 10), &UNIT);
+    let before = token::Client::new(&env, &token).balance(&admin);
+    let replay_error =
+        soroban_sdk::Error::from_contract_error(Error::WithdrawalAlreadyExecuted as u32);
+    assert!(
+        matches!(client.try_withdraw_protocol_fees(&id(&env, 10), &UNIT), Err(Ok(error)) if error == replay_error)
+    );
+    assert!(
+        matches!(client.try_withdraw_ecosystem_fees(&id(&env, 10), &UNIT), Err(Ok(error)) if error == replay_error)
+    );
+    assert_eq!(token::Client::new(&env, &token).balance(&admin), before);
+    assert_eq!(client.get_protocol_fees(), 4 * UNIT);
+    assert_eq!(client.get_ecosystem_fees(), 5 * UNIT);
+}
+
+#[test]
+fn withdrawals_preserve_active_stakes_and_other_fee_buckets() {
+    let (env, contract, _, admin, p1, p2) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    client.fund_bot_pool(&admin, &(100 * UNIT));
+    pvp(&env, &contract, &p1, &p2, 1, 50 * UNIT);
+    settle_p1(&env, &contract, &p1, 1);
+    client.create_game(&p1, &id(&env, 2), &MODE_PVP, &(25 * UNIT), &500);
+    assert!(client
+        .try_withdraw_protocol_fees(&id(&env, 10), &(6 * UNIT))
+        .is_err());
+    assert!(client
+        .try_withdraw_ecosystem_fees(&id(&env, 11), &(6 * UNIT))
+        .is_err());
+    assert!(client
+        .try_withdraw_bot_liquidity(&(101 * UNIT), &id(&env, 12))
+        .is_err());
+    client.withdraw_protocol_fees(&id(&env, 10), &(5 * UNIT));
+    client.withdraw_ecosystem_fees(&id(&env, 11), &(5 * UNIT));
+    assert_eq!(client.get_locked_escrow(), 25 * UNIT);
+    assert_eq!(client.get_bot_liquidity(), 100 * UNIT);
+    assert_eq!(client.get_contract_balance(), 125 * UNIT);
+    client.withdraw_bot_liquidity(&(100 * UNIT), &id(&env, 12));
+    assert_eq!(client.get_contract_balance(), 25 * UNIT);
+    assert!(client
+        .try_withdraw_bot_liquidity(&UNIT, &id(&env, 13))
+        .is_err());
+}
+
+#[test]
+fn every_privileged_operation_requires_actual_owner_authorization() {
+    let (env, contract, _, admin, p1, p2) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    client.fund_bot_pool(&admin, &(100 * UNIT));
+    pvp(&env, &contract, &p1, &p2, 1, 50 * UNIT);
+    settle_p1(&env, &contract, &p1, 1);
+    env.mock_auths(&[]);
+    assert!(client
+        .try_withdraw_protocol_fees(&id(&env, 10), &UNIT)
+        .is_err());
+    assert!(client
+        .try_withdraw_ecosystem_fees(&id(&env, 11), &UNIT)
+        .is_err());
+    assert!(client
+        .try_withdraw_bot_liquidity(&UNIT, &id(&env, 12))
+        .is_err());
+    assert!(client.try_set_fee_bps(&1000).is_err());
+    assert!(client.try_set_paused(&true).is_err());
+    assert!(client.try_set_bot_enabled(&false).is_err());
+    assert!(client
+        .try_set_limits(&MAX_ENTRY, &(2 * MAX_ENTRY), &0)
+        .is_err());
+    assert!(client.try_fund_bot_pool(&p1, &UNIT).is_err());
+    assert_eq!(client.get_accrued_fees(), 10 * UNIT);
+    assert_eq!(client.get_bot_liquidity(), 100 * UNIT);
+}
+
+#[test]
+fn settlement_rejects_a_lower_score_and_an_unrelated_winner() {
+    let (env, contract, _, admin, p1, p2) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    pvp(&env, &contract, &p1, &p2, 1, 25 * UNIT);
+    assert!(client
+        .try_settle_game(&id(&env, 1), &p1, &10, &90, &1, &2, &id(&env, 250))
+        .is_err());
+    assert!(client
+        .try_settle_game(&id(&env, 1), &admin, &90, &10, &2, &1, &id(&env, 250))
+        .is_err());
+    assert_eq!(client.get_locked_escrow(), 50 * UNIT);
+    assert_eq!(client.get_accrued_fees(), 0);
+}
+
+#[test]
+fn score_combo_and_seat_tie_breaks_match_the_game_verifier() {
+    let (env, contract, _, _, p1, p2) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    pvp(&env, &contract, &p1, &p2, 1, 25 * UNIT);
+    assert!(client
+        .try_settle_game(&id(&env, 1), &p1, &50, &50, &4, &8, &id(&env, 250))
+        .is_err());
+    assert_eq!(
+        client
+            .settle_game(&id(&env, 1), &p2, &50, &50, &4, &8, &id(&env, 250))
+            .winner,
+        Some(p2.clone())
+    );
+    pvp(&env, &contract, &p1, &p2, 2, 25 * UNIT);
+    assert!(client
+        .try_settle_game(&id(&env, 2), &p2, &50, &50, &8, &8, &id(&env, 250))
+        .is_err());
+    assert_eq!(
+        client
+            .settle_game(&id(&env, 2), &p1, &50, &50, &8, &8, &id(&env, 250))
+            .winner,
+        Some(p1)
+    );
+}
+
+#[test]
+fn empty_or_negative_results_and_unstarted_settlement_are_rejected() {
+    let (env, contract, _, _, p1, p2) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    client.create_game(&p1, &id(&env, 1), &MODE_PVP, &(25 * UNIT), &500);
+    client.join_game(&p2, &id(&env, 1));
+    assert!(client
+        .try_settle_game(&id(&env, 1), &p1, &90, &10, &1, &1, &id(&env, 250))
+        .is_err());
+    client.start_game(&id(&env, 1));
+    assert!(client
+        .try_settle_game(&id(&env, 1), &p1, &90, &10, &1, &1, &id(&env, 0))
+        .is_err());
+    assert!(client
+        .try_settle_game(&id(&env, 1), &p1, &-1, &0, &1, &1, &id(&env, 250))
+        .is_err());
+    assert!(client
+        .try_settle_game(&id(&env, 1), &p1, &90, &10, &-1, &1, &id(&env, 250))
+        .is_err());
+    assert_eq!(client.get_contract_balance(), 50 * UNIT);
+}
+
+#[test]
+fn duplicate_settlement_and_game_creation_cannot_move_funds_twice() {
+    let (env, contract, token, _, p1, p2) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    pvp(&env, &contract, &p1, &p2, 1, 25 * UNIT);
+    settle_p1(&env, &contract, &p1, 1);
+    let before = token::Client::new(&env, &token).balance(&p1);
+    assert!(client
+        .try_settle_game(&id(&env, 1), &p1, &90, &10, &1, &1, &id(&env, 250))
+        .is_err());
+    assert!(client
+        .try_create_game(&p1, &id(&env, 1), &MODE_PVP, &(25 * UNIT), &500)
+        .is_err());
+    assert_eq!(token::Client::new(&env, &token).balance(&p1), before);
+}
+
+#[test]
+fn player_and_computer_wins_use_the_same_funded_90_5_5_rule() {
+    let (env, contract, _, admin, p1, _) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    client.fund_bot_pool(&admin, &(100 * UNIT));
+    for key in [1, 2] {
+        client.create_game(&p1, &id(&env, key), &MODE_BOT, &(25 * UNIT), &500);
+        client.start_game(&id(&env, key));
+    }
+    let player = settle_p1(&env, &contract, &p1, 1);
+    let computer = client.settle_game(&id(&env, 2), &admin, &10, &90, &1, &2, &id(&env, 250));
+    assert_eq!(player.payout, 45 * UNIT);
+    assert_eq!(computer.payout, 45 * UNIT);
+    assert_eq!(client.get_bot_liquidity(), 50 * UNIT);
+    assert_eq!(client.get_contract_balance(), 60 * UNIT);
+    assert_eq!(client.get_stats().bot_wins, 1);
+    assert_eq!(client.get_stats().player_wins, 1);
+}
+
+#[test]
+fn fee_changes_do_not_change_a_game_that_has_already_locked_its_stake() {
+    let (env, contract, _, _, p1, p2) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    pvp(&env, &contract, &p1, &p2, 1, 50 * UNIT);
+    client.set_fee_bps(&2000);
+    let result = settle_p1(&env, &contract, &p1, 1);
+    assert_eq!(result.payout, 90 * UNIT);
+    assert_eq!(
+        (result.protocol_fee, result.ecosystem_fee),
+        (5 * UNIT, 5 * UNIT)
+    );
+    assert!(client.try_set_fee_bps(&(MAX_FEE_BPS + 1)).is_err());
+}
+
+#[test]
+fn later_limits_cannot_freeze_a_previously_committed_player_payout() {
+    let (env, contract, _, _, p1, p2) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    pvp(&env, &contract, &p1, &p2, 81, 50 * UNIT);
+    client.set_limits(&MIN_ENTRY, &(2 * MIN_ENTRY), &(100 * UNIT));
+    assert_eq!(settle_p1(&env, &contract, &p1, 81).payout, 90 * UNIT);
+    assert!(client.try_create_game(&p1, &id(&env, 82), &MODE_PVP, &(50 * UNIT), &500).is_err());
+}
+
+#[test]
+fn invalid_configuration_cannot_make_new_payouts_impossible() {
+    let (env, contract, _, _, _, _) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    for (entry, payout, reserve) in [
+        (MIN_ENTRY - 1, 2 * MAX_ENTRY, 0),
+        (MAX_ENTRY + 1, 2 * MAX_ENTRY, 0),
+        (MAX_ENTRY, MAX_ENTRY, 0),
+        (MAX_ENTRY, 2 * MAX_ENTRY, -1),
+    ] {
+        assert!(client.try_set_limits(&entry, &payout, &reserve).is_err());
+    }
+    assert_eq!(client.get_config().max_entry, MAX_ENTRY);
+}
+
+#[test]
+fn audit_witness_the_authorized_score_oracle_is_not_a_gameplay_proof() {
+    // A passing witness documents a trust boundary; it does NOT demonstrate
+    // that a malicious administrator is unable to fabricate a computer win.
+    let (env, contract, token, admin, p1, _) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    client.fund_bot_pool(&admin, &(125 * UNIT));
+    client.create_game(&p1, &id(&env, 93), &MODE_BOT, &MIN_ENTRY, &500);
+    client.start_game(&id(&env, 93));
+    let before = token::Client::new(&env, &token).balance(&admin);
+    let result = client.settle_game(&id(&env, 93), &admin, &0, &1, &0, &0, &id(&env, 94));
+    assert_eq!(result.payout, 45 * UNIT);
+    assert_eq!(token::Client::new(&env, &token).balance(&admin) - before, 45 * UNIT);
+    // No gameplay trace or proof was supplied. The hash is an attestation by
+    // the authorized oracle, not evidence the scores came from real gameplay.
+}
+
+#[test]
+fn administrator_playing_as_a_player_is_not_miscounted_as_a_computer_win() {
+    let (env, contract, _, admin, _, _) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    client.fund_bot_pool(&admin, &(150 * UNIT));
+    client.create_game(&admin, &id(&env, 95), &MODE_BOT, &MIN_ENTRY, &500);
+    client.start_game(&id(&env, 95));
+    client.settle_game(&id(&env, 95), &admin, &100, &1, &5, &0, &id(&env, 96));
+    assert_eq!(client.get_stats().player_wins, 1);
+    assert_eq!(client.get_stats().bot_wins, 0);
+}
+
+#[test]
+#[ignore = "Operational estimate: first build the release WASM with the pinned Stellar CLI"]
+fn mainnet_wasm_constructor_fee_estimate() {
+    let (env, _, token, admin, _, _) = world();
+    // Only this local cost probe permits recording nested constructor auth.
+    // Deployed transactions still require the real designated account signature.
+    env.mock_all_auths_allowing_non_root_auth();
+    env.ledger().with_mut(|ledger| {
+        ledger.min_persistent_entry_ttl = 2_073_600;
+        ledger.min_temp_entry_ttl = 17_280;
+        ledger.max_entry_ttl = 3_110_400;
+    });
+    let bytes = std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/target/wasm32v1-none/release/chain_duel_mainnet.wasm")).expect("Build the release WASM first");
+    let contract = env.register(bytes.as_slice(), (admin.clone(), admin.clone(), token, 1000_u32, MAX_ENTRY, 2 * MAX_ENTRY, 100 * UNIT));
+    let estimate = env.cost_estimate().fee();
+    std::println!("CONSTRUCTOR_FEE_ESTIMATE_UNITS={}", estimate.total);
+    std::println!("CONSTRUCTOR_PERSISTENT_RENT_UNITS={}", estimate.persistent_entry_rent);
+    std::println!("Estimate uses SDK conservative fee rates and current Mainnet minimum TTL; exact RPC initialization is quoted after code upload.");
+    assert_eq!(ChainDuelClient::new(&env, &contract).get_config().admin, admin);
+}
+
+#[test]
+fn refunds_return_only_to_depositors_and_cannot_be_claimed_twice() {
+    let (env, contract, token, admin, p1, p2) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    let balances = token::Client::new(&env, &token);
+    let before = balances.balance(&p1);
+    client.create_game(&p1, &id(&env, 1), &MODE_PVP, &(25 * UNIT), &500);
+    assert!(client.try_cancel_game(&p2, &id(&env, 1)).is_err());
+    client.set_paused(&true);
+    client.cancel_game(&p1, &id(&env, 1));
+    assert_eq!(balances.balance(&p1), before);
+    assert!(client.try_cancel_game(&admin, &id(&env, 1)).is_err());
+    assert!(client.try_claim_refund(&id(&env, 1)).is_err());
+    assert_eq!(client.get_accrued_fees(), 0);
+}
+
+#[test]
+fn expired_joined_games_refund_both_players_without_admin_authorization() {
+    let (env, contract, token, _, p1, p2) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    client.create_game(&p1, &id(&env, 1), &MODE_PVP, &(25 * UNIT), &500);
+    client.join_game(&p2, &id(&env, 1));
+    assert!(client.try_claim_refund(&id(&env, 1)).is_err());
+    env.ledger().with_mut(|ledger| ledger.sequence_number = 500);
+    assert!(client.try_start_game(&id(&env, 1)).is_err());
+    env.mock_auths(&[]);
+    client.claim_refund(&id(&env, 1));
+    assert_eq!(client.get_locked_escrow(), 0);
+    assert_eq!(token::Client::new(&env, &token).balance(&p1), 50_000 * UNIT);
+    assert_eq!(token::Client::new(&env, &token).balance(&p2), 50_000 * UNIT);
+}
+
+#[test]
+fn pause_blocks_new_entries_but_preserves_active_settlement_and_bot_refunds() {
+    let (env, contract, _, admin, p1, p2) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    pvp(&env, &contract, &p1, &p2, 1, 25 * UNIT);
+    client.fund_bot_pool(&admin, &(25 * UNIT));
+    client.create_game(&p1, &id(&env, 2), &MODE_BOT, &(25 * UNIT), &500);
+    client.set_paused(&true);
+    assert!(client
+        .try_create_game(&p1, &id(&env, 3), &MODE_PVP, &(25 * UNIT), &500)
+        .is_err());
+    settle_p1(&env, &contract, &p1, 1);
+    client.cancel_game(&p1, &id(&env, 2));
+    assert_eq!(client.get_bot_liquidity(), 25 * UNIT);
+    assert_eq!(client.get_locked_escrow(), 0);
+}
+
+#[test]
+fn invalid_entries_and_modes_cannot_debit_any_player() {
+    let (env, contract, token, _, p1, _) = world();
+    let client = ChainDuelClient::new(&env, &contract);
+    assert!(client.try_set_limits(&(MAX_ENTRY * 2), &(MAX_ENTRY * 4), &0).is_err());
+    let balances = token::Client::new(&env, &token);
+    let before = balances.balance(&p1);
+    for amount in [0, -1, MIN_ENTRY - 1, MAX_ENTRY + 1] {
+        assert!(client
+            .try_create_game(&p1, &id(&env, 1), &MODE_PVP, &amount, &500)
+            .is_err());
+    }
+    assert!(client
+        .try_create_game(&p1, &id(&env, 1), &9, &MIN_ENTRY, &500)
+        .is_err());
+    assert_eq!(balances.balance(&p1), before);
+    assert_eq!(client.get_locked_escrow(), 0);
+}
+
+#[test]
+fn every_existing_stake_preset_and_seven_decimal_custom_amount_is_preserved() {
+    for entry in [
+        25 * UNIT,
+        50 * UNIT,
+        100 * UNIT,
+        200 * UNIT,
+        500 * UNIT,
+        1000 * UNIT,
+        2000 * UNIT,
+        5000 * UNIT,
+        10000 * UNIT,
+        125 * UNIT + 1234567,
+    ] {
+        let (env, contract, _, admin, p1, p2) = world();
+        let client = ChainDuelClient::new(&env, &contract);
+        pvp(&env, &contract, &p1, &p2, 1, entry);
+        let game = settle_p1(&env, &contract, &p1, 1);
+        assert_eq!(
+            game.payout + game.protocol_fee + game.ecosystem_fee,
+            entry * 2
+        );
+        client.fund_bot_pool(&admin, &entry);
+        client.create_game(&p1, &id(&env, 2), &MODE_BOT, &entry, &500);
+        client.start_game(&id(&env, 2));
+        assert_eq!(settle_p1(&env, &contract, &p1, 2).payout, game.payout);
+    }
+}
+
+#[test]
+fn varied_256_games_conserve_supply_and_every_withdrawable_bucket() {
+    let mut state: u64 = 9137;
+    for _ in 0..256 {
+        let (env, contract, token, admin, p1, p2) = world();
+        let client = ChainDuelClient::new(&env, &contract);
+        let balances = token::Client::new(&env, &token);
+        state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
+        let entry = MIN_ENTRY + (state as i128 % (MAX_ENTRY - MIN_ENTRY + 1));
+        if state % 2 == 0 {
+            pvp(&env, &contract, &p1, &p2, 1, entry);
+        } else {
+            client.fund_bot_pool(&admin, &entry);
+            client.create_game(&p1, &id(&env, 1), &MODE_BOT, &entry, &500);
+            client.start_game(&id(&env, 1));
+        }
+        let game = settle_p1(&env, &contract, &p1, 1);
+        assert_eq!(game.protocol_fee, entry * 2 * 500 / 10000);
+        assert_eq!(game.ecosystem_fee, entry * 2 * 500 / 10000);
+        assert_eq!(
+            game.payout + game.protocol_fee + game.ecosystem_fee,
+            entry * 2
+        );
+        assert_eq!(client.get_locked_escrow(), 0);
+        assert_eq!(
+            client.get_contract_balance(),
+            client.get_bot_liquidity() + client.get_protocol_fees() + client.get_ecosystem_fees()
+        );
+        client.withdraw_protocol_fees(&id(&env, 10), &game.protocol_fee);
+        client.withdraw_ecosystem_fees(&id(&env, 11), &game.ecosystem_fee);
+        assert_eq!(
+            balances.balance(&admin)
+                + balances.balance(&p1)
+                + balances.balance(&p2)
+                + balances.balance(&contract),
+            150_000 * UNIT
+        );
+    }
+}

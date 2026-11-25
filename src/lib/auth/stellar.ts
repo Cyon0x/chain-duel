@@ -5,6 +5,9 @@ import { consumeNonce, storeNonce } from "../db/repositories/identity";
 import { appUrl } from "../config/env";
 import { stellarNetwork } from "../config/stellar";
 import { secureToken } from "../game/rng";
+import { playerControlledSigningEnabled } from "../config/stellar-verification";
+import { readPlayerAccountAuthority } from "../services/player-authority";
+import { hasAccountSigningWeight } from "../stellar/player-authority";
 
 const CHALLENGE_TTL_MS = 10 * 60 * 1000;
 
@@ -75,7 +78,7 @@ function verifyChallengeSignature(keypair: Keypair, message: string, signature: 
 }
 
 export async function verifyChallenge(input: VerifyChallengeInput): Promise<{ ok: boolean; reason?: string }> {
-  if (input.signerAddress && input.signerAddress !== input.address) {
+  if (!playerControlledSigningEnabled() && input.signerAddress && input.signerAddress !== input.address) {
     return { ok: false, reason: "signer_mismatch" };
   }
   const nonceLine = input.message
@@ -93,7 +96,12 @@ export async function verifyChallenge(input: VerifyChallengeInput): Promise<{ ok
   const signature = decodeSignature(input.signature);
   if (!signature) return { ok: false, reason: "invalid_signature_encoding" };
   try {
-    const keypair = Keypair.fromPublicKey(input.address);
+    const signerAddress = input.signerAddress ?? input.address;
+    if (playerControlledSigningEnabled()) {
+      const authority = await readPlayerAccountAuthority(input.address, stellarNetwork().id);
+      if (authority ? !hasAccountSigningWeight(authority, signerAddress) : signerAddress !== input.address) return { ok: false, reason: "signer_no_current_authority" };
+    }
+    const keypair = Keypair.fromPublicKey(signerAddress);
     const valid = verifyChallengeSignature(keypair, input.message, signature);
     return valid ? { ok: true } : { ok: false, reason: "signature_invalid" };
   } catch {

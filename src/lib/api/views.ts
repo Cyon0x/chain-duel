@@ -1,4 +1,5 @@
 /** Client-safe view types mirrored from the server services. No secrets here. */
+import type { StellarFinancialContext } from "../stellar/shared";
 
 export type GameModeView = "pvp" | "bot" | "private";
 export type GameStatusView =
@@ -11,7 +12,7 @@ export type GameStatusView =
   | "expired"
   | "refunded";
 
-export interface GameViewRow {
+export interface GameViewRow extends StellarFinancialContext {
   id: string;
   code: string;
   mode: GameModeView;
@@ -25,6 +26,8 @@ export interface GameViewRow {
   fee_bps: number;
   payout_stroops: number;
   fee_stroops: number;
+  protocol_fee_stroops?: number;
+  ecosystem_fee_stroops?: number;
   player_one_score: number;
   player_two_score: number;
   seed: string;
@@ -86,7 +89,7 @@ export interface MatchView {
   escrow: { creator: boolean; joiner: boolean };
 }
 
-export interface ProfileView {
+export interface ProfileView extends StellarFinancialContext {
   user_id: string;
   username: string;
   avatar: string | null;
@@ -124,7 +127,7 @@ export interface AchievementView {
   unlocked: boolean;
 }
 
-export interface MatchRowView {
+export interface MatchRowView extends StellarFinancialContext {
   id: string;
   game_id: string;
   user_id: string;
@@ -151,13 +154,15 @@ export type TransactionStatusView =
   | "confirmed"
   | "failed";
 
-export interface TransactionView {
+export interface TransactionView extends StellarFinancialContext {
   id: string;
   user_id: string | null;
   game_id: string | null;
   kind: string;
   direction: "in" | "out";
   amount_stroops: number;
+  allocation?: "protocol" | "ecosystem" | null;
+  fee_amount_stroops?: number;
   status: TransactionStatusView;
   tx_hash: string | null;
   ledger: number | null;
@@ -173,6 +178,7 @@ export interface DashboardView {
   profile: ProfileView;
   wallet: WalletView | null;
   balanceXlm: string | null;
+  balanceToken?: string | null;
   rank: number;
   recentMatches: MatchRowView[];
   activeGames: GameViewRow[];

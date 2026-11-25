@@ -4,6 +4,8 @@ import { commitEntry, confirmWalletEscrow } from "@/lib/services/duel";
 import { findGameById } from "@/lib/db/repositories/duel";
 import { db } from "@/lib/db";
 import { ChainDuelError } from "@/lib/services/errors";
+import { assertStellarRequest, type StellarRequestContext } from "@/lib/api/stellar-context";
+import type { PulseEnrollmentProof } from "@/lib/stellar/verified-contract";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +22,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       role?: "creator" | "joiner";
       signedXdr?: string;
       transactionId?: string;
-    }>(request);
+      enrollment?: PulseEnrollmentProof;
+    } & StellarRequestContext>(request);
+    assertStellarRequest(body, { game, demo: Boolean(game.demo) });
 
     if (body.action === "confirm") {
       if (!body.signedXdr || !body.transactionId) {
@@ -36,7 +40,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     const role = body.role ?? (game.creator_id === session.user.id ? "creator" : "joiner");
-    const result = await commitEntry({ game, userId: session.user.id, role });
+    const result = await commitEntry({ game, userId: session.user.id, role, enrollment: body.enrollment });
     return ok({ game: result.game, escrow: result });
   } catch (error) {
     return fail(error);

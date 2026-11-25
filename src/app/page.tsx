@@ -20,8 +20,8 @@ export default async function HomePage() {
   const { payout } = splitPool(pool, ECONOMY.feeBps);
   const stats: { label: string; value: string; unit?: string; icon: IconName }[] = [
     { label: "Duel length", value: `${PULSE_DUEL.durationMs / 1000}s`, icon: "clock" },
-    { label: "Default entry", value: formatXlm(ECONOMY.defaultEntryStroops), unit: "XLM", icon: "layers" },
-    { label: "Prize pool", value: formatXlm(pool), unit: "XLM", icon: "trophy" },
+    { label: "Default entry", value: formatXlm(ECONOMY.defaultEntryStroops), unit: network.asset.symbol, icon: "layers" },
+    { label: "Prize pool", value: formatXlm(pool), unit: network.asset.symbol, icon: "trophy" },
   ];
 
   return (
@@ -48,7 +48,7 @@ export default async function HomePage() {
           </dl>
         </div>
         <div className={styles.economy}>
-          <span><Icon name="shield" size={14} />Default winner reward {formatXlm(payout)} XLM · {ECONOMY.feeBps / 100}% protocol fee</span>
+          <span><Icon name="shield" size={14} />Default winner reward {formatXlm(payout)} {network.asset.symbol} · {network.id === "mainnet" ? "5% protocol · 5% ecosystem" : `${ECONOMY.feeBps / 100}% protocol fee`}</span>
           <Link href="/transactions" className="focus-ring">Settled on {network.label}<Icon name="external" size={13} /></Link>
         </div>
       </section>

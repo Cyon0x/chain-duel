@@ -65,6 +65,7 @@ export async function POST(request: Request) {
           action: z.literal("approve"),
           id: z.uuid(),
           stepId: z.uuid(),
+          signedXdr: z.string().max(200000).optional(),
         }),
         z.object({ action: z.literal("refresh"), id: z.uuid() }),
         z.object({
@@ -90,7 +91,7 @@ export async function POST(request: Request) {
           prepared: await prepareBridgeStep(userId, input.id, input.phase),
         });
       case "approve":
-        return ok(await authorizeBridgeStep(userId, input.id, input.stepId));
+        return ok(await authorizeBridgeStep(userId, input.id, input.stepId, input.signedXdr));
       case "refresh":
         return ok(await refreshBridge(userId, input.id));
       case "recover":

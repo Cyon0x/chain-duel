@@ -3,6 +3,7 @@ import { entryStroopsOrThrow } from "@/lib/api/stake";
 import { requireSessionUser } from "@/lib/auth/session";
 import { cancelQueue, joinQueue, queueStatus } from "@/lib/services/matchmaking";
 import { ECONOMY } from "@/lib/config/game";
+import { assertStellarRequest, type StellarRequestContext } from "@/lib/api/stellar-context";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +19,9 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const session = await requireSessionUser();
-    const body = await readJson<{ entryXlm?: number; demo?: boolean }>(request);
+    const body = await readJson<{ entryXlm?: number; demo?: boolean } & StellarRequestContext>(request);
     const demo = body.demo ?? false;
+    assertStellarRequest(body, { demo });
     const entryStroops =
       body.entryXlm !== undefined
         ? entryStroopsOrThrow(body.entryXlm, { demo })

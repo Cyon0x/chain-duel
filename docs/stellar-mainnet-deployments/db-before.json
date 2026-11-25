@@ -1,0 +1,29 @@
+{
+  "checkedAt": "2026-11-24T12:53:42.330Z",
+  "readOnly": true,
+  "counts": {
+    "users": "99",
+    "profiles": "99",
+    "wallets": "99",
+    "wallet_keys": "91",
+    "games": "66",
+    "game_players": "135",
+    "matches": "78",
+    "transactions": "212",
+    "arc_wallets": "2",
+    "arc_transactions": "0",
+    "bridge_transfers": "0",
+    "bridge_steps": "0"
+  },
+  "walletAssociationsSha256": "235bfd895d285f4fd7d8ca8b4f09509e0b72a4755d5eaa7826fc75e979121054",
+  "encryptedWalletKeysSha256": "a76762173da6e82495f4ec2ef8432ce41b26e588cd40b6c39a63d73e69676d2e",
+  "controlledWallets": [
+    {
+      "address": "GCQKVXWIQHVGUOUHZR2O6YBWBNNPKIYH5AWQHXHF3EYRHM73WIWVSK7K",
+      "custody": "external",
+      "storedNetwork": "testnet",
+      "encryptedKeyPresent": false,
+      "signerMatches": null
+    }
+  ]
+}

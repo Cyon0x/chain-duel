@@ -31,6 +31,12 @@ describe("network routing preserves legacy Stellar requests", () => {
     );
     expect(response.headers.get("location")).toBe("https://example.com/arc/dashboard");
   });
+  it("allows explicitly scoped Stellar USDC to reach the route's authoritative network/token checks", async () => {
+    for (const networkId of ["stellar-mainnet", "stellar-testnet"]) {
+      const response = await proxy(new NextRequest("https://example.com/api/duels", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ networkId, currency: "USDC" }) }));
+      expect(response.headers.get("x-middleware-next")).toBe("1");
+    }
+  });
   it("does not route Stellar matches into Arc", async () => {
     const response = await proxy(
       new NextRequest("https://example.com/match/stellar-game", { headers: { cookie: "cd_ecosystem=arc" } }),
