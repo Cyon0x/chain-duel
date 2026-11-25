@@ -130,6 +130,10 @@
       "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
     },
     {
+      "path": "docs/stellar-verified-deployments/preview-release.json",
+      "purpose": "Record the confirmed Testnet preview, implementation commit, public configuration and remaining release gates."
+    },
+    {
       "path": "docs/stellar-verified-deployments/production-associations-after.json",
       "purpose": "Preserve architecture, migration decisions, independent public evidence and review/release limits."
     },

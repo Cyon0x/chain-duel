@@ -188,6 +188,22 @@ Evidence: [resource measurements](stellar-verified-deployments/resource-evidence
 [security report](stellar-verified-security-report.md),
 [signing/migration plan](stellar-player-controlled-signing.md).
 
+## Published review candidate
+
+[Draft PR #5](https://github.com/Cyon0x/chain-duel/pull/5) contains the candidate.
+The [verified immutable Testnet Preview](https://chain-duel-ruesb1byi-cyon0xs-projects.vercel.app)
+is READY in Vercel and its GitHub check succeeds. Live health confirms PostgreSQL;
+network metadata confirms the official Testnet USDC, pinned contract/WASM, client
+signing and 90/5/5 split. Mainnet is unapproved and Arc financial operations are
+disabled. Google/X credentials are absent in this isolated hosted Preview; demo
+login is available, while live provider login remains an explicit release gate.
+Production OAuth configuration is unchanged. Public metadata is retained in
+[preview-release.json](stellar-verified-deployments/preview-release.json).
+
+The financial evidence retains `lastError` from an earlier interrupted assertion;
+its final `testStatus: complete`, successful receipts and financial verification
+fields record the completed run. It is not presented as a current failure.
+
 ## Remaining release gates
 
 1. Complete interactive signing/recovery with every supported Freighter, xBull,
@@ -220,5 +236,5 @@ Every changed/new path and its purpose is listed in
 [stellar-independent-verification-files.json](stellar-independent-verification-files.json).
 The separate Arc source/contracts were not modified. The GitHub branch and guarded
 Vercel Preview expose this candidate for review; they do not authorize production
-cutover. Deployment metadata is recorded after publication in
-`stellar-verified-deployments/preview-release.json`.
+cutover. Deployment metadata is retained in
+[preview-release.json](stellar-verified-deployments/preview-release.json).
