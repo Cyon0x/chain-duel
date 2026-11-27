@@ -6,6 +6,7 @@ import { useAsync } from "@/lib/hooks/use-async";
 import { api } from "@/lib/api/client";
 import { formatXlm } from "@/lib/config/game";
 import { Icon } from "@/components/icons";
+import { useNetwork } from "@/components/networks/network-provider";
 
 interface BotStatus {
   available: boolean;
@@ -16,6 +17,7 @@ interface BotStatus {
 }
 
 export function ComputerPanel({ defaultEntryXlm, options }: { defaultEntryXlm: number; options: { xlm: number; label: string }[] }) {
+  const symbol = useNetwork().stellar.asset.symbol;
   const { data, loading } = useAsync<BotStatus>(() => api("/api/bot"), [], { pollMs: 15_000 });
 
   if (loading && !data) {
@@ -61,7 +63,7 @@ export function ComputerPanel({ defaultEntryXlm, options }: { defaultEntryXlm: n
           </div>
         </div>
         <span className="numeric text-xs text-dim">
-          Max entry {formatXlm(data.maxEntryStroops)} XLM
+          Max entry {formatXlm(data.maxEntryStroops)} {symbol}
         </span>
       </div>
       <CreateDuelPanel

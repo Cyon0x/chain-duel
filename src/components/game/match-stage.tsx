@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, ButtonLink, EmptyState, LoadingBlock, Panel, Spinner } from "@/components/ui";
 import { api } from "@/lib/api/client";
 import { useAsync } from "@/lib/hooks/use-async";
 import { EscrowStatus } from "@/components/escrow-status";
 import { runEscrow, type EscrowStep } from "@/lib/wallet/escrow-client";
+import { financialSymbol } from "@/lib/stellar/shared";
 import { useSession } from "@/components/providers";
 import { isResultFinal } from "@/lib/game/outcome";
 import { PulseArena } from "./arena";
@@ -31,9 +32,17 @@ export function MatchStage({ gameId, selfUserId }: { gameId: string; selfUserId:
   const [actionError, setActionError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [waitingForOpponent, setWaitingForOpponent] = useState(false);
+  const [independentView, setIndependentView] = useState<MatchView | null>(null);
+  const pendingRead = useRef<Promise<MatchView> | null>(null);
 
-  const { data: view, error, loading, reload } = useAsync<MatchView>(
-    () => api<MatchView>(`/api/matches/${gameId}`),
+  const { data: serverView, error, loading, reload } = useAsync<MatchView>(
+    () => {
+      if (!pendingRead.current) pendingRead.current = (async () => {
+        const response = await api<MatchView>(`/api/matches/${gameId}`);
+        return response.game.verification_version === 1 ? (await import("@/lib/wallet/verified-match-view")).independentlyVerifiedMatchView(response) : response;
+      })().finally(() => { pendingRead.current = null; });
+      return pendingRead.current;
+    },
     [gameId],
     {
       pollMs: 4000,
@@ -41,6 +50,21 @@ export function MatchStage({ gameId, selfUserId }: { gameId: string; selfUserId:
       shouldPoll: (current) => !current || !isResultFinal(current.game),
     },
   );
+  const view = independentView ?? serverView;
+  useEffect(() => {
+    if (!view || view.game.demo || view.game.verification_version !== 1 || view.game.status !== "active" || !view.startAtMs || !session.walletAddress || !view.players.some(player => player.user_id === selfUserId)) return;
+    const deadline = view.startAtMs + 80000;
+    const timer = window.setTimeout(async () => {
+      try {
+        const direct = await import("@/lib/wallet/verified-pulse");
+        await direct.settleDirectPulseGame(view.game, session.walletAddress!);
+        const checked = await (await import("@/lib/wallet/verified-match-view")).independentlyVerifiedMatchView(view);
+        setIndependentView(checked);
+        void reload();
+      } catch (caught) { setActionError(caught instanceof Error ? caught.message : "Direct Stellar settlement is awaiting confirmation."); }
+    }, Math.max(1000, deadline - Date.now() + 6000));
+    return () => window.clearTimeout(timer);
+  }, [reload, selfUserId, session.walletAddress, view]);
 
   const self = useMemo(
     () => view?.players.find((player) => player.user_id === selfUserId) ?? null,
@@ -66,6 +90,7 @@ export function MatchStage({ gameId, selfUserId }: { gameId: string; selfUserId:
               address: session.walletAddress ?? "",
               role: self.seat === 1 ? "creator" : "joiner",
               onStep: setStep,
+              financial: view.game,
             });
             lastError = null;
             break;
@@ -122,6 +147,7 @@ export function MatchStage({ gameId, selfUserId }: { gameId: string; selfUserId:
   if (!view) return null;
 
   const game = view.game;
+  const symbol = financialSymbol(game);
 
   if (game.status === "cancelled" || game.status === "expired" || game.status === "refunded") {
     return (
@@ -213,12 +239,12 @@ export function MatchStage({ gameId, selfUserId }: { gameId: string; selfUserId:
         <div className="flex items-center justify-between">
           <span className="text-muted">Entry</span>
           <span className="numeric">
-            {game.demo ? "Demo (no stake)" : `${xlm(game.entry_stroops)} XLM each`}
+            {game.demo ? "Demo (no stake)" : `${xlm(game.entry_stroops)} ${symbol} each`}
           </span>
         </div>
         <div className="mt-2 flex items-center justify-between">
           <span className="text-muted">Prize pool</span>
-          <span className="numeric">{game.demo ? "—" : `${xlm(game.entry_stroops * 2)} XLM`}</span>
+          <span className="numeric">{game.demo ? "—" : `${xlm(game.entry_stroops * 2)} ${symbol}`}</span>
         </div>
       </div>
 
@@ -227,7 +253,7 @@ export function MatchStage({ gameId, selfUserId }: { gameId: string; selfUserId:
       <div className="flex flex-col items-center gap-2">
         <Button size="lg" loading={busy} onClick={enter} disabled={!opponentReady || step === "confirmed"}>
           {!selfLocked && !game.demo
-            ? `Lock entry · ${xlm(game.entry_stroops)} XLM`
+            ? `Lock entry · ${xlm(game.entry_stroops)} ${symbol}`
             : game.mode === "bot"
               ? "Start duel vs computer"
               : "Start duel"}

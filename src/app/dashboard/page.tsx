@@ -6,6 +6,7 @@ import { InviteInbox } from "@/components/invite-inbox";
 import { getSessionUser } from "@/lib/auth/session";
 import { dashboardFor } from "@/lib/services/profile";
 import { formatXlm } from "@/lib/config/game";
+import { publicStellarConfig } from "@/lib/config/stellar";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,8 @@ export default async function DashboardPage() {
 
   const data = await dashboardFor(session);
   const profile = data.profile;
+  const network = publicStellarConfig(session.user.id);
+  const symbol = network.asset.symbol;
   const winRate = profile.games_played ? Math.round((profile.wins / profile.games_played) * 100) : 0;
 
   return (
@@ -38,12 +41,12 @@ export default async function DashboardPage() {
 
         <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
           <div className="panel-flat px-4 py-3.5">
-            <p className="eyebrow">XLM balance</p>
+            <p className="eyebrow">{symbol} balance</p>
             <p className="numeric mt-2 text-2xl font-semibold text-accent">
-              {data.balanceXlm ?? "—"}
-              <span className="ml-1 text-sm text-dim">XLM</span>
+              {data.balanceToken ?? "—"}
+              <span className="ml-1 text-sm text-dim">{symbol}</span>
             </p>
-            <p className="mt-1 text-xs text-dim">Native Testnet balance</p>
+            <p className="mt-1 text-xs text-dim">{network.id === "mainnet" ? `${data.balanceXlm ?? "—"} XLM for network fees and reserves` : "Native Testnet balance"}</p>
           </div>
           <Stat label="Record" value={`${profile.wins}W · ${profile.losses}L`} hint={`${winRate}% win rate`} />
           <Stat
@@ -68,8 +71,7 @@ export default async function DashboardPage() {
         </div>
         {!data.escrowAvailable ? (
           <p className="rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
-            On-chain escrow is not configured on this deployment. Demo duels are fully playable; staked duels activate as
-            soon as the Soroban contract is connected.
+            Staked duels are temporarily paused. You can still play a demo.
           </p>
         ) : null}
       </Panel>
@@ -166,15 +168,15 @@ export default async function DashboardPage() {
             <p className="eyebrow">Career</p>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted">Earned</span>
-              <span className="numeric text-success">{formatXlm(profile.total_earned_stroops)} XLM</span>
+              <span className="numeric text-success">{formatXlm(profile.total_earned_stroops)} {symbol}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted">Wagered</span>
-              <span className="numeric">{formatXlm(profile.total_wagered_stroops)} XLM</span>
+              <span className="numeric">{formatXlm(profile.total_wagered_stroops)} {symbol}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted">Fees paid</span>
-              <span className="numeric text-dim">{formatXlm(profile.fees_paid_stroops)} XLM</span>
+              <span className="numeric text-dim">{formatXlm(profile.fees_paid_stroops)} {symbol}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted">Human duels</span>

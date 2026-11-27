@@ -3,6 +3,7 @@ import clsx from "clsx";
 import { Avatar, Badge } from "@/components/ui";
 import { formatXlm } from "@/lib/config/game";
 import { Icon } from "@/components/icons";
+import { financialNetwork, financialSymbol, stellarExplorerBase, stellarNetworkLabel, type StellarNetworkId } from "@/lib/stellar/shared";
 import type {
   DirectoryPlayer,
   GameViewRow,
@@ -44,7 +45,7 @@ export function MatchRowItem({ match }: { match: MatchRowView }) {
       </div>
       <div className="text-right">
         <p className={clsx("numeric text-sm font-semibold", match.reward_stroops > 0 ? "text-success" : "text-muted")}>
-          {match.demo ? "Demo" : match.reward_stroops > 0 ? `+${formatXlm(match.reward_stroops)}` : `−${formatXlm(match.entry_stroops)}`}
+          {match.demo ? "Demo" : `${match.reward_stroops > 0 ? `+${formatXlm(match.reward_stroops)}` : `−${formatXlm(match.entry_stroops)}`} ${financialSymbol(match)}`}
         </p>
         {match.mode !== "bot" && match.rating_delta !== 0 ? (
           <p className={clsx("numeric text-xs", match.rating_delta > 0 ? "text-success" : "text-danger")}>
@@ -69,6 +70,7 @@ const TX_LABELS: Record<string, string> = {
   bot_settlement: "Computer duel settlement",
   treasury_funding: "Treasury funding",
   treasury_withdrawal: "Treasury withdrawal",
+  trustline: "USDC setup",
 };
 
 export function TransactionItem({ tx }: { tx: TransactionView }) {
@@ -85,17 +87,19 @@ export function TransactionItem({ tx }: { tx: TransactionView }) {
         {incoming ? "↓" : "↑"}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{TX_LABELS[tx.kind] ?? tx.kind}</p>
+        <p className="truncate text-sm font-medium">{tx.kind === "fee" && tx.allocation === "ecosystem" ? "Ecosystem allocation" : TX_LABELS[tx.kind] ?? tx.kind}</p>
         <p className="numeric mt-0.5 text-xs text-dim">
           {relativeTime(tx.created_at)}
           {tx.game_id ? ` · ${tx.game_id.slice(0, 10)}` : ""}
+          {` · ${stellarNetworkLabel(financialNetwork(tx))}`}
         </p>
       </div>
       <div className="text-right">
         <p className={clsx("numeric text-sm font-semibold", incoming ? "text-success" : "text-ink")}>
-          {tx.amount_stroops > 0 ? `${incoming ? "+" : "−"}${formatXlm(tx.amount_stroops)}` : "—"}
+          {tx.amount_stroops > 0 ? `${incoming ? "+" : "−"}${formatXlm(tx.amount_stroops, 7)} ${financialSymbol(tx)}` : tx.fee_amount_stroops ? `${formatXlm(tx.fee_amount_stroops, 7)} ${financialSymbol(tx)}` : "—"}
         </p>
-        <TxStatus status={tx.status} demo={tx.demo === 1} hash={tx.tx_hash} />
+        {tx.kind === "fee" && tx.fee_amount_stroops ? <p className="text-xs text-dim">From prize pool</p> : null}
+        <TxStatus status={tx.status} demo={tx.demo === 1} hash={tx.tx_hash} network={financialNetwork(tx)} />
       </div>
     </div>
   );
@@ -105,10 +109,12 @@ export function TxStatus({
   status,
   demo,
   hash,
+  network = "testnet",
 }: {
   status: string;
   demo?: boolean;
   hash?: string | null;
+  network?: StellarNetworkId;
 }) {
   if (demo) return <Badge tone="neutral">Demo</Badge>;
   const tone =
@@ -123,7 +129,7 @@ export function TxStatus({
   if (hash && status === "confirmed") {
     return (
       <a
-        href={`https://stellar.expert/explorer/testnet/tx/${hash}`}
+        href={`${stellarExplorerBase(network)}/tx/${hash}`}
         target="_blank"
         rel="noreferrer"
         className="focus-ring inline-flex rounded-full"
@@ -184,7 +190,7 @@ export function ActiveDuelCard({ game }: { game: GameViewRow }) {
           {game.mode === "bot" ? "Computer duel" : "Duel"} in progress
         </p>
         <p className="numeric mt-0.5 text-xs text-dim">
-          {game.demo ? "Demo" : `${formatXlm(game.entry_stroops)} XLM entry`} · {game.status}
+          {game.demo ? "Demo" : `${formatXlm(game.entry_stroops, 7)} ${financialSymbol(game)} entry`} · {game.status}
         </p>
       </div>
       <span className="text-sm font-medium text-accent">Resume →</span>

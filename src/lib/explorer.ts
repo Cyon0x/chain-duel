@@ -1,21 +1,21 @@
 /**
- * Client-safe Stellar explorer helpers. Chain Duel ships on Testnet; the URL
- * can be overridden at build time with NEXT_PUBLIC_STELLAR_EXPLORER_URL.
+ * Client-safe explorer helpers. Every financial record supplies its own network;
+ * an unbound historical record retains Testnet.
  */
-export const EXPLORER_BASE =
-  process.env.NEXT_PUBLIC_STELLAR_EXPLORER_URL ?? "https://stellar.expert/explorer/testnet";
+import { stellarExplorerBase, type StellarNetworkId } from "./stellar/shared";
+export const EXPLORER_BASE = stellarExplorerBase("testnet");
 
-export function txExplorerUrl(hash: string | null | undefined): string | null {
+export function txExplorerUrl(hash: string | null | undefined, network: StellarNetworkId = "testnet"): string | null {
   if (!hash) return null;
-  return `${EXPLORER_BASE}/tx/${hash}`;
+  return `${stellarExplorerBase(network)}/tx/${hash}`;
 }
 
-export function accountExplorerUrl(address: string): string {
-  return `${EXPLORER_BASE}/account/${address}`;
+export function accountExplorerUrl(address: string, network: StellarNetworkId = "testnet"): string {
+  return `${stellarExplorerBase(network)}/account/${address}`;
 }
 
-export function contractExplorerUrl(id: string): string {
-  return `${EXPLORER_BASE}/contract/${id}`;
+export function contractExplorerUrl(id: string, network: StellarNetworkId = "testnet"): string {
+  return `${stellarExplorerBase(network)}/contract/${id}`;
 }
 
 export function truncateAddress(address: string | null | undefined, size = 4): string {

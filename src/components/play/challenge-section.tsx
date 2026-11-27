@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button, Panel } from "@/components/ui";
 import { CreateDuelPanel } from "./create-duel";
 import { formatXlm } from "@/lib/config/game";
+import { useNetwork } from "@/components/networks/network-provider";
 
 export function ChallengeSection({
   username,
@@ -19,6 +20,7 @@ export function ChallengeSection({
   maxEntryXlm?: number;
 }) {
   const [open, setOpen] = useState(false);
+  const symbol = useNetwork().stellar.asset.symbol;
 
   if (!open) {
     return (
@@ -26,7 +28,7 @@ export function ChallengeSection({
         <div>
           <p className="eyebrow">Challenge</p>
           <p className="mt-1.5 text-sm text-muted">
-            Send {username} a Pulse Duel invitation for {formatXlm(defaultEntry * 10_000_000)} XLM.
+            Send {username} a Pulse Duel invitation for {formatXlm(defaultEntry * 10_000_000)} {symbol}.
           </p>
         </div>
         <Button size="lg" onClick={() => setOpen(true)}>

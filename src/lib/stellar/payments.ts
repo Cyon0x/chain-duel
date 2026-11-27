@@ -11,10 +11,11 @@ import {
 } from "@stellar/stellar-sdk";
 import type { Keypair } from "@stellar/stellar-sdk";
 import { stellarNetwork } from "../config/stellar";
+import { STELLAR_MAINNET_USDC_ISSUER, STELLAR_TESTNET_USDC_ISSUER, type StellarAssetSymbol, type StellarNetworkId } from "./shared";
 import { StellarIntegrationError } from "./server";
 
 /**
- * Classic XLM transfers over Horizon.
+ * Classic XLM and official Mainnet USDC transfers over Horizon.
  *
  * Soroban is the wrong tool for a plain payment between two accounts: it costs
  * more, needs a contract invocation and gains nothing. These are ordinary
@@ -27,8 +28,41 @@ export const BASE_RESERVE_XLM = 1;
 export const FEE_HEADROOM_XLM = 0.5;
 export const MAX_MEMO_LENGTH = 28;
 
-export function horizonServer(): Horizon.Server {
-  return new Horizon.Server(stellarNetwork().horizonUrl);
+export function horizonServer(networkId?: StellarNetworkId): Horizon.Server {
+  return new Horizon.Server(stellarNetwork(networkId).horizonUrl);
+}
+
+export function paymentAsset(currency: StellarAssetSymbol = "XLM", networkId?: StellarNetworkId): Asset {
+  if (currency === "XLM") return Asset.native();
+  const network = stellarNetwork(networkId).id;
+  if (currency !== "USDC" || !["mainnet", "testnet"].includes(network)) throw new StellarIntegrationError("USDC wallet payments require the official Circle asset for the selected Stellar network.", "invalid_input");
+  return new Asset("USDC", network === "mainnet" ? STELLAR_MAINNET_USDC_ISSUER : STELLAR_TESTNET_USDC_ISSUER);
+}
+
+const reserveCache = new Map<string, { units: bigint; expiresAt: number }>();
+export async function baseReserveUnits(networkId?: StellarNetworkId): Promise<bigint> {
+  const net = stellarNetwork(networkId);
+  const cached = reserveCache.get(net.horizonUrl);
+  if (cached && cached.expiresAt > Date.now()) return cached.units;
+  const response = await fetch(`${net.horizonUrl}/ledgers?order=desc&limit=1`, { cache: "no-store", signal: AbortSignal.timeout(15000) });
+  if (!response.ok) throw new StellarIntegrationError("The Stellar account reserve could not be verified.", "balance_unavailable");
+  const payload = await response.json() as { _embedded?: { records?: { base_reserve_in_stroops: number }[] } };
+  const value = payload._embedded?.records?.[0]?.base_reserve_in_stroops;
+  if (!Number.isSafeInteger(value) || !value || value < 0) throw new StellarIntegrationError("The Stellar account reserve could not be verified.", "balance_unavailable");
+  const units = BigInt(value);
+  reserveCache.set(net.horizonUrl, { units, expiresAt: Date.now() + 60000 });
+  return units;
+}
+
+export function decimalUnits(value: string): bigint {
+  if (!/^\d+(?:\.\d{1,7})?$/.test(value)) throw new StellarIntegrationError("Enter an exact amount with up to seven decimal places.", "invalid_input");
+  const [whole, fraction = ""] = value.split(".");
+  return BigInt(whole) * 10_000_000n + BigInt(fraction.padEnd(7, "0"));
+}
+
+export function unitDecimal(value: bigint): string {
+  if (value < 0n) throw new StellarIntegrationError("Invalid balance.", "invalid_input");
+  return `${value / 10_000_000n}.${(value % 10_000_000n).toString().padStart(7, "0")}`;
 }
 
 export function isValidStellarAddress(address: string): boolean {
@@ -43,28 +77,35 @@ export interface AccountSnapshot {
   spendableXlm: string;
   reserveXlm: string;
   subentries: number;
+  usdc?: string;
+  spendableUsdc?: string;
+  usdcTrustline?: boolean;
+  usdcAuthorized?: boolean;
+  baseReserveXlm?: string;
 }
 
-function round7(value: number): string {
-  return value.toFixed(7).replace(/0+$/, "").replace(/\.$/, "");
-}
-
-export async function accountSnapshot(address: string): Promise<AccountSnapshot> {
-  const server = horizonServer();
+export async function accountSnapshot(address: string, networkId?: StellarNetworkId): Promise<AccountSnapshot> {
+  const server = horizonServer(networkId);
   try {
     const account = await server.loadAccount(address);
     const native = account.balances.find((balance) => balance.asset_type === "native");
-    const xlm = native ? Number(native.balance) : 0;
     const subentries = account.subentry_count ?? 0;
-    const reserve = (2 + subentries) * 0.5;
-    const spendable = Math.max(xlm - reserve - FEE_HEADROOM_XLM, 0);
+    const baseReserve = await baseReserveUnits(networkId);
+    const reserve = BigInt(2 + subentries + (account.num_sponsoring ?? 0) - (account.num_sponsored ?? 0)) * baseReserve;
+    const spendable = decimalUnits(native?.balance ?? "0") - reserve - decimalUnits(native?.selling_liabilities ?? "0") - decimalUnits(String(FEE_HEADROOM_XLM));
+    const issuer = stellarNetwork(networkId).id === "mainnet" ? STELLAR_MAINNET_USDC_ISSUER : STELLAR_TESTNET_USDC_ISSUER;
+    const usdc = account.balances.find(balance => "asset_code" in balance && balance.asset_code === "USDC" && balance.asset_issuer === issuer);
+    const usdcUnits = decimalUnits(usdc?.balance ?? "0") - decimalUnits(usdc && "selling_liabilities" in usdc ? usdc.selling_liabilities : "0");
+    const authorized = Boolean(usdc && "is_authorized" in usdc && usdc.is_authorized);
     return {
       address,
       exists: true,
-      xlm: round7(xlm),
-      spendableXlm: round7(spendable),
-      reserveXlm: round7(reserve),
+      xlm: native?.balance ?? "0",
+      spendableXlm: unitDecimal(spendable > 0n ? spendable : 0n),
+      reserveXlm: unitDecimal(reserve),
       subentries,
+      usdc: usdc?.balance ?? "0", spendableUsdc: authorized && usdcUnits > 0n ? unitDecimal(usdcUnits) : "0", usdcTrustline: Boolean(usdc), usdcAuthorized: authorized,
+      baseReserveXlm: unitDecimal(baseReserve),
     };
   } catch (error) {
     if (isNotFound(error)) {
@@ -91,16 +132,19 @@ export async function buildPayment(input: {
   destination: string;
   amountXlm: string;
   memo?: string | null;
+  currency?: StellarAssetSymbol;
+  networkId?: StellarNetworkId;
 }): Promise<{ xdr: string; sequence: string }> {
-  const net = stellarNetwork();
-  const server = horizonServer();
+  const net = stellarNetwork(input.networkId);
+  const server = horizonServer(input.networkId);
+  const asset = paymentAsset(input.currency, input.networkId);
   let account: Horizon.AccountResponse;
   try {
     account = await server.loadAccount(input.source);
   } catch (error) {
     if (isNotFound(error)) {
       throw new StellarIntegrationError(
-        "This wallet has no funds on Testnet yet. Deposit first, then try again.",
+        `This wallet has no funds on ${net.label} yet. Deposit XLM first, then try again.`,
         "source_not_funded",
         error,
       );
@@ -121,7 +165,7 @@ export async function buildPayment(input: {
     .addOperation(
       Operation.payment({
         destination: input.destination,
-        asset: Asset.native(),
+        asset,
         amount: input.amountXlm,
       }),
     )
@@ -131,8 +175,8 @@ export async function buildPayment(input: {
   return { xdr: transaction.toXDR(), sequence: account.sequence };
 }
 
-export function signPaymentXdr(xdrBase64: string, keypair: Keypair): string {
-  const transaction = TransactionBuilder.fromXDR(xdrBase64, stellarNetwork().networkPassphrase) as Transaction;
+export function signPaymentXdr(xdrBase64: string, keypair: Keypair, networkId?: StellarNetworkId): string {
+  const transaction = TransactionBuilder.fromXDR(xdrBase64, stellarNetwork(networkId).networkPassphrase) as Transaction;
   transaction.sign(keypair);
   return transaction.toXDR();
 }
@@ -142,9 +186,9 @@ export interface SubmittedPayment {
   ledger: number | null;
 }
 
-export async function submitPaymentXdr(xdrBase64: string): Promise<SubmittedPayment> {
-  const server = horizonServer();
-  const transaction = TransactionBuilder.fromXDR(xdrBase64, stellarNetwork().networkPassphrase) as Transaction;
+export async function submitPaymentXdr(xdrBase64: string, networkId?: StellarNetworkId): Promise<SubmittedPayment> {
+  const server = horizonServer(networkId);
+  const transaction = TransactionBuilder.fromXDR(xdrBase64, stellarNetwork(networkId).networkPassphrase) as Transaction;
   try {
     const response = await server.submitTransaction(transaction);
     return { hash: response.hash, ledger: response.ledger ?? null };
@@ -152,7 +196,7 @@ export async function submitPaymentXdr(xdrBase64: string): Promise<SubmittedPaym
     const detail = (error as { response?: { data?: { extras?: { result_codes?: unknown } } } })?.response?.data
       ?.extras?.result_codes;
     const codes = detail ? JSON.stringify(detail) : null;
-    console.error("[chain-duel] Horizon rejected a payment:", codes ?? (error instanceof Error ? error.message : error));
+    console.error("[chain-duel] Horizon rejected a payment:", codes ?? "unknown result code");
     if (/op_underfunded|op_low_reserve|insufficient/i.test(codes ?? "")) {
       throw new StellarIntegrationError(
         "That wallet does not have enough XLM for this transfer once the reserve is kept.",
@@ -162,6 +206,15 @@ export async function submitPaymentXdr(xdrBase64: string): Promise<SubmittedPaym
     }
     throw new StellarIntegrationError("Stellar rejected the transfer. Nothing was sent.", "submit_failed", error);
   }
+}
+
+/** Creating a USDC trustline locks a base reserve; it never sends USDC. */
+export async function buildUsdcTrustline(source: string): Promise<string> {
+  const net = stellarNetwork();
+  const asset = paymentAsset("USDC", net.id);
+  const account = await horizonServer().loadAccount(source);
+  return new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: net.networkPassphrase })
+    .addOperation(Operation.changeTrust({ asset })).setTimeout(180).build().toXDR();
 }
 
 /** Unfunded Testnet accounts can be created with Friendbot. */

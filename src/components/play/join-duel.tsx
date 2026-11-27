@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Avatar, Badge, Button, ButtonLink, Panel } from "@/components/ui";
 import { EscrowStatus } from "@/components/escrow-status";
-import { post } from "@/lib/api/client";
+import { postStellar } from "@/lib/api/client";
+import { financialSymbol, type StellarFinancialContext } from "@/lib/stellar/shared";
 import { completeEscrow, type EscrowStep } from "@/lib/wallet/escrow-client";
 import { useSession } from "@/components/providers";
 import { formatXlm } from "@/lib/config/game";
@@ -12,7 +13,7 @@ import type { GameViewRow } from "@/lib/api/views";
 
 interface JoinResponse {
   game: GameViewRow;
-  escrow: { mode: string; xdr?: string; transactionId?: string; txHash?: string };
+  escrow: { mode: string; xdr?: string; transactionId?: string; txHash?: string; networkPassphrase?: string };
 }
 
 export function JoinDuelPanel({
@@ -23,6 +24,7 @@ export function JoinDuelPanel({
   demo,
   isSelf,
   authenticated,
+  financial,
 }: {
   code: string;
   creatorUsername: string;
@@ -31,9 +33,11 @@ export function JoinDuelPanel({
   demo: boolean;
   isSelf: boolean;
   authenticated: boolean;
+  financial: StellarFinancialContext;
 }) {
   const router = useRouter();
   const session = useSession();
+  const symbol = financialSymbol(financial);
   const [step, setStep] = useState<EscrowStep>("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -41,7 +45,7 @@ export function JoinDuelPanel({
     setError(null);
     setStep("preparing");
     try {
-      const joined = await post<JoinResponse>("/api/duels/join", { code });
+      const joined = await postStellar<JoinResponse>("/api/duels/join", { code }, financial);
       // `join` already prepared — and for managed wallets submitted — the
       // joiner's entry, so we finish that exact handoff instead of asking the
       // server to lock the entry a second time.
@@ -50,6 +54,7 @@ export function JoinDuelPanel({
         address: session.walletAddress ?? "",
         escrow: joined.escrow,
         onStep: setStep,
+        financial: joined.game,
       });
       router.push(`/match/${joined.game.id}`);
     } catch (caught) {
@@ -82,12 +87,12 @@ export function JoinDuelPanel({
       <div className="grid grid-cols-2 gap-3">
         <div className="panel-flat px-4 py-3 text-center">
           <p className="eyebrow">Entry</p>
-          <p className="numeric mt-1.5 text-lg font-semibold">{demo ? "Demo" : `${formatXlm(entryStroops)} XLM`}</p>
+          <p className="numeric mt-1.5 text-lg font-semibold">{demo ? "Demo" : `${formatXlm(entryStroops, 7)} ${symbol}`}</p>
         </div>
         <div className="panel-flat px-4 py-3 text-center">
           <p className="eyebrow">Prize pool</p>
           <p className="numeric mt-1.5 text-lg font-semibold text-accent">
-            {demo ? "—" : `${formatXlm(entryStroops * 2)} XLM`}
+            {demo ? "—" : `${formatXlm(entryStroops * 2, 7)} ${symbol}`}
           </p>
         </div>
       </div>
@@ -113,7 +118,7 @@ export function JoinDuelPanel({
         </ButtonLink>
       ) : (
         <Button size="lg" loading={busy} onClick={join} disabled={step === "confirmed"}>
-          {demo ? "Join demo duel" : `Join duel · ${formatXlm(entryStroops)} XLM`}
+          {demo ? "Join demo duel" : `Join duel · ${formatXlm(entryStroops, 7)} ${symbol}`}
         </Button>
       )}
 

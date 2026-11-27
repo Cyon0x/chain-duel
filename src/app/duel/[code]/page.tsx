@@ -57,6 +57,7 @@ export default async function DuelInvitePage({ params }: { params: Promise<{ cod
         demo={game.demo === 1}
         isSelf={session?.user.id === game.creator_id}
         authenticated={Boolean(session)}
+        financial={game}
       />
     </div>
   );

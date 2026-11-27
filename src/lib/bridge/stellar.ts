@@ -21,6 +21,10 @@ import { CCTP_ADDRESSES, cctpToStellarUnits, evmRecipientBytes32 } from "./cctp"
 import { arcConfig } from "../arc/config";
 import type { BridgeRow, BridgePhase } from "./types";
 import { validateBridgeMessage } from "./validation";
+import { executeStellarIntent } from "../stellar/intents";
+import { submitSignedXdr, transactionReceipt, latestLedger } from "../stellar/server";
+import { playerControlledSigningEnabled } from "../config/stellar-verification";
+import { assertPlayerWalletReady } from "../services/player-authority";
 
 export function stellarBridgeNetwork() {
   const testnet = arcConfig().testnet;
@@ -54,7 +58,7 @@ export async function bridgeStellarSigner(userId: string) {
 export async function bridgeStellarWallet(userId: string) {
   const database = await db();
   const wallet = await primaryWallet(database, userId);
-  if (!wallet || wallet.custody !== "managed" || !(await loadWalletKey(database, wallet.id)))
+  if (!wallet || (!playerControlledSigningEnabled() && (wallet.custody !== "managed" || !(await loadWalletKey(database, wallet.id)))))
     throw new ChainDuelError("Your managed Stellar wallet is unavailable.", "bridge_wallet_unavailable", 409);
   return wallet;
 }
@@ -110,6 +114,7 @@ export async function prepareStellarBridgeStep(userId: string, transfer: BridgeR
   const signer = await bridgeStellarWallet(userId);
   const network = stellarBridgeNetwork();
   const server = await stellarBridgeRpc();
+  if (playerControlledSigningEnabled()) await assertPlayerWalletReady(userId, signer.address, network.networkId === "stellar-mainnet" ? "mainnet" : "testnet");
   const horizon = new Horizon.Server(network.horizonUrl);
   const account = await server.getAccount(signer.address);
   const fee = await horizon.fetchBaseFee();
@@ -133,12 +138,12 @@ export async function prepareStellarBridgeStep(userId: string, transfer: BridgeR
   if (phase === "source_approval") {
     target = network.usdc;
     method = "approve";
-    const latest = await server.getLatestLedger();
+    const latest = await latestLedger(network.networkId === "stellar-mainnet" ? "mainnet" : "testnet");
     args = [
       new Address(signer.address).toScVal(),
       new Address(network.cctp.stellarMessenger).toScVal(),
       nativeToScVal(amount, { type: "i128" }),
-      nativeToScVal(latest.sequence + 120, { type: "u32" }),
+      nativeToScVal(latest + 120, { type: "u32" }),
     ];
   } else if (phase === "source_burn") {
     target = network.cctp.stellarMessenger;
@@ -175,6 +180,7 @@ export async function prepareStellarBridgeStep(userId: string, transfer: BridgeR
   return { target, xdr: assembled.toXDR(), gasFee: assembled.fee };
 }
 export async function signStellarBridgePayload(userId: string, unsignedXdr: string) {
+  if (playerControlledSigningEnabled()) throw new ChainDuelError("The Stellar bridge requires a player-controlled wallet signature.", "player_signature_required", 409);
   const signer = await bridgeStellarSigner(userId);
   const tx = TransactionBuilder.fromXDR(unsignedXdr, stellarBridgeNetwork().passphrase) as Transaction;
   if (tx.source !== signer.address)
@@ -187,9 +193,17 @@ export async function signStellarBridgePayload(userId: string, unsignedXdr: stri
   return { xdr: tx.toXDR(), hash: Buffer.from(tx.hash()).toString("hex") };
 }
 export async function submitStellarBridgePayload(signedXdr: string) {
-  const server = await stellarBridgeRpc();
-  const tx = TransactionBuilder.fromXDR(signedXdr, stellarBridgeNetwork().passphrase) as Transaction;
-  return server.sendTransaction(tx);
+  const network = stellarBridgeNetwork();
+  const tx = TransactionBuilder.fromXDR(signedXdr, network.passphrase) as Transaction;
+  if (network.networkId === "stellar-testnet") return (await stellarBridgeRpc()).sendTransaction(tx);
+  const hash = Buffer.from(tx.hash()).toString("hex");
+  return executeStellarIntent({
+    id: `stellar-bridge:${hash}`, networkId: "mainnet", address: tx.source,
+    contractId: network.usdc, method: "bridge", argsHash: hash,
+    prepare: async () => signedXdr,
+    submit: signed => submitSignedXdr(signed, "mainnet"),
+    receipt: saved => transactionReceipt(saved, "mainnet"),
+  });
 }
 export async function stellarBridgeReceipt(hash: string) {
   const server = await stellarBridgeRpc();

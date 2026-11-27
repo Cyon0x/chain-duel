@@ -9,6 +9,7 @@ import { api } from "@/lib/api/client";
 import { formatXlm } from "@/lib/config/game";
 import { useAsync } from "@/lib/hooks/use-async";
 import type { DirectoryPlayer, GameViewRow, MatchRowView } from "@/lib/api/views";
+import { financialSymbol } from "@/lib/stellar/shared";
 
 type RankedPlayer = DirectoryPlayer & { position: number };
 
@@ -28,7 +29,7 @@ export function LandingDuels() {
   return <section aria-labelledby="duel-activity-heading" className="flex flex-col gap-3">
     <div className="activity-panel__header"><h2 id="duel-activity-heading">Your arena</h2><Link href="/play" className="focus-ring">Play hub <Icon name="arrow" size={15} /></Link></div>
     {active.map((game) => <ActiveDuelCard key={game.id} game={game} />)}
-    {available.length ? <div className="grid gap-2 sm:grid-cols-3">{available.map((game) => <Link key={game.id} href={`/duel/${game.code}`} className="focus-ring panel-flat flex flex-wrap items-center justify-between gap-2 px-4 py-3"><span><strong className="block text-sm">Open duel · {game.code}</strong><span className="text-xs text-muted">{game.demo ? "Demo · no stake" : `${formatXlm(game.entry_stroops)} XLM entry · ${formatXlm(game.entry_stroops * 2)} XLM pool`}</span></span><span className="inline-flex min-h-8 items-center gap-2 text-sm text-accent">Join <Icon name="arrow" size={14} /></span></Link>)}</div> : null}
+    {available.length ? <div className="grid gap-2 sm:grid-cols-3">{available.map((game) => <Link key={game.id} href={`/duel/${game.code}`} className="focus-ring panel-flat flex flex-wrap items-center justify-between gap-2 px-4 py-3"><span><strong className="block text-sm">Open duel · {game.code}</strong><span className="text-xs text-muted">{game.demo ? "Demo · no stake" : `${formatXlm(game.entry_stroops, 7)} ${financialSymbol(game)} entry · ${formatXlm(game.entry_stroops * 2, 7)} ${financialSymbol(game)} pool`}</span></span><span className="inline-flex min-h-8 items-center gap-2 text-sm text-accent">Join <Icon name="arrow" size={14} /></span></Link>)}</div> : null}
     {recent.length ? <div><h3 className="mb-2 text-sm text-muted">Recent duels</h3><div className="flex flex-col gap-2">{recent.map((match) => <MatchRowItem key={match.id} match={match} />)}</div></div> : null}
     {own.error && !own.data ? <ActivityError label="Your duel activity could not be loaded." retry={own.reload} /> : null}
   </section>;

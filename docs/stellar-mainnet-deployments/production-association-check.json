@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-11-24T13:40:21.157Z",
+  "application": "https://chain-duel.vercel.app",
+  "productionNetwork": "testnet",
+  "authenticationUsingExistingDesignatedWalletVerified": true,
+  "newAccountCreated": false,
+  "existingUserIdMatchesLocalDatabase": true,
+  "existingUsernameMatchesLocalDatabase": true,
+  "profileReadable": true,
+  "walletAddress": "GCQKVXWIQHVGUOUHZR2O6YBWBNNPKIYH5AWQHXHF3EYRHM73WIWVSK7K",
+  "walletCustody": "external",
+  "persistence": "postgres",
+  "googleConfigured": true,
+  "xConfigured": true,
+  "manualWalletProviderCheck": false,
+  "financialTransactionsExecuted": false,
+  "secretExposed": false
+}

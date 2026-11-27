@@ -6,8 +6,8 @@ export async function GET() {
     const userId = (await requireSessionUser()).user.id;
     const database = await arcDb();
     const stellar = await database.query(
-      `SELECT t.*, 'stellar-' || COALESCE((SELECT w.network FROM wallets w WHERE w.user_id=t.user_id ORDER BY w.is_primary DESC LIMIT 1),'unknown') AS network_id,
-        'XLM' AS currency, 7 AS token_decimals FROM transactions t WHERE t.user_id=? ORDER BY t.created_at DESC LIMIT 100`,
+      `SELECT t.*, 'stellar-' || t.stellar_network AS network_id,
+        7 AS token_decimals FROM transactions t WHERE t.user_id=? ORDER BY t.created_at DESC LIMIT 100`,
       [userId],
     );
     const arc = await database.query(

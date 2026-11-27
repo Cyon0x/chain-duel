@@ -12,6 +12,7 @@ import { usePreferences } from "@/components/providers";
 import { resolveOutcome } from "@/lib/game/outcome";
 import type { MatchRowView, MatchView, TransactionView } from "@/lib/api/views";
 import brandMark from "@/assets/brand/chain-duel-mark.png";
+import { financialNetwork, financialSymbol, stellarNetworkLabel } from "@/lib/stellar/shared";
 
 interface ResultProps {
   view: MatchView;
@@ -30,6 +31,8 @@ export function MatchResult({ view, selfUserId, onPlayAgain }: ResultProps) {
   const self = view.players.find((player) => player.user_id === selfUserId) ?? view.players[0];
   const opponent = view.players.find((player) => player.user_id !== selfUserId) ?? view.players[1];
   const game = view.game;
+  const symbol = financialSymbol(game);
+  const splitFees = financialNetwork(game) === "mainnet" || game.verification_version === 1;
 
   const selfScore = self?.score ?? 0;
   const opponentScore = opponent?.score ?? 0;
@@ -67,7 +70,7 @@ export function MatchResult({ view, selfUserId, onPlayAgain }: ResultProps) {
     (tx) => tx.game_id === game.id && (tx.kind === "payout" || tx.kind === "bot_settlement" || tx.kind === "entry") && tx.tx_hash,
   );
   const txHash = game.settle_tx_hash ?? matchRow?.settlement_tx_hash ?? settlementTx?.tx_hash ?? null;
-  const explorer = txExplorerUrl(txHash);
+  const explorer = txExplorerUrl(txHash, financialNetwork(game));
 
   const pool = game.entry_stroops * 2;
   const title = won ? "WINNER" : botWon ? "COMPUTER WINS" : isDraw ? "DRAW" : "DEFEAT";
@@ -127,19 +130,20 @@ export function MatchResult({ view, selfUserId, onPlayAgain }: ResultProps) {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Panel className="px-4 py-3.5">
           <p className="eyebrow">Prize pool</p>
-          <p className="numeric mt-2 text-xl font-semibold">{game.demo ? "No stake" : `${xlm(pool)} XLM`}</p>
+          <p className="numeric mt-2 text-xl font-semibold">{game.demo ? "No stake" : `${xlm(pool)} ${symbol}`}</p>
         </Panel>
         <Panel className="px-4 py-3.5">
           <p className="eyebrow">Your reward</p>
           <p className={clsx("numeric mt-2 text-xl font-semibold", won ? "text-success" : "text-muted")}>
-            {game.demo ? "Demo" : `${xlm(won ? game.payout_stroops : 0)} XLM`}
+            {game.demo ? "Demo" : `${xlm(won ? game.payout_stroops : 0)} ${symbol}`}
           </p>
         </Panel>
         <Panel className="px-4 py-3.5">
-          <p className="eyebrow">Protocol fee</p>
+          <p className="eyebrow">{splitFees ? "Game fees" : "Protocol fee"}</p>
           <p className="numeric mt-2 text-xl font-semibold text-muted">
-            {game.demo ? "—" : `${xlm(game.fee_stroops)} XLM`}
+            {game.demo ? "—" : `${xlm(game.fee_stroops)} ${symbol}`}
           </p>
+          {!game.demo && splitFees ? <p className="mt-1 text-xs text-dim">Protocol {xlm(game.protocol_fee_stroops ?? 0)} · ecosystem {xlm(game.ecosystem_fee_stroops ?? 0)} {symbol}</p> : null}
         </Panel>
         <Panel className="px-4 py-3.5">
           <p className="eyebrow">Rating</p>
@@ -162,9 +166,9 @@ export function MatchResult({ view, selfUserId, onPlayAgain }: ResultProps) {
             <p className="eyebrow">Settlement</p>
             <p className="mt-1.5 text-sm text-muted">
               {game.demo
-                ? "Demo duel — no Testnet funds moved."
+                ? "Demo duel — no funds moved."
                 : txHash
-                  ? "Settled on Stellar Testnet."
+                  ? `Settled on ${stellarNetworkLabel(financialNetwork(game))}.`
                   : "Settlement is still confirming."}
             </p>
           </div>

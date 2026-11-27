@@ -1,4 +1,6 @@
 "use client";
+import { walletPublicConfig } from "../wallet/public-config";
+import { financialNetwork, financialSymbol, type StellarFinancialContext } from "../stellar/shared";
 
 /**
  * Browser-side API client. Every call goes to a server route that re-validates
@@ -43,6 +45,13 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function post<T>(path: string, body?: unknown): Promise<T> {
   return api<T>(path, { method: "POST", body: JSON.stringify(body ?? {}) });
+}
+
+export async function postStellar<T>(path: string, body: Record<string, unknown> = {}, financial?: StellarFinancialContext): Promise<T> {
+  const config = financial ? null : await walletPublicConfig();
+  const networkId = financial ? `stellar-${financialNetwork(financial)}` : config!.networkId;
+  const currency = financial ? financialSymbol(financial) : config!.asset.symbol;
+  return post<T>(path, { ...body, networkId, currency });
 }
 
 export function patch<T>(path: string, body?: unknown): Promise<T> {

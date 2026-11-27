@@ -15,6 +15,7 @@ import brandMark from "@/assets/brand/chain-duel-mark.png";
 import { NetworkProvider } from "@/components/networks/network-provider";
 import { publicArcConfig } from "@/lib/arc/config";
 import { selectedEcosystem } from "@/lib/networks/selection";
+import { StellarPlayerVaultSetup } from "@/components/wallet/player-vault-setup";
 
 const uiFont = localFont({
   src: [
@@ -35,7 +36,7 @@ const arcadeFont = localFont({
 
 const TITLE = "Chain Duel — Compete. React. Duel.";
 const DESCRIPTION =
-  "Chain Duel connects ecosystems through competitive on-chain gaming, with independent Stellar XLM and Arc USDC integrations.";
+  "Chain Duel connects ecosystems through competitive on-chain gaming, with independent Stellar and Arc integrations.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl()),
@@ -63,7 +64,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Reading the session touches the database. If persistence is down we still
   // render the chrome and let pages surface their own error state.
   const session = await getSessionUser().catch(() => null);
-  const network = publicStellarConfig();
+  const network = publicStellarConfig(session?.user.id);
   const arc = publicArcConfig();
   const selected = await selectedEcosystem();
   const integrations = integrationStatus();
@@ -90,7 +91,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               onboardingComplete: session?.profile?.onboarding_complete === 1,
             }}
           >
-            <NetworkProvider value={{ selected, stellarLabel: network.label, arc, socialAccount: session?.user.auth_provider === "google" || session?.user.auth_provider === "x" }}>
+            <NetworkProvider value={{ selected, stellarLabel: network.label, stellar: network, arc, socialAccount: session?.user.auth_provider === "google" || session?.user.auth_provider === "x" }}>
             <GameCursor />
             <SiteHeader
               networkLabel={network.label}
@@ -101,6 +102,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 demoMode: demoModeEnabled(),
               }}
             />
+            <StellarPlayerVaultSetup />
             {storageWarning ? (
               <div className="mx-auto w-full max-w-7xl px-4 pt-4 sm:px-6">
                 <p
@@ -125,7 +127,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     className="h-5 w-auto opacity-80"
                   />
                   <p>
-                    Stellar · XLM. Arc · USDC. {network.isTestnet ? "Stellar Testnet assets carry no real-world value." : "Independent ecosystems, one Chain Duel account."}
+                    Stellar · {network.asset.symbol}. Arc · USDC. {network.isTestnet ? "Stellar Testnet assets carry no real-world value." : "Independent ecosystems, one Chain Duel account."}
                   </p>
                 </div>
                 <nav className="site-footer__links" aria-label="Legal">

@@ -13,6 +13,17 @@ process.env.DEMO_MODE_ENABLED = "true";
 // honestly, and tests assert that behaviour.
 delete process.env.CHAIN_DUEL_CONTRACT_ID;
 delete process.env.CHAIN_DUEL_STAKE_CONTRACT_ID;
+delete process.env.CHAIN_DUEL_MAINNET_CONTRACT_ID;
+delete process.env.STELLAR_MAINNET_CONTRACT_REVIEWED;
+delete process.env.STELLAR_MAINNET_GAMING_ENABLED;
+delete process.env.STELLAR_MAINNET_E2E_VERIFIED;
+delete process.env.STELLAR_MAINNET_VALIDATION_USER_IDS;
+delete process.env.STELLAR_SIGNER_DATABASE_URL;
+delete process.env.STELLAR_PLAYER_SIGNING_MODE;
+delete process.env.STELLAR_VERIFICATION_VERSION;
+delete process.env.CHAIN_DUEL_VERIFIED_CONTRACT_ID;
+delete process.env.STELLAR_VERIFIED_WASM_HASH;
+delete process.env.STELLAR_VERIFIED_MAINNET_APPROVED;
 delete process.env.SETTLEMENT_SECRET_KEY;
 delete process.env.TREASURY_SECRET_KEY;
 delete process.env.DATABASE_URL;

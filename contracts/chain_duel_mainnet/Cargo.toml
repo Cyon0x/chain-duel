@@ -1,0 +1,27 @@
+[package]
+name = "chain_duel_mainnet"
+version = "1.0.0"
+edition = "2021"
+rust-version = "1.92"
+description = "Independently verified Pulse escrow; Testnet validation required before Mainnet approval"
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+soroban-sdk = { version = "=28.0.0" }
+pulse_replay = { path = "../pulse_replay" }
+
+[dev-dependencies]
+soroban-sdk = { version = "=28.0.0", features = ["testutils"] }
+ed25519-dalek = { version = "=2.2.0" }
+
+[profile.release]
+overflow-checks = true
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "symbols"

@@ -19,7 +19,7 @@ import type { GameRow, GameStatus, QueueRow } from "../db/types";
 import { ECONOMY, PULSE_DUEL, QUEUE_TTL_MS, inviteCode } from "../config/game";
 import { secureSeed } from "../game/rng";
 import { randomContractGameId } from "../auth/stellar";
-import { contractId } from "../config/stellar";
+import { contractId, stellarGamingAllowed } from "../config/stellar";
 import { onChainEscrowAvailable } from "./escrow";
 import { escrowUnavailableError, ChainDuelError } from "./errors";
 
@@ -66,6 +66,7 @@ export async function joinQueue(input: {
     }
   }
   if (!input.demo && !onChainEscrowAvailable()) throw escrowUnavailableError();
+  if (!input.demo && !stellarGamingAllowed(input.userId)) throw new ChainDuelError("Stellar Mainnet staked duels are paused while deployment verification is completed.", "mainnet_verification_pending", 503);
 
   const database = await db();
   const existing = await findActiveQueueEntry(database, input.userId);

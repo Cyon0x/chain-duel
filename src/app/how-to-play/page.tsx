@@ -1,5 +1,6 @@
 import { Badge, ButtonLink, Panel, SectionHeader } from "@/components/ui";
 import { PULSE_DUEL, ECONOMY, formatXlm, splitPool } from "@/lib/config/game";
+import { publicStellarConfig } from "@/lib/config/stellar";
 
 export const metadata = { title: "How to Play — Chain Duel" };
 
@@ -15,6 +16,8 @@ const STEPS = [
 ];
 
 export default function HowToPlayPage() {
+  const network = publicStellarConfig();
+  const symbol = network.asset.symbol;
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 pt-2 sm:gap-8">
       <header>
@@ -78,24 +81,24 @@ export default function HowToPlayPage() {
           <ul className="mt-3 flex flex-col gap-2 text-sm">
             <li className="flex items-center justify-between border-b border-line pb-2">
               <span className="text-muted">Default entry</span>
-              <span className="numeric">{formatXlm(ECONOMY.defaultEntryStroops)} XLM each</span>
+              <span className="numeric">{formatXlm(ECONOMY.defaultEntryStroops)} {symbol} each</span>
             </li>
             <li className="flex items-center justify-between border-b border-line pb-2">
               <span className="text-muted">Prize pool</span>
-              <span className="numeric">{formatXlm(ECONOMY.defaultEntryStroops * 2)} XLM</span>
+              <span className="numeric">{formatXlm(ECONOMY.defaultEntryStroops * 2)} {symbol}</span>
             </li>
             <li className="flex items-center justify-between border-b border-line pb-2">
               <span className="text-muted">Winner reward</span>
-              <span className="numeric text-success">{formatXlm(splitPool(ECONOMY.defaultEntryStroops * 2, ECONOMY.feeBps).payout)} XLM</span>
+              <span className="numeric text-success">{formatXlm(splitPool(ECONOMY.defaultEntryStroops * 2, ECONOMY.feeBps).payout)} {symbol}</span>
             </li>
             <li className="flex items-center justify-between">
-              <span className="text-muted">Protocol fee</span>
-              <span className="numeric text-dim">{ECONOMY.feeBps / 100}% · {ECONOMY.feeBps} bps</span>
+              <span className="text-muted">{network.id === "mainnet" ? "Game fees" : "Protocol fee"}</span>
+              <span className="numeric text-dim">{network.id === "mainnet" ? "5% protocol · 5% ecosystem" : `${ECONOMY.feeBps / 100}% · ${ECONOMY.feeBps} bps`}</span>
             </li>
           </ul>
           <p className="mt-3 text-xs text-dim">
             Entries are escrowed in the Chain Duel Soroban contract. Unjoined private duels can be cancelled for a full
-            refund after the join window.
+            refund. Stellar network fees are paid separately in XLM.
           </p>
         </Panel>
       </section>

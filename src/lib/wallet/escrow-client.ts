@@ -1,6 +1,7 @@
 "use client";
 
-import { post } from "@/lib/api/client";
+import { postStellar } from "@/lib/api/client";
+import type { StellarFinancialContext } from "@/lib/stellar/shared";
 import { signTransactionXdr } from "@/lib/wallet/client";
 import type { EscrowHandoffView, GameViewRow } from "@/lib/api/views";
 
@@ -39,14 +40,23 @@ export async function runEscrow(input: {
   address: string;
   role?: "creator" | "joiner";
   onStep?: (step: EscrowStep) => void;
+  financial?: StellarFinancialContext;
 }): Promise<EscrowResult> {
   const { gameId, address, role, onStep } = input;
   onStep?.("preparing");
+  let enrollment: { publicKeyHex: string; proofHex: string } | undefined;
+  if (input.financial?.verification_version === 1) {
+    const response = await fetch(`/api/matches/${gameId}`, { cache: "no-store" });
+    if (!response.ok) throw new Error("The verified game could not be loaded.");
+    const view = await response.json() as { game: GameViewRow };
+    enrollment = await (await import("./verified-pulse")).createPulseEnrollment(view.game, address, role === "joiner" ? 2 : 1);
+  }
 
-  const prepared = await post<EntryResponse>(`/api/duels/${gameId}/entry`, {
+  const prepared = await postStellar<EntryResponse>(`/api/duels/${gameId}/entry`, {
     action: "commit",
     ...(role ? { role } : {}),
-  });
+    ...(enrollment ? { enrollment } : {}),
+  }, input.financial);
 
   if (prepared.escrow.mode !== "wallet-signature") {
     onStep?.("confirmed");
@@ -60,7 +70,7 @@ export async function runEscrow(input: {
   onStep?.("awaiting_wallet");
   let signedXdr: string;
   try {
-    signedXdr = await signTransactionXdr(prepared.escrow.xdr, address);
+    signedXdr = await signTransactionXdr(prepared.escrow.xdr, address, prepared.escrow.networkPassphrase);
   } catch (error) {
     onStep?.("failed");
     throw error;
@@ -68,11 +78,11 @@ export async function runEscrow(input: {
 
   onStep?.("signing");
   onStep?.("submitting");
-  const confirmed = await post<EntryResponse>(`/api/duels/${gameId}/entry`, {
+  const confirmed = await postStellar<EntryResponse>(`/api/duels/${gameId}/entry`, {
     action: "confirm",
     signedXdr,
     transactionId: prepared.escrow.transactionId,
-  });
+  }, prepared.game);
 
   onStep?.("confirming");
   onStep?.("confirmed");
@@ -97,8 +107,9 @@ export interface EscrowCompletion {
 export async function completeEscrow(input: {
   gameId: string;
   address: string;
-  escrow: { mode: string; xdr?: string; transactionId?: string; txHash?: string };
+  escrow: { mode: string; xdr?: string; transactionId?: string; txHash?: string; networkPassphrase?: string };
   onStep?: (step: EscrowStep) => void;
+  financial?: StellarFinancialContext;
 }): Promise<EscrowCompletion> {
   const { gameId, address, escrow, onStep } = input;
 
@@ -108,24 +119,25 @@ export async function completeEscrow(input: {
   }
 
   if (!escrow.xdr || !escrow.transactionId) {
+    if (input.financial?.verification_version === 1) return runEscrow({ gameId, address, role: "joiner", onStep, financial: input.financial });
     throw new Error("The escrow transaction could not be prepared.");
   }
 
   onStep?.("awaiting_wallet");
   let signedXdr: string;
   try {
-    signedXdr = await signTransactionXdr(escrow.xdr, address);
+    signedXdr = await signTransactionXdr(escrow.xdr, address, escrow.networkPassphrase);
   } catch (error) {
     onStep?.("failed");
     throw error;
   }
 
   onStep?.("submitting");
-  const confirmed = await post<EntryResponse>(`/api/duels/${gameId}/entry`, {
+  const confirmed = await postStellar<EntryResponse>(`/api/duels/${gameId}/entry`, {
     action: "confirm",
     signedXdr,
     transactionId: escrow.transactionId,
-  });
+  }, input.financial);
   onStep?.("confirming");
   onStep?.("confirmed");
   return { txHash: confirmed.escrow.txHash ?? null, demo: false };

@@ -3,11 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Avatar, Button, Panel } from "@/components/ui";
-import { api, post } from "@/lib/api/client";
+import { api, postStellar } from "@/lib/api/client";
+import { financialSymbol, type StellarFinancialContext } from "@/lib/stellar/shared";
+import { useSession } from "@/components/providers";
+import { completeEscrow } from "@/lib/wallet/escrow-client";
+import type { GameViewRow, EscrowHandoffView } from "@/lib/api/views";
 import { useAsync } from "@/lib/hooks/use-async";
 import { formatXlm } from "@/lib/config/game";
 
-interface Invite {
+interface Invite extends StellarFinancialContext {
   id: string;
   username: string;
   avatar: string | null;
@@ -19,11 +23,13 @@ interface Invite {
 
 interface InviteResponse {
   accepted: boolean;
-  game?: { id: string };
+  game?: GameViewRow;
+  escrow?: EscrowHandoffView;
 }
 
 export function InviteInbox() {
   const router = useRouter();
+  const session = useSession();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { data, reload } = useAsync<{ invites: Invite[] }>(() => api("/api/invites"), [], { pollMs: 10_000 });
@@ -34,8 +40,9 @@ export function InviteInbox() {
     setBusyId(invite.id);
     setError(null);
     try {
-      const result = await post<InviteResponse>(`/api/invites/${invite.id}`, { accept });
+      const result = await postStellar<InviteResponse>(`/api/invites/${invite.id}`, { accept }, invite);
       if (result.accepted && result.game?.id) {
+        if (result.escrow) await completeEscrow({ gameId: result.game.id, address: session.walletAddress ?? "", escrow: result.escrow, financial: result.game });
         router.push(`/match/${result.game.id}`);
         return;
       }
@@ -63,7 +70,7 @@ export function InviteInbox() {
               <span className="font-medium">{invite.username}</span> challenged you to a Pulse Duel.
             </p>
             <p className="numeric mt-0.5 text-xs text-dim">
-              {formatXlm(invite.entry_stroops)} XLM entry · {invite.rating} rating
+              {formatXlm(invite.entry_stroops, 7)} {financialSymbol(invite)} entry · {invite.rating} rating
             </p>
           </div>
           <div className="flex gap-2">

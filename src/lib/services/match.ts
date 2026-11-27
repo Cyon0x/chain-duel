@@ -1,4 +1,5 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import { db, nowIso } from "../db";
 import {
   addGamePlayer,
@@ -21,6 +22,8 @@ import { findProfile, primaryWallet, unlockAchievement, updateProfile } from "..
 import type { GameRow, GamePlayerRow, SqlDriver } from "../db/types";
 import { PULSE_DUEL, REPUTATION, splitPool, stroopsToXlm } from "../config/game";
 import { explorerTxUrl } from "../config/stellar";
+import { financialNetwork, financialSymbol, stellarPoolSplit, STELLAR_DEPLOYMENT_ADMIN } from "../stellar/shared";
+import { recordStellarProfileFinance } from "../db/repositories/stellar-finance";
 import { evaluateAchievements, applyElo } from "../game/rating";
 import { buildTargetSchedule, theoreticalMaxScore, type TargetSpec } from "../game/pulse";
 import { verifySubmission, type SubmissionPayload } from "../game/verify";
@@ -29,6 +32,9 @@ import { DEFAULT_BOT } from "../config/game";
 import { beginOnChainGame, settleOnChain, messageOf, gameEscrowContractId } from "./escrow";
 import { recordBotTreasuryMovement } from "./treasury";
 import { ChainDuelError } from "./errors";
+import { isVerifiedGame } from "../config/stellar-verification";
+import { verifiedPulseState, relayVerifiedInputs, settleVerifiedGame, verifiedSettlementReceipt, verifiedInputReceipt, verifiedStartReceipt } from "../stellar/verified-contract";
+import type { SignedPulseInputs } from "../stellar/pulse-codec";
 
 export function botSeatId(): string {
   return `bot:${DEFAULT_BOT.id}`;
@@ -63,6 +69,7 @@ export async function loadGameView(gameId: string): Promise<GameView | null> {
   const database = await db();
   const game = await findGameById(database, gameId);
   if (!game) return null;
+  const startPending = !game.demo && (financialNetwork(game) === "mainnet" || isVerifiedGame(game)) && game.status === "active" && !game.start_tx_hash;
   const rows = await listGamePlayers(database, game.id);
   const players = [];
   for (const row of rows) {
@@ -86,7 +93,7 @@ export async function loadGameView(gameId: string): Promise<GameView | null> {
   const startAtMs = game.started_at ? new Date(game.started_at).getTime() : null;
 
   return {
-    game,
+    game: startPending ? { ...game, status: "joined", started_at: null } : game,
     players,
     botScore,
     serverTimeMs: Date.now(),
@@ -184,7 +191,11 @@ export async function startMatch(input: { gameId: string; userId: string }): Pro
   if (!players.some((player) => player.user_id === input.userId)) {
     throw new ChainDuelError("You are not part of this duel.", "forbidden", 403);
   }
-  if (game.status === "active" || game.status === "finished" || game.status === "settled") return game;
+  if (isVerifiedGame(game) && ["joined", "active"].includes(game.status)) return confirmVerifiedStart(game);
+  if (game.status === "active" || game.status === "finished" || game.status === "settled") {
+    if (!game.demo && financialNetwork(game) === "mainnet" && game.status === "active" && !game.start_tx_hash) return confirmMainnetStart(game);
+    return game;
+  }
   if (game.status !== "joined") {
     throw new ChainDuelError("Both players must be in escrow before the duel starts.", "not_ready");
   }
@@ -192,7 +203,7 @@ export async function startMatch(input: { gameId: string; userId: string }): Pro
     throw new ChainDuelError("Escrow is not funded for this duel.", "not_funded");
   }
   const claimed = await transitionGame(database, game.id, ["joined"], "active", {
-    started_at: nowIso(),
+    started_at: financialNetwork(game) === "mainnet" && !game.demo ? null : nowIso(),
   });
   if (!claimed) {
     const fresh = await findGameById(database, game.id);
@@ -200,6 +211,7 @@ export async function startMatch(input: { gameId: string; userId: string }): Pro
   }
   if (!game.demo && game.contract_game_id) {
     try {
+      if (financialNetwork(game) === "mainnet") return await confirmMainnetStart(game);
       const txHash = await beginOnChainGame(game);
       if (txHash) await updateGame(database, game.id, { create_tx_hash: game.create_tx_hash ?? txHash });
     } catch (error) {
@@ -219,6 +231,35 @@ export async function startMatch(input: { gameId: string; userId: string }): Pro
   return fresh;
 }
 
+async function confirmVerifiedStart(game: GameRow): Promise<GameRow> {
+  const database = await db();
+  let state = await verifiedPulseState(game);
+  let hash = game.start_tx_hash ?? null;
+  if (state.status === 0 || state.status === 1) {
+    hash = await beginOnChainGame(game);
+    state = await verifiedPulseState(game);
+  }
+  if (state.status !== 2 || state.startedAtMs <= 0) throw new ChainDuelError("The independently verified game clock is unavailable.", "verified_start_pending", 502);
+  if (!hash) hash = await verifiedStartReceipt(game, state);
+  const players = await listGamePlayers(database, game.id);
+  if (state.creator !== players.find(player => player.seat === 1)?.address || (game.mode !== "bot" && state.opponent !== players.find(player => player.seat === 2)?.address)) throw new ChainDuelError("The funded participants do not match this duel.", "verified_start_mismatch", 502);
+  await updateGame(database, game.id, { status: "active", start_tx_hash: hash, started_at: new Date(state.startedAtMs).toISOString(), seed: state.seedHex, seed_chain_verified: 1, input_deadline_ms: state.deadlineMs });
+  return (await findGameById(database, game.id))!;
+}
+
+async function confirmMainnetStart(game: GameRow): Promise<GameRow> {
+  const database = await db();
+  const hash = await beginOnChainGame(game);
+  if (!hash) throw new ChainDuelError("The Mainnet game start was not confirmed.", "chain_error", 502);
+  await database.transaction(async tx => {
+    const changed = await tx.run("UPDATE games SET status = 'active', start_tx_hash = ?, started_at = ? WHERE id = ? AND start_tx_hash IS NULL", [hash, nowIso(), game.id]);
+    if (changed) await appendGameEvent(tx, { gameId: game.id, seq: 0, type: "match_started", payload: { seed: game.seed, durationMs: game.duration_ms } });
+  });
+  const fresh = await findGameById(database, game.id);
+  if (!fresh) throw new ChainDuelError("Duel disappeared", "not_found", 404);
+  return fresh;
+}
+
 export interface SubmitResultOutcome {
   game: GameRow;
   score: number;
@@ -230,10 +271,13 @@ export async function submitResult(input: {
   gameId: string;
   userId: string;
   payload: Omit<SubmissionPayload, "matchId">;
+  signedInputs?: SignedPulseInputs;
+  verifiedReceiptHash?: string;
 }): Promise<SubmitResultOutcome> {
   const database = await db();
   const game = await findGameById(database, input.gameId);
   if (!game) throw new ChainDuelError("That duel does not exist.", "not_found", 404);
+  if (isVerifiedGame(game)) return submitVerifiedResult(game, input.userId, input.signedInputs, input.verifiedReceiptHash);
   if (game.status === "settled" || game.status === "finished") {
     throw new ChainDuelError("That duel is already settled.", "already_settled");
   }
@@ -242,6 +286,8 @@ export async function submitResult(input: {
   }
   const player = await findGamePlayer(database, game.id, input.userId);
   if (!player) throw new ChainDuelError("You are not part of this duel.", "forbidden", 403);
+
+  if (financialNetwork(game) === "mainnet" && (!game.start_tx_hash || !game.started_at || Date.now() < Date.parse(game.started_at) + PULSE_DUEL.countdownMs + game.duration_ms)) throw new ChainDuelError("The duel clock has not finished yet.", "match_not_finished", 409);
 
   const verification = verifySubmission(
     { ...input.payload, matchId: game.id },
@@ -333,16 +379,20 @@ export async function settleMatch(gameId: string): Promise<GameRow> {
   if (!game) throw new ChainDuelError("That duel does not exist.", "not_found", 404);
   if (game.status === "settled") return game;
   if (game.status === "cancelled" || game.status === "expired") return game;
+  if (isVerifiedGame(game)) return settleVerifiedMatch(game);
 
   const players = await listGamePlayers(database, game.id);
   if (players.length < 2) {
     throw new ChainDuelError("That duel does not have two players.", "invalid_state");
   }
+  if (!game.demo && financialNetwork(game) === "mainnet" && (!game.contract_game_id || game.escrow_state !== "onchain")) throw new ChainDuelError("This Mainnet duel has no verified funded escrow.", "not_funded", 409);
 
   const claimed = await database.run(
-    `UPDATE games SET settlement_status = 'submitting', status = 'finished'
-     WHERE id = ? AND (settlement_status IS NULL OR settlement_status = 'failed')`,
-    [game.id],
+    `UPDATE games SET settlement_status = 'submitting', status = 'finished', settlement_started_at = ?
+     WHERE id = ? AND (settlement_status IS NULL OR settlement_status = 'failed' OR
+       (stellar_network = 'mainnet' AND settlement_status = 'submitting' AND
+        (settlement_started_at IS NULL OR settlement_started_at < ?)))`,
+    [nowIso(), game.id, new Date(Date.now() - 300000).toISOString()],
   );
   if (claimed === 0) {
     const fresh = await findGameById(database, game.id);
@@ -351,21 +401,21 @@ export async function settleMatch(gameId: string): Promise<GameRow> {
 
   const { winner, reason } = winnerOf(game, players);
   const pool = game.entry_stroops * 2;
-  const { payout, fee } = splitPool(pool, game.fee_bps);
+  const { payout, fee } = financialNetwork(game) === "mainnet" ? stellarPoolSplit(pool, game.protocol_fee_bps ?? 500, game.ecosystem_fee_bps ?? 500) : splitPool(pool, game.fee_bps);
   const winnerIsBot = winner.is_bot === 1;
   const resultHash = resultHashFor(game, players);
 
   const winnerWallet = winnerIsBot
     ? null
     : await primaryWallet(database, winner.user_id);
-  const winnerAddress = winnerWallet?.address ?? null;
+  const winnerAddress = winner.address ?? winnerWallet?.address ?? null;
 
   // A previous attempt may have already paid out on chain. The hash is stored
   // before any local bookkeeping, so a retry only has to finish the books.
   let settlementTxHash: string | null = game.settle_tx_hash ?? null;
   if (!game.demo && game.contract_game_id && !settlementTxHash) {
     const contract = await import("../stellar/contract");
-    const treasury = await contract.getOnChainConfig(await gameEscrowContractId(game.id));
+    const treasury = await contract.getOnChainConfig(await gameEscrowContractId(game.id), financialNetwork(game));
     const payoutAddress = winnerIsBot ? treasury?.treasury ?? null : winnerAddress;
     if (!payoutAddress) {
       await updateGame(database, game.id, { status: "active", settlement_status: "failed" });
@@ -377,6 +427,8 @@ export async function settleMatch(gameId: string): Promise<GameRow> {
         winnerAddress: payoutAddress,
         playerOneScore: players.find((player) => player.seat === 1)?.score ?? 0,
         playerTwoScore: players.find((player) => player.seat === 2)?.score ?? 0,
+        playerOneCombo: players.find((player) => player.seat === 1)?.max_combo ?? 0,
+        playerTwoCombo: players.find((player) => player.seat === 2)?.max_combo ?? 0,
         resultHashHex: resultHash,
       });
       settlementTxHash = outcome.txHash;
@@ -388,6 +440,12 @@ export async function settleMatch(gameId: string): Promise<GameRow> {
   }
 
   try {
+    if (!game.demo && financialNetwork(game) === "mainnet") {
+      const actual = await (await import("../stellar/contract")).getOnChainGame(game.contract_game_id!, await gameEscrowContractId(game.id), "mainnet");
+      const split = stellarPoolSplit(pool, game.protocol_fee_bps ?? 500, game.ecosystem_fee_bps ?? 500);
+      const expectedWinner = winnerIsBot ? STELLAR_DEPLOYMENT_ADMIN : winnerAddress;
+      if (!settlementTxHash || !actual || actual.status !== 4 || actual.id !== game.contract_game_id || actual.creator !== players.find(player => player.seat === 1)?.address || actual.entryAmount !== BigInt(game.entry_stroops) || actual.winner !== expectedWinner || actual.payout !== BigInt(payout) || actual.protocolFee !== BigInt(split.protocol) || actual.ecosystemFee !== BigInt(split.ecosystem) || actual.resultHash !== resultHash || actual.playerOneScore !== (players.find(player => player.seat === 1)?.score ?? 0) || actual.playerTwoScore !== (players.find(player => player.seat === 2)?.score ?? 0)) throw new ChainDuelError("The Mainnet settlement does not match its verified game and fee allocation.", "settlement_mismatch", 502);
+    }
     // Statistics, ratings, reputation, ledger rows and the final game status
     // are written atomically so a partial failure can never leave the match
     // half-settled: it rolls back and the retry path completes it.
@@ -416,7 +474,68 @@ export async function settleMatch(gameId: string): Promise<GameRow> {
   return fresh;
 }
 
+async function submitVerifiedResult(game: GameRow, userId: string, signedInputs?: SignedPulseInputs, verifiedReceiptHash?: string): Promise<SubmitResultOutcome> {
+  const database = await db(); const player = await findGamePlayer(database, game.id, userId);
+  if (!player || player.is_bot || !player.address) throw new ChainDuelError("Only this duel's human participant can synchronize their inputs.", "forbidden", 403);
+  if (signedInputs) {
+    if (signedInputs.player !== player.address) throw new ChainDuelError("The input authorization belongs to another participant.", "input_player_mismatch", 403);
+    await relayVerifiedInputs(game, signedInputs);
+  } else if (!/^[0-9a-f]{64}$/.test(verifiedReceiptHash ?? "")) {
+    throw new ChainDuelError("A verified player input transaction is required. Scores cannot authorize Stellar payouts.", "verified_input_required", 422);
+  }
+  if (verifiedReceiptHash) await verifiedInputReceipt(game, player.address, verifiedReceiptHash);
+  const state = await verifiedPulseState(game);
+  const input = player.seat === 1 ? state.one : state.two;
+  if ((player.seat === 1 ? state.creator : state.opponent) !== player.address) throw new ChainDuelError("The registered input seat does not match this player.", "input_player_mismatch", 403);
+  // Numbers supplied by the frontend/backend are intentionally excluded.
+  await recordPlayerResult(database, game.id, userId, { score: input.score, maxCombo: input.maxCombo, hits: input.hits, misses: input.misses, result: input.closed ? "finished" : "playing" });
+  let settled = game;
+  if (state.status === 4 || (Date.now() >= state.endAtMs && (Date.now() > state.deadlineMs || (state.one.closed && (state.mode === 1 || state.two.closed))))) settled = await settleVerifiedMatch(game);
+  else settled = (await findGameById(database, game.id)) ?? game;
+  return { game: settled, score: input.score, settled: settled.status === "settled", waitingForOpponent: settled.status !== "settled" };
+}
+
+async function settleVerifiedMatch(game: GameRow): Promise<GameRow> {
+  const database = await db();
+  const claimed = await database.run(`UPDATE games SET settlement_status = 'submitting', settlement_started_at = ? WHERE id = ? AND status != 'settled' AND
+    (settlement_status IS NULL OR settlement_status = 'failed' OR settlement_started_at < ?)`, [nowIso(), game.id, new Date(Date.now() - 300000).toISOString()]);
+  if (!claimed) return (await findGameById(database, game.id)) ?? game;
+  try {
+    let actual = await verifiedPulseState(game);
+    if (actual.status !== 4) { await settleVerifiedGame(game); actual = await verifiedPulseState(game); }
+    const hash = await verifiedSettlementReceipt(game, actual);
+    const players = await listGamePlayers(database, game.id);
+    const one = players.find(player => player.seat === 1); const two = players.find(player => player.seat === 2);
+    const split = stellarPoolSplit(game.entry_stroops * 2, 500, 500);
+    if (!one || !two || one.address !== actual.creator || (!two.is_bot && two.address !== actual.opponent) || actual.status !== 4 || actual.payout !== String(split.payout) || actual.protocolFee !== String(split.protocol) || actual.ecosystemFee !== String(split.ecosystem)) throw new ChainDuelError("The verified payout, participants or fee allocations are inconsistent.", "verified_settlement_mismatch", 502);
+    const firstWins = actual.playerOneScore > actual.playerTwoScore || (actual.playerOneScore === actual.playerTwoScore && actual.playerOneCombo >= actual.playerTwoCombo);
+    const winner = firstWins ? one : two;
+    if (actual.winner !== (winner.is_bot ? STELLAR_DEPLOYMENT_ADMIN : winner.address)) throw new ChainDuelError("The independently derived winner does not match the contract receipt.", "verified_winner_mismatch", 502);
+    const verifiedPlayers = players.map(player => ({ ...player,
+      score: player.seat === 1 ? actual.playerOneScore : actual.playerTwoScore,
+      max_combo: player.seat === 1 ? actual.playerOneCombo : actual.playerTwoCombo,
+      hits: player.seat === 1 ? actual.one.hits : actual.two.hits,
+      misses: player.seat === 1 ? actual.one.misses : actual.two.misses,
+    }));
+    const verifiedGame = { ...game, seed: actual.seedHex, result_hash: actual.resultHash, protocol_fee_bps: 500, ecosystem_fee_bps: 500, settle_tx_hash: hash };
+    await database.transaction(async tx => {
+      const current = await findGameById(tx, game.id); if (current?.status === "settled") return;
+      for (const player of verifiedPlayers) await recordPlayerResult(tx, game.id, player.user_id, { score: player.score, maxCombo: player.max_combo, hits: player.hits, misses: player.misses, result: "finished" });
+      await applySettlement(tx, { game: verifiedGame, players: verifiedPlayers, winner: verifiedPlayers.find(player => player.id === winner.id)!, reason: "contract_verified_pulse", payout: split.payout, fee: split.fee, settlementTxHash: hash, demo: false });
+    });
+  } catch (error) {
+    await updateGame(database, game.id, { settlement_status: "failed" });
+    throw error;
+  }
+  return (await findGameById(database, game.id))!;
+}
+
 function resultHashFor(game: GameRow, players: GamePlayerRow[]): string {
+  if (isVerifiedGame(game)) {
+    if (!/^[0-9a-f]{64}$/.test(game.result_hash ?? "")) throw new ChainDuelError("The independently verified result commitment is missing.", "verified_result_missing", 502);
+    return game.result_hash!;
+  }
+  if (financialNetwork(game) === "mainnet") return createHash("sha256").update(JSON.stringify({ gameId: game.id, contractGameId: game.contract_game_id, network: game.stellar_network, currency: game.currency, seed: game.seed, players: [...players].sort((a,b) => a.seat-b.seat).map(player => ({ seat: player.seat, userId: player.user_id, address: player.address, score: player.score, maxCombo: player.max_combo })) })).digest("hex");
   const payload = [
     game.id,
     game.seed,
@@ -514,9 +633,11 @@ async function applySettlement(database: SqlDriver, input: {
         bot_losses: profile.bot_losses + (isBotMatch && !won ? 1 : 0),
         current_streak: streak,
         best_streak: Math.max(profile.best_streak, streak),
-        total_earned_stroops: profile.total_earned_stroops + reward,
-        total_wagered_stroops: profile.total_wagered_stroops + game.entry_stroops,
-        fees_paid_stroops: profile.fees_paid_stroops + (isBotMatch ? 0 : fee / 2),
+        ...(financialNetwork(game) === "mainnet" || financialSymbol(game) === "USDC" ? {} : {
+          total_earned_stroops: profile.total_earned_stroops + reward,
+          total_wagered_stroops: profile.total_wagered_stroops + game.entry_stroops,
+          fees_paid_stroops: profile.fees_paid_stroops + (isBotMatch ? 0 : fee / 2),
+        }),
         reputation: Math.min(REPUTATION.max, Math.max(REPUTATION.min, profile.reputation + reputationDelta)),
         rating: ratingValue,
       });
@@ -526,6 +647,7 @@ async function applySettlement(database: SqlDriver, input: {
         delta: reputationDelta,
         reason: "match_completed",
       });
+      await recordStellarProfileFinance(database, player.user_id, game, reward, game.entry_stroops, isBotMatch ? 0 : fee / 2);
       void ratingDelta;
     }
 
@@ -543,6 +665,8 @@ async function applySettlement(database: SqlDriver, input: {
       ratingDelta,
       settlementTxHash,
       demo,
+      stellarNetwork: financialNetwork(game),
+      currency: financialSymbol(game),
     });
 
     if (reward > 0) {
@@ -554,13 +678,18 @@ async function applySettlement(database: SqlDriver, input: {
         amountStroops: reward,
         status: "confirmed",
         txHash: settlementTxHash,
-        explorerUrl: settlementTxHash ? explorerTxUrl(settlementTxHash) : null,
-        address: (await primaryWallet(database, player.user_id))?.address ?? null,
+        explorerUrl: settlementTxHash ? explorerTxUrl(settlementTxHash, financialNetwork(game)) : null,
+        address: player.address ?? (await primaryWallet(database, player.user_id))?.address ?? null,
         demo,
         metadata: { role: "winner", reason },
       });
     }
-    if (fee > 0) {
+    if (fee > 0 && (financialNetwork(game) === "mainnet" || isVerifiedGame(game))) {
+      const split = stellarPoolSplit(game.entry_stroops * 2, game.protocol_fee_bps ?? 500, game.ecosystem_fee_bps ?? 500);
+      for (const [allocation, amount] of [["protocol", split.protocol], ["ecosystem", split.ecosystem]] as const) {
+        await createTransaction(database, { userId: player.user_id, gameId: game.id, kind: "fee", direction: "out", amountStroops: 0, feeAmountStroops: amount, allocation, status: "confirmed", txHash: settlementTxHash, explorerUrl: settlementTxHash ? explorerTxUrl(settlementTxHash, financialNetwork(game)) : null, demo, metadata: { note: "Fee is deducted from the prize pool", allocation, feeStroops: amount } });
+      }
+    } else if (fee > 0) {
       await createTransaction(database, {
         userId: player.user_id,
         gameId: game.id,
@@ -589,7 +718,7 @@ async function applySettlement(database: SqlDriver, input: {
         bot_id: DEFAULT_BOT.id,
         entry_stroops: game.entry_stroops,
         bot_stake_stroops: game.entry_stroops,
-        player_score: player.user_id === winner.user_id ? player.score : opponent?.score ?? 0,
+        player_score: player.score,
         bot_score: opponent?.score ?? 0,
         winner: won ? "player" : "bot",
         fee_stroops: fee,
@@ -597,6 +726,8 @@ async function applySettlement(database: SqlDriver, input: {
         treasury_delta_stroops: treasuryDelta,
         settlement_tx_hash: settlementTxHash,
         created_at: nowIso(),
+        stellar_network: financialNetwork(game),
+        currency: financialSymbol(game),
       });
       await recordBotTreasuryMovement(
         {
@@ -606,10 +737,12 @@ async function applySettlement(database: SqlDriver, input: {
           txHash: settlementTxHash,
           gameId: game.id,
           metadata: { winner: won ? "player" : "bot" },
+          stellarNetwork: financialNetwork(game),
+          currency: financialSymbol(game),
         },
         database,
       );
-      await recordBotTreasuryMovement(
+      if (financialNetwork(game) !== "mainnet") await recordBotTreasuryMovement(
         {
           kind: "fee_accrual",
           direction: "in",
@@ -617,6 +750,8 @@ async function applySettlement(database: SqlDriver, input: {
           txHash: settlementTxHash,
           gameId: game.id,
           metadata: { note: "Protocol fee retained by the contract" },
+          stellarNetwork: financialNetwork(game),
+          currency: financialSymbol(game),
         },
         database,
       );
@@ -640,13 +775,29 @@ async function applySettlement(database: SqlDriver, input: {
     }
   }
 
+  if (!demo && (financialNetwork(game) === "mainnet" || isVerifiedGame(game)) && fee > 0) {
+    const split = stellarPoolSplit(game.entry_stroops * 2, game.protocol_fee_bps ?? 500, game.ecosystem_fee_bps ?? 500);
+    for (const [allocation, amount] of [["protocol", split.protocol], ["ecosystem", split.ecosystem]] as const) {
+      await recordBotTreasuryMovement({
+        kind: "fee_accrual", direction: "in", amountStroops: amount,
+        txHash: settlementTxHash, gameId: game.id,
+        metadata: { allocation, note: "Allocation retained in its escrow fee bucket" },
+        stellarNetwork: financialNetwork(game), currency: financialSymbol(game),
+      }, database);
+    }
+  }
+
   await updateGame(database, game.id, {
     status: "settled",
     winner_id: winner.is_bot === 1 ? null : winner.user_id,
+    ...(isBotMatch ? { bot_outcome: winner.is_bot === 1 ? "loss" : "win" } : {}),
     player_one_score: players.find((player) => player.seat === 1)?.score ?? 0,
     player_two_score: players.find((player) => player.seat === 2)?.score ?? 0,
     payout_stroops: payout,
     fee_stroops: fee,
+    protocol_fee_stroops: financialNetwork(game) === "mainnet" || isVerifiedGame(game) ? stellarPoolSplit(game.entry_stroops * 2, game.protocol_fee_bps ?? 500, game.ecosystem_fee_bps ?? 500).protocol : fee,
+    ecosystem_fee_stroops: financialNetwork(game) === "mainnet" || isVerifiedGame(game) ? stellarPoolSplit(game.entry_stroops * 2, game.protocol_fee_bps ?? 500, game.ecosystem_fee_bps ?? 500).ecosystem : 0,
+    settle_tx_hash: settlementTxHash,
     pool_stroops: game.entry_stroops * 2,
     result_hash: resultHashFor(game, players),
     settlement_status: "confirmed",
@@ -696,7 +847,7 @@ export async function addBotPlayer(gameId: string): Promise<void> {
 export async function ensureSettlementForExpiredMatches(limit = 10): Promise<number> {
   const database = await db();
   const stale = await database.query<GameRow>(
-    `SELECT * FROM games WHERE status = 'active' AND started_at IS NOT NULL
+    `SELECT * FROM games WHERE status IN ('active','finished') AND started_at IS NOT NULL
      ORDER BY started_at ASC LIMIT ?`,
     [limit],
   );

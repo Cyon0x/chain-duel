@@ -1,0 +1,33 @@
+{
+  "checkedAt": "2026-11-24T13:29:57.192Z",
+  "readOnly": true,
+  "scope": {
+    "database": "chain_duel_multichain_preview",
+    "schema": "public"
+  },
+  "counts": {
+    "users": "17",
+    "profiles": "17",
+    "wallets": "17",
+    "wallet_keys": "17",
+    "games": "1",
+    "game_players": "2",
+    "matches": "1",
+    "transactions": "1",
+    "arc_wallets": "1",
+    "arc_transactions": "9",
+    "bridge_transfers": "2",
+    "bridge_steps": "7"
+  },
+  "walletAssociationsSha256": "f3554afd203b1b5c60ea025bba3f4752211c295e5f8c30e078cf7c6414ed4045",
+  "encryptedWalletKeysSha256": "8db7494cbb8d00cf85b0e71a2355e3c79ef37228fa74935822617fddc9165202",
+  "controlledWallets": [
+    {
+      "address": "GBGDTBOXVZ4GIDDRISY5FGXYY7XCWCCK3FRHJHSVFEZMWA3ZZ2HUALTK",
+      "custody": "managed",
+      "storedNetwork": "testnet",
+      "encryptedKeyPresent": true,
+      "signerMatches": false
+    }
+  ]
+}

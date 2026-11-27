@@ -9,6 +9,7 @@ import { THEME_DEFINITIONS, THEMES, type ThemeId } from "@/lib/config/themes";
 import { disconnectWallet } from "@/lib/wallet/client";
 import { accountExplorerUrl, truncateAddress } from "@/lib/explorer";
 import { patch } from "@/lib/api/client";
+import { useNetwork } from "@/components/networks/network-provider";
 
 export function SettingsPanel({
   username,
@@ -21,6 +22,7 @@ export function SettingsPanel({
   const { theme, setTheme, soundEnabled, toggleSound, musicEnabled, toggleMusic, notifyEnabled, toggleNotify } =
     usePreferences();
   const session = useSession();
+  const network = useNetwork().stellar;
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -106,7 +108,7 @@ export function SettingsPanel({
           <span className="text-sm text-muted">Wallet</span>
           {wallet ? (
             <a
-              href={accountExplorerUrl(wallet.address)}
+              href={accountExplorerUrl(wallet.address, network.id)}
               target="_blank"
               rel="noreferrer"
               className="focus-ring numeric text-sm text-accent hover:underline"

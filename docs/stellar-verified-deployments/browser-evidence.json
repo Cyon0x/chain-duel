@@ -1,0 +1,103 @@
+{
+  "base": "http://localhost:4315",
+  "startedAt": "2026-11-25T12:30:40.634Z",
+  "network": "testnet",
+  "checks": [
+    "Player 1: client-signed official Testnet USDC trustline, live balance retrieval and controlled funding",
+    "Player 2: client-signed official Testnet USDC trustline, live balance retrieval and controlled funding",
+    "Real-browser wrong-code rejection and recovery after local key loss preserve the same funded player address",
+    "Interrupted, expired browser duel reconciled through the eligible on-chain refund path before retrying",
+    "Interrupted browser game recovered from independently settled chain state without another stake or payout",
+    "Full real-browser player-controlled USDC stake, private invitation/join, simultaneous gameplay, hit capture, zero opponent score, direct input verification, settlement, 90% winner payout, profile and balance updates",
+    "Verified result screen shows the exact contract score, recorded rating delta and distinct protocol/ecosystem allocations"
+  ],
+  "playerAddresses": [
+    "GDPQW6XAZUAUVK2YO72SV2ODIQOW3GJYERFM64QS3HTZY7HK4UHDZCFT",
+    "GARXEKMMK3MH6QPPXKAQ3H5LBRLZQXXD73PWBCJBWVJ5GDJSEBUGZC5W"
+  ],
+  "games": [
+    {
+      "id": "gam_caf1bcbc-7010-4747-98d2-e1d20e1e6960",
+      "contractGameId": "749966c69ffb3b3d451e67a71d93bb8d0469cd58bc6d150b6c4257d8bf5bfc8e",
+      "code": "YQH76H",
+      "verificationVersion": 1,
+      "recoveredStatus": "cancelled"
+    },
+    {
+      "id": "gam_4b3b6e63-63d4-4eb1-9cfc-dedc2d126d84",
+      "contractGameId": "26cf122ebb476b6ef8d84760b4990eab2d95268b086c1aac90af55ce0f9f6d21",
+      "code": "VP7BFC",
+      "verificationVersion": 1,
+      "result": {
+        "id": "gam_4b3b6e63-63d4-4eb1-9cfc-dedc2d126d84",
+        "code": "VP7BFC",
+        "game_type": "pulse_duel",
+        "mode": "private",
+        "status": "settled",
+        "visibility": "private",
+        "creator_id": "usr_ade3b225-4e2a-4f53-99f0-dc63e9e72802",
+        "opponent_id": "usr_53cd2a68-cb6a-476c-835d-885aca6e544a",
+        "winner_id": "usr_ade3b225-4e2a-4f53-99f0-dc63e9e72802",
+        "entry_stroops": 250000000,
+        "pool_stroops": 500000000,
+        "fee_bps": 1000,
+        "payout_stroops": 450000000,
+        "fee_stroops": 50000000,
+        "player_one_score": 190,
+        "player_two_score": 0,
+        "seed": "a2121627a9ccb355c09dde5306142988f2c3f653b9ea58b6ba2c5946b868dbaa",
+        "duration_ms": 60000,
+        "escrow_state": "settled",
+        "settlement_status": "confirmed",
+        "contract_game_id": "26cf122ebb476b6ef8d84760b4990eab2d95268b086c1aac90af55ce0f9f6d21",
+        "result_hash": "0e4b1f7dd270282f336087b298e94b281dd2c3d86c544f9b25da61d6c7ffa34f",
+        "create_tx_hash": "936a9c0f87f6b4c40cdeeb821aaf4768eb71f23a90851f4aed7e61b9bc390d43",
+        "join_tx_hash": "6d29150091a79082eeaa0513f59fbb9db8d2268580736924197c8c753c316c6c",
+        "settle_tx_hash": "4b99ad13bfdd58cc6346d820103eaf972955c8d03f2c7f482d2e84eb15717f83",
+        "demo": 0,
+        "bot_outcome": null,
+        "bot_state": null,
+        "created_at": "2026-11-25T11:05:43.788Z",
+        "expires_at": "2026-11-25T11:20:43.553Z",
+        "started_at": "2026-11-25T11:07:33.000Z",
+        "finished_at": "2026-11-25T12:18:19.551Z",
+        "settled_at": "2026-11-25T12:18:19.551Z",
+        "stellar_network": "testnet",
+        "currency": "USDC",
+        "token_contract_id": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+        "protocol_fee_bps": 500,
+        "ecosystem_fee_bps": 500,
+        "protocol_fee_stroops": 25000000,
+        "ecosystem_fee_stroops": 25000000,
+        "start_tx_hash": "fbb82fa7e3d30fa15d5d876e1fb75c99a466a3711ba55a0f28387c357bd9de8e",
+        "settlement_started_at": "2026-11-25T12:18:01.893Z",
+        "verification_version": 1,
+        "seed_chain_verified": 1,
+        "input_deadline_ms": 1795604933000
+      }
+    }
+  ],
+  "transactions": [
+    {
+      "label": "controlled-browser-player-1-funding",
+      "hash": "ac43f7432be23cc0dd04eb1115314c1366d8b363fa12b3ac834c281938a4abb6",
+      "destination": "GDPQW6XAZUAUVK2YO72SV2ODIQOW3GJYERFM64QS3HTZY7HK4UHDZCFT",
+      "amountTestnetUsdc": "75",
+      "successful": true
+    },
+    {
+      "label": "controlled-browser-player-2-funding",
+      "hash": "0bac0c9825120fcf46c5c816ec65a1b4e7fbcaf6dd3a7ad904263a2d8a3893d1",
+      "destination": "GARXEKMMK3MH6QPPXKAQ3H5LBRLZQXXD73PWBCJBWVJ5GDJSEBUGZC5W",
+      "amountTestnetUsdc": "75",
+      "successful": true
+    }
+  ],
+  "errors": [],
+  "finishedAt": "2026-11-25T12:32:13.621Z",
+  "passed": true,
+  "screenshots": [
+    "browser/winner-result.png",
+    "browser/wallet-390.png"
+  ]
+}

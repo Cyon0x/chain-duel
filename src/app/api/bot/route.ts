@@ -9,8 +9,8 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const entryStroops = numeric(url.searchParams.get("entryStroops"), ECONOMY.defaultEntryStroops);
-    await getSessionUser();
-    const availability = await botAvailability(entryStroops);
+    const session = await getSessionUser();
+    const availability = await botAvailability(entryStroops, session?.user.id);
     // The bot's configured win probability is never included in any client payload.
     return ok({
       available: availability.available,

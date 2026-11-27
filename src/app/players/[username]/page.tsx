@@ -7,6 +7,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { publicProfile } from "@/lib/services/profile";
 import { ECONOMY, STAKE_PRESETS, formatXlm } from "@/lib/config/game";
 import { truncateAddress } from "@/lib/explorer";
+import { financialSymbol } from "@/lib/stellar/shared";
 
 export const dynamic = "force-dynamic";
 
@@ -105,7 +106,7 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
             ))}
           </Panel>
           <p className="mt-3 text-xs text-dim">
-            Total earned {formatXlm(profile.total_earned_stroops)} XLM · wagered {formatXlm(profile.total_wagered_stroops)} XLM
+            Total earned {formatXlm(profile.total_earned_stroops)} {financialSymbol(profile)} · wagered {formatXlm(profile.total_wagered_stroops)} {financialSymbol(profile)}
           </p>
         </section>
       </div>

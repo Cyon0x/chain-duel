@@ -4,6 +4,7 @@ import { requireSessionUser } from "@/lib/auth/session";
 import { createDuel, openDuels } from "@/lib/services/duel";
 import { ChainDuelError } from "@/lib/services/errors";
 import { ECONOMY } from "@/lib/config/game";
+import { assertStellarRequest, type StellarRequestContext } from "@/lib/api/stellar-context";
 
 export const dynamic = "force-dynamic";
 
@@ -24,12 +25,13 @@ export async function POST(request: Request) {
       entryXlm?: number;
       demo?: boolean;
       invitedUsername?: string;
-    }>(request);
+    } & StellarRequestContext>(request);
     const mode = body.mode ?? "private";
     if (!["pvp", "private", "bot"].includes(mode)) {
       throw new ChainDuelError("Unknown duel mode.", "invalid_mode");
     }
     const demo = body.demo ?? false;
+    assertStellarRequest(body, { demo });
     const entryStroops =
       body.entryXlm !== undefined
         ? entryStroopsOrThrow(body.entryXlm, { demo })

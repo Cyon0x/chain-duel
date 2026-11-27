@@ -4,6 +4,7 @@ import { TransactionItem } from "@/components/lists";
 import { getSessionUser } from "@/lib/auth/session";
 import { transactionsFor } from "@/lib/services/profile";
 import { txExplorerUrl } from "@/lib/explorer";
+import { financialNetwork } from "@/lib/stellar/shared";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export default async function TransactionsPage() {
           <p className="eyebrow">Ledger</p>
           <h1 className="text-display mt-2 text-4xl">Transactions</h1>
           <p className="mt-2 text-sm text-muted">
-            Every entry, payout, refund and fee, with its Stellar Testnet transaction.
+            Every entry, payout, refund and fee, with its asset, network and Stellar transaction.
           </p>
         </div>
         <div className="flex gap-2">
@@ -38,7 +39,7 @@ export default async function TransactionsPage() {
               <TransactionItem tx={tx} />
               {tx.tx_hash && tx.status === "confirmed" ? (
                 <a
-                  href={txExplorerUrl(tx.tx_hash) ?? "#"}
+                  href={txExplorerUrl(tx.tx_hash, financialNetwork(tx)) ?? "#"}
                   target="_blank"
                   rel="noreferrer"
                   className="focus-ring numeric -mt-1 truncate px-1 text-xs text-dim hover:text-accent"

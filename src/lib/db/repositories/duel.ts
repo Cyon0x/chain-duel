@@ -1,4 +1,8 @@
 import { newId, nowIso } from "../index";
+import { stellarNetwork, tokenContractId, publicStellarConfig } from "../../config/stellar";
+import { stellarVerificationEnabled } from "../../config/stellar-verification";
+import { STELLAR_TESTNET_USDC } from "../../stellar/shared";
+import type { StellarAssetSymbol, StellarNetworkId } from "../../stellar/shared";
 import type {
   BotMatchRow,
   GameEventRow,
@@ -19,6 +23,13 @@ const GAME_FIELDS = [
   "pool_stroops",
   "payout_stroops",
   "fee_stroops",
+  "protocol_fee_stroops",
+  "ecosystem_fee_stroops",
+  "start_tx_hash",
+  "settlement_started_at",
+  "seed",
+  "seed_chain_verified",
+  "input_deadline_ms",
   "player_one_score",
   "player_two_score",
   "escrow_state",
@@ -55,14 +66,24 @@ export async function createGame(
     demo: boolean;
     contractGameId?: string | null;
     escrowContractId?: string | null;
+    stellarNetwork?: StellarNetworkId;
+    currency?: StellarAssetSymbol;
+    tokenContractId?: string;
+    verificationVersion?: number;
   },
 ): Promise<GameRow> {
   const id = input.id ?? newId("gam");
+  const network = input.stellarNetwork ?? stellarNetwork().id;
+  const token = input.tokenContractId ?? tokenContractId(network);
+  const currency = input.currency ?? (network === "mainnet" || token === STELLAR_TESTNET_USDC ? "USDC" : "XLM");
+  const verificationVersion = input.verificationVersion ?? (!input.demo && stellarVerificationEnabled(network) ? 1 : 0);
+  const protocolBps = network === "mainnet" || verificationVersion === 1 ? Math.floor(input.feeBps / 2) : input.feeBps;
   const insert = async (target: SqlDriver): Promise<GameRow> => {
     await target.execute(
       `INSERT INTO games (id, code, game_type, mode, status, visibility, creator_id, entry_stroops, pool_stroops,
-         fee_bps, seed, duration_ms, escrow_state, demo, created_at, expires_at, contract_game_id)
-       VALUES (?, ?, 'pulse_duel', ?, 'waiting', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         fee_bps, seed, duration_ms, escrow_state, demo, created_at, expires_at, contract_game_id,
+         stellar_network,currency,token_contract_id,protocol_fee_bps,ecosystem_fee_bps,verification_version)
+       VALUES (?, ?, 'pulse_duel', ?, 'waiting', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         input.code,
@@ -79,6 +100,12 @@ export async function createGame(
         nowIso(),
         input.expiresAt,
         input.contractGameId ?? null,
+        network,
+        currency,
+        token,
+        protocolBps,
+        input.feeBps - protocolBps,
+        verificationVersion,
       ],
     );
     if (input.escrowContractId) {
@@ -380,14 +407,16 @@ export async function enqueue(
     entryStroops: number;
     demo: boolean;
     expiresAt: string;
+    stellarNetwork?: StellarNetworkId;
+    currency?: StellarAssetSymbol;
   },
 ): Promise<QueueRow> {
   const id = newId("que");
   const timestamp = nowIso();
   await db.execute(
-    `INSERT INTO matchmaking_queue (id, user_id, game_type, entry_stroops, demo, status, created_at, updated_at, expires_at)
-     VALUES (?, ?, ?, ?, ?, 'searching', ?, ?, ?)`,
-    [id, input.userId, input.gameType, input.entryStroops, input.demo ? 1 : 0, timestamp, timestamp, input.expiresAt],
+    `INSERT INTO matchmaking_queue (id, user_id, game_type, entry_stroops, demo, status, created_at, updated_at, expires_at,stellar_network,currency)
+     VALUES (?, ?, ?, ?, ?, 'searching', ?, ?, ?, ?, ?)`,
+    [id, input.userId, input.gameType, input.entryStroops, input.demo ? 1 : 0, timestamp, timestamp, input.expiresAt, input.stellarNetwork ?? stellarNetwork().id, input.currency ?? publicStellarConfig().asset.symbol],
   );
   const row = await db.one<QueueRow>("SELECT * FROM matchmaking_queue WHERE id = ?", [id]);
   if (!row) throw new Error("Failed to enqueue");
@@ -397,11 +426,12 @@ export async function enqueue(
 export async function findActiveQueueEntry(
   db: SqlDriver,
   userId: string,
+  network: StellarNetworkId = stellarNetwork().id,
 ): Promise<QueueRow | null> {
   return db.one<QueueRow>(
-    `SELECT * FROM matchmaking_queue WHERE user_id = ? AND status IN ('searching','matched')
+    `SELECT * FROM matchmaking_queue WHERE user_id = ? AND stellar_network = ? AND currency = ? AND status IN ('searching','matched')
      ORDER BY created_at DESC LIMIT 1`,
-    [userId],
+    [userId, network, publicStellarConfig().asset.symbol],
   );
 }
 
@@ -411,14 +441,14 @@ export async function findQueueEntry(db: SqlDriver, id: string): Promise<QueueRo
 
 export async function findOpponentInQueue(
   db: SqlDriver,
-  input: { userId: string; gameType: string; entryStroops: number; demo: boolean },
+  input: { userId: string; gameType: string; entryStroops: number; demo: boolean; stellarNetwork?: StellarNetworkId },
 ): Promise<QueueRow | null> {
   return db.one<QueueRow>(
     `SELECT * FROM matchmaking_queue
      WHERE status = 'searching' AND user_id != ? AND game_type = ? AND entry_stroops = ? AND demo = ?
-       AND expires_at > ?
+       AND expires_at > ? AND stellar_network = ? AND currency = ?
      ORDER BY created_at ASC LIMIT 1`,
-    [input.userId, input.gameType, input.entryStroops, input.demo ? 1 : 0, nowIso()],
+    [input.userId, input.gameType, input.entryStroops, input.demo ? 1 : 0, nowIso(), input.stellarNetwork ?? stellarNetwork().id, publicStellarConfig().asset.symbol],
   );
 }
 
@@ -479,6 +509,8 @@ export async function upsertMatch(
     ratingDelta: number;
     settlementTxHash: string | null;
     demo: boolean;
+    stellarNetwork?: StellarNetworkId;
+    currency?: StellarAssetSymbol;
   },
 ): Promise<void> {
   const existing = await db.one<MatchRow>(
@@ -488,8 +520,8 @@ export async function upsertMatch(
   if (existing) return;
   await db.execute(
     `INSERT INTO matches (id, game_id, user_id, opponent_id, opponent_label, mode, result, score_for, score_against,
-       entry_stroops, reward_stroops, rating_delta, settlement_tx_hash, demo, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       entry_stroops, reward_stroops, rating_delta, settlement_tx_hash, demo, created_at,stellar_network,currency)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       newId("mat"),
       input.gameId,
@@ -506,6 +538,8 @@ export async function upsertMatch(
       input.settlementTxHash,
       input.demo ? 1 : 0,
       nowIso(),
+      input.stellarNetwork ?? stellarNetwork().id,
+      input.currency ?? ((input.stellarNetwork ?? stellarNetwork().id) === "mainnet" ? "USDC" : "XLM"),
     ],
   );
 }
@@ -571,8 +605,8 @@ export async function recordReputation(
 export async function recordBotMatch(db: SqlDriver, row: BotMatchRow): Promise<void> {
   await db.execute(
     `INSERT INTO bot_matches (game_id, player_id, bot_id, entry_stroops, bot_stake_stroops, player_score, bot_score,
-       winner, fee_stroops, player_reward_stroops, treasury_delta_stroops, settlement_tx_hash, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       winner, fee_stroops, player_reward_stroops, treasury_delta_stroops, settlement_tx_hash, created_at,stellar_network,currency)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       row.game_id,
       row.player_id,
@@ -587,18 +621,20 @@ export async function recordBotMatch(db: SqlDriver, row: BotMatchRow): Promise<v
       row.treasury_delta_stroops,
       row.settlement_tx_hash,
       row.created_at,
+      row.stellar_network ?? stellarNetwork().id,
+      row.currency ?? ((row.stellar_network ?? stellarNetwork().id) === "mainnet" ? "USDC" : "XLM"),
     ],
   );
 }
 
-export async function listBotMatches(db: SqlDriver, limit = 50): Promise<BotMatchRow[]> {
+export async function listBotMatches(db: SqlDriver, limit = 50, network: StellarNetworkId = stellarNetwork().id): Promise<BotMatchRow[]> {
   return db.query<BotMatchRow>(
-    "SELECT * FROM bot_matches ORDER BY created_at DESC LIMIT ?",
-    [limit],
+    "SELECT * FROM bot_matches WHERE stellar_network = ? ORDER BY created_at DESC LIMIT ?",
+    [network, limit],
   );
 }
 
-export async function botMatchTotals(db: SqlDriver): Promise<{
+export async function botMatchTotals(db: SqlDriver, network: StellarNetworkId = stellarNetwork().id): Promise<{
   games: number;
   bot_wins: number;
   player_wins: number;
@@ -620,7 +656,8 @@ export async function botMatchTotals(db: SqlDriver): Promise<{
             COALESCE(SUM(player_reward_stroops), 0) AS player_rewards,
             COALESCE(SUM(treasury_delta_stroops), 0) AS treasury_delta,
             COALESCE(SUM(fee_stroops), 0) AS fees
-     FROM bot_matches`,
+     FROM bot_matches WHERE stellar_network = ?`,
+    [network],
   );
   return {
     games: Number(row?.games ?? 0),

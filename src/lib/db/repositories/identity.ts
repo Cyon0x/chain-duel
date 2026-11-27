@@ -1,4 +1,5 @@
 import { newId, nowIso } from "../index";
+import { playerControlledSigningEnabled } from "../../config/stellar-verification";
 import type {
   AchievementRow,
   AuthProvider,
@@ -333,6 +334,7 @@ export interface WalletKeyRow {
 }
 
 export async function loadWalletKey(db: SqlDriver, walletId: string): Promise<WalletKeyRow | null> {
+  if (playerControlledSigningEnabled()) throw new Error("Legacy player signing keys are unavailable to the player-controlled backend.");
   return db.one<WalletKeyRow>(
     "SELECT wallet_id, ciphertext, iv, auth_tag, algo FROM wallet_keys WHERE wallet_id = ?",
     [walletId],
@@ -410,8 +412,7 @@ export async function consumeNonce(
   );
   if (!row || row.consumed_at) return false;
   if (new Date(row.expires_at).getTime() < Date.now()) return false;
-  await db.execute("UPDATE stellar_nonces SET consumed_at = ? WHERE nonce = ?", [nowIso(), nonce]);
-  return true;
+  return await db.run("UPDATE stellar_nonces SET consumed_at = ? WHERE nonce = ? AND consumed_at IS NULL", [nowIso(), nonce]) === 1;
 }
 
 // ------------------------------------------------------------- achievements
