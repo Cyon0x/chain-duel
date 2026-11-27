@@ -9,9 +9,6 @@ export const USDC = "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75";
 export const MAINNET_RPC = "https://mainnet.sorobanrpc.com";
 export const MAINNET_HORIZON = "https://horizon.stellar.org";
 export const MAX_SPEND = 400_000_000n;
-// SDK cost probe, not an exact Mainnet initialization quote. Replaced with an
-// exact RPC simulation after upload, before signing the atomic constructor.
-export const CONSTRUCTOR_ESTIMATE = 32_963_986n;
 export const CONSTRUCTOR = Object.freeze({ admin: ADMIN, treasury: ADMIN, token: USDC, fee_bps: 1000, max_entry: "100000000000", max_payout: "200000000000", min_treasury_balance: "1000000000" });
 export const digest = value => createHash("sha256").update(value).digest("hex");
 export const json = value => JSON.stringify(value, (_key, item) => typeof item === "bigint" ? item.toString() : item, 2);
@@ -59,7 +56,7 @@ export function assertIdentity(identity, artifactSha256, sourceSha256) {
   assert.equal(identity.contractId, deriveContractId(Buffer.from(identity.saltHex, "hex")), "The prepared contract ID does not match its source and salt.");
 }
 
-export function requireDeploymentReview(review, identity) {
+export function requireDeploymentReview(review, identity, maxSpend = MAX_SPEND) {
   assert.equal(review?.deploymentFingerprint, digest(json(identity)), "The deployment review does not identify this exact prepared deployment.");
   assert.equal(review.approvedForDeployment, true, "The immutable Mainnet contract has not cleared its deployment review.");
   assert.equal(review.verifierImplementation, "independent-contract-game-replay", "A trusted gameplay-verifier signature is not authorized for Mainnet settlement.");
@@ -67,13 +64,13 @@ export function requireDeploymentReview(review, identity) {
   assert.equal(review.testnetEndToEndVerified, true, "The owner requires complete Testnet verification before Mainnet deployment.");
   assert.equal(review.mainnetDeploymentApproved, true, "The new architecture requires explicit owner Mainnet approval after security review.");
   assert(typeof review.mainnetApprovalReference === "string" && review.mainnetApprovalReference.trim().length > 20, "The explicit owner Mainnet approval must be recorded.");
-  assert.equal(review.maxSpendXlm, decimal(MAX_SPEND), "Deployment review has a different expenditure cap.");
+  assert.equal(review.maxSpendXlm, decimal(maxSpend), "Deployment review has a different expenditure cap.");
   assert.equal(review.offlineChecksPassed, true, "Complete the contract and application checks before Mainnet deployment.");
 }
 
-export function assertBudget({ balance, reserve, liabilities = 0n, committedFees = 0n, nextFee, futureFees = 0n }) {
-  assert(nextFee >= 0n && committedFees >= 0n && futureFees >= 0n, "Invalid deployment fee budget.");
-  assert(committedFees + nextFee + futureFees <= MAX_SPEND, "The deployment would exceed the total 40 XLM expenditure cap.");
+export function assertBudget({ balance, reserve, liabilities = 0n, committedFees = 0n, nextFee, futureFees = 0n, maxSpend = MAX_SPEND }) {
+  assert(nextFee >= 0n && committedFees >= 0n && futureFees >= 0n && maxSpend > 0n, "Invalid deployment fee budget.");
+  assert(committedFees + nextFee + futureFees <= maxSpend, `The deployment would exceed the total ${decimal(maxSpend).replace(/\.0+$/, "")} XLM expenditure cap.`);
   assert(balance - reserve - liabilities >= nextFee + futureFees, "The designated wallet cannot cover deployment while preserving its account reserves and liabilities.");
 }
 
@@ -85,7 +82,7 @@ export function assertConfiguredRoles(config) {
   assert.equal(config.bot_enabled, true, "The fresh contract has changed the existing computer-game configuration.");
 }
 
-export function assertDeploymentTransaction(signedXdr, kind, identity, wasm, { requireSignature = true } = {}) {
+export function assertDeploymentTransaction(signedXdr, kind, identity, wasm, { requireSignature = true, maxSpend = MAX_SPEND } = {}) {
   const tx = TransactionBuilder.fromXDR(signedXdr, Networks.PUBLIC);
   assert(tx instanceof Transaction, "Fee-bumped or unrelated transaction envelopes are not allowed by the deployment runner.");
   assert.equal(tx.source, ADMIN, "The deployment transaction has another source wallet.");
@@ -102,8 +99,10 @@ export function assertDeploymentTransaction(signedXdr, kind, identity, wasm, { r
     assert.equal(tx.toEnvelope().value.tx.operations[0].toXDR("base64"), expectedOp.toXDR("base64"), "The trustline operation differs from the official Mainnet USDC asset.");
   }
   assert(tx.timeBounds && Number(tx.timeBounds.maxTime) > 0, "Deployment transactions must expire.");
-  if (requireSignature) assert(tx.signatures.some(signature => Keypair.fromPublicKey(ADMIN).verify(tx.hash(), signature.signature)), "The transaction lacks the designated wallet's valid signature.");
-  assert(BigInt(tx.fee) <= MAX_SPEND, "The saved deployment transaction exceeds the expenditure cap.");
+  if (requireSignature) {
+    assert(tx.signatures.some(signature => Keypair.fromPublicKey(ADMIN).verify(tx.hash(), signature.signature)), "The transaction lacks the designated wallet's valid signature.");
+    assert(BigInt(tx.fee) <= maxSpend, "The saved deployment transaction exceeds the expenditure cap.");
+  }
   return tx;
 }
 

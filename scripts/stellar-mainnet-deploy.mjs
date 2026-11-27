@@ -9,7 +9,7 @@ import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { Address, Asset, Contract, Keypair, Networks, TransactionBuilder, rpc, scValToNative, xdr } from "@stellar/stellar-sdk";
 import { Pool } from "pg";
 import { ROOT, loadEnvFile } from "./lib.mjs";
-import { ADMIN, ISSUER, USDC, MAINNET_RPC, MAINNET_HORIZON, CONSTRUCTOR, CONSTRUCTOR_ESTIMATE, MAX_SPEND, assertBudget, assertConfiguredRoles, assertDeploymentTransaction, assertIdentity, decimal, deploymentOperation, deriveContractId, digest, json, recoverAttempt, requireDeploymentReview, units } from "./stellar-mainnet-deployment.mjs";
+import { ADMIN, ISSUER, USDC, MAINNET_RPC, MAINNET_HORIZON, CONSTRUCTOR, MAX_SPEND, assertBudget, assertConfiguredRoles, assertDeploymentTransaction, assertIdentity, decimal, deploymentOperation, deriveContractId, digest, json, recoverAttempt, requireDeploymentReview, units } from "./stellar-mainnet-deployment.mjs";
 
 const args = process.argv.slice(2);
 const option = (name, fallback) => args.includes(name) ? args[args.indexOf(name) + 1] : fallback;
@@ -18,18 +18,21 @@ const verify = args.includes("--verify");
 const env = Object.fromEntries(Object.entries(loadEnvFile(option("--env-file", resolve(ROOT, ".env.local")))).map(([key,value]) => [key, /^".*"$/.test(value) ? JSON.parse(value) : value]));
 const server = new rpc.Server(MAINNET_RPC, { timeout: 20_000 });
 const wasmPath = resolve(ROOT, "contracts/chain_duel_mainnet/target/wasm32v1-none/release/chain_duel_mainnet.wasm");
-const privateDir = resolve(option("--state-dir", resolve(homedir(), ".local/state/chain-duel/stellar-mainnet")));
+const privateDir = resolve(option("--state-dir", resolve(homedir(), ".local/state/chain-duel/stellar-verified-mainnet")));
 const statePath = resolve(privateDir, "deployment.json");
 const lockPath = resolve(privateDir, "deployment.lock");
-const planPath = resolve(option("--output", resolve(ROOT, "docs/stellar-mainnet-deployments/prepared-mainnet.json")));
-const reviewPath = resolve(option("--review-file", resolve(ROOT, "docs/stellar-mainnet-deployments/approved-review-mainnet.json")));
-const deploymentPath = resolve(ROOT, "docs/stellar-mainnet-deployments/deployment-mainnet.json");
+const evidenceDir = resolve(ROOT, "docs/stellar-verified-deployments");
+const planPath = resolve(option("--output", resolve(evidenceDir, "mainnet-preflight.json")));
+const reviewPath = resolve(option("--review-file", resolve(evidenceDir, "mainnet-approval.json")));
+const deploymentPath = resolve(evidenceDir, "mainnet-deployment.json");
 const inclusionFee = "1000";
 const sourceFiles = ["contracts/chain_duel_mainnet/src/lib.rs", "contracts/chain_duel_mainnet/src/verification.rs", "contracts/chain_duel_mainnet/src/test.rs", "contracts/chain_duel_mainnet/Cargo.toml", "contracts/chain_duel_mainnet/Cargo.lock", "contracts/chain_duel_mainnet/rust-toolchain.toml", "contracts/pulse_replay/src/lib.rs", "contracts/pulse_replay/src/test.rs", "contracts/pulse_replay/Cargo.toml", "contracts/pulse_replay/Cargo.lock", "scripts/stellar-build.mjs"];
 let stage = "configuration";
 let state;
 let unlock;
 let coordinator;
+let maxSpend;
+let testnetEvidence;
 
 async function getJson(url) {
   const response = await fetch(url, { signal: AbortSignal.timeout(20000), cache: "no-store" });
@@ -107,13 +110,16 @@ async function verifyDeployment() {
   const values = await Promise.all(methods.map(method => readCall(state.identity.contractId, method)));
   const reads = Object.fromEntries(methods.map((method,index) => [method, values[index]]));
   assertConfiguredRoles(reads.get_config);
+  const rulesHash = await readCall(state.identity.contractId, "get_rules_hash");
+  assert(rulesHash instanceof Uint8Array, "The deployed contract did not return a Pulse rules hash.");
+  assert.equal(Buffer.from(rulesHash).toString("hex"), testnetEvidence.preparation.rulesHash, "The deployed contract uses different Pulse rules.");
   const [isAdmin, playerIsAdmin] = await Promise.all([readCall(state.identity.contractId, "is_admin", [new Address(ADMIN).toScVal()]), readCall(state.identity.contractId, "is_admin", [new Address("GBGDTBOXVZ4GIDDRISY5FGXYY7XCWCCK3FRHJHSVFEZMWA3ZZ2HUALTK").toScVal()])]);
   assert.equal(isAdmin, true, "The designated wallet lacks Mainnet administration.");
   assert.equal(playerIsAdmin, false, "An ordinary player has Mainnet administration.");
   const accounted = BigInt(reads.get_bot_liquidity) + BigInt(reads.get_locked_escrow) + BigInt(reads.get_protocol_fees) + BigInt(reads.get_ecosystem_fees);
   assert(BigInt(reads.get_contract_balance) >= accounted, "Escrow liabilities exceed its official USDC balance.");
   if (!state.completedAt) for (const method of methods.slice(2)) assert.equal(BigInt(reads[method]), 0n, `Fresh initialization has nonzero ${method}; investigate before activating users.`);
-  return { verifiedAt: new Date().toISOString(), ledgerEntries: entries, reads, administratorVerified: isAdmin, ordinaryPlayerIsAdmin: playerIsAdmin, accountingSolvent: true };
+  return { verifiedAt: new Date().toISOString(), ledgerEntries: entries, reads, rulesHash: Buffer.from(rulesHash).toString("hex"), administratorVerified: isAdmin, ordinaryPlayerIsAdmin: playerIsAdmin, accountingSolvent: true };
 }
 
 async function feeQuote(kind, wasm) {
@@ -199,7 +205,7 @@ async function sharedCoordinator() {
 
 async function recoverSaved(wasm) {
   for (const attempt of state.attempts) {
-    assertDeploymentTransaction(attempt.signedXdr, attempt.kind, state.identity, wasm);
+    assertDeploymentTransaction(attempt.signedXdr, attempt.kind, state.identity, wasm, { maxSpend });
     if (attempt.status === "expired") continue;
     const receipt = await recoverAttempt(attempt, receiptInfrastructure);
     attempt.status = receipt.status;
@@ -210,7 +216,7 @@ async function recoverSaved(wasm) {
   }
 }
 
-async function perform(kind, wasm, signer, { recoverOnly = false } = {}) {
+async function perform(kind, wasm, signer, { recoverOnly = false, futureFees = 0n } = {}) {
   let attempt = state.attempts.findLast(item => item.kind === kind);
   if (attempt?.status === "confirmed") return;
   if (attempt && ["prepared","pending"].includes(attempt.status)) {
@@ -230,17 +236,17 @@ async function perform(kind, wasm, signer, { recoverOnly = false } = {}) {
     const quote = await feeQuote(kind, wasm);
     const balance = await accountSnapshot();
     const reserve = units(balance.reserveXlm) + (kind === "trustline" && !balance.usdcTrustline ? units(balance.baseReserveXlm) : 0n);
-    assertBudget({ balance: units(balance.xlmBalance), reserve, liabilities: units(balance.nativeSellingLiabilities), committedFees: committedFees(), nextFee: quote.fee });
+    assertBudget({ balance: units(balance.xlmBalance), reserve, liabilities: units(balance.nativeSellingLiabilities), committedFees: committedFees(), nextFee: quote.fee, futureFees, maxSpend });
     await coordinator.assertLease();
     assert(Number(quote.transaction.timeBounds.maxTime) > Date.now()/1000 + 30, "The simulated deployment envelope is too close to expiry; quote it again.");
     quote.transaction.sign(signer);
-    const transaction = assertDeploymentTransaction(quote.transaction.toXDR(), kind, state.identity, wasm);
+    const transaction = assertDeploymentTransaction(quote.transaction.toXDR(), kind, state.identity, wasm, { maxSpend });
     attempt = { kind, hash: Buffer.from(transaction.hash()).toString("hex"), signedXdr: transaction.toXDR(), sequence: transaction.sequence, maxTime: Number(transaction.timeBounds.maxTime), feeUnits: transaction.fee, resourceFeeUnits: quote.resourceFee, simulatedAtLedger: quote.ledger ?? null, status: "prepared", preparedAt: new Date().toISOString() };
     state.attempts.push(attempt);
     savePrivate(); // Always persist exact bytes before any broadcast.
   }
   await coordinator.persist(attempt);
-  const transaction = assertDeploymentTransaction(attempt.signedXdr, kind, state.identity, wasm);
+  const transaction = assertDeploymentTransaction(attempt.signedXdr, kind, state.identity, wasm, { maxSpend });
   const deadline = Date.now()+100000;
   let lastSend = 0;
   while (Date.now() < deadline) {
@@ -280,6 +286,14 @@ try {
   const sourceHashes = Object.fromEntries(sourceFiles.map(file => [file,digest(readFileSync(resolve(ROOT,file)))]));
   const sourceSha256 = digest(json(sourceHashes));
   const wasmSha256 = digest(wasm);
+  testnetEvidence = JSON.parse(readFileSync(resolve(evidenceDir, "testnet-evidence.json"), "utf8"));
+  assert(testnetEvidence.deployed && testnetEvidence.wasmIndependentlyVerified && testnetEvidence.testStatus === "complete", "Independent Testnet verification must be complete.");
+  assert.equal(testnetEvidence.wasmSha256, wasmSha256, "Mainnet WASM differs from the artifact verified on Testnet.");
+  assert.equal(testnetEvidence.admin, ADMIN, "Testnet evidence uses a different deployment administrator.");
+  const testnetConstructor = testnetEvidence.transactions.find(transaction => transaction.label === "escrow:atomic-deploy-and-initialize" && transaction.successful && transaction.rpcAndHorizonVerified);
+  assert(testnetConstructor, "The exact Testnet constructor receipt is required to estimate initial funding.");
+  const constructorEstimate = BigInt(testnetConstructor.maxFeeUnits);
+  assert(constructorEstimate > 0n, "The verified Testnet constructor must include its simulated fee maximum.");
   assert(isAbsolute(privateDir), "Private deployment state requires an absolute path.");
   mkdirSync(privateDir, { recursive: true, mode: 0o700 });
   const stateRelative = relative(realpathSync(ROOT), realpathSync(privateDir));
@@ -296,6 +310,8 @@ try {
     state = { schemaVersion: 1, preparedAt: new Date().toISOString(), identity: { admin: ADMIN, networkPassphrase: Networks.PUBLIC, wasmSha256, sourceSha256, saltHex: salt.toString("hex"), contractId: deriveContractId(salt), constructor: CONSTRUCTOR }, sourceHashes, attempts: [] };
     savePrivate();
   }
+  maxSpend = units(option("--max-spend-xlm", state.approvedMaxSpendXlm ?? decimal(MAX_SPEND)));
+  assert(maxSpend > 0n, "The deployment expenditure cap must be positive.");
   stage = "Mainnet infrastructure";
   const [network, horizonNetwork] = await Promise.all([server.getNetwork(),getJson(MAINNET_HORIZON)]);
   assert.equal(network.passphrase, Networks.PUBLIC, "RPC is not on Stellar Mainnet.");
@@ -314,27 +330,31 @@ try {
   } else if (!execute) {
     stage = "read-only spending plan";
     const upload = entries.code ? null : await feeQuote("upload",wasm);
-    const constructor = entries.instance ? null : entries.code ? await feeQuote("deploy",wasm) : { fee: CONSTRUCTOR_ESTIMATE, estimatedOnly: true };
+    const constructor = entries.instance ? null : entries.code ? await feeQuote("deploy",wasm) : { fee: constructorEstimate, estimatedOnly: true };
     const trustlineFee = balance.usdcTrustline ? 0n : BigInt(inclusionFee);
     const estimatedFuture = (upload?.fee ?? 0n) + (constructor?.fee ?? 0n) + trustlineFee;
     const reserveAfter = units(balance.reserveXlm) + (balance.usdcTrustline ? 0n : units(balance.baseReserveXlm));
-    assertBudget({ balance: units(balance.xlmBalance), reserve: reserveAfter, liabilities: units(balance.nativeSellingLiabilities), committedFees: committedFees(), nextFee: estimatedFuture });
-    const plan = { schemaVersion: 1, checkedAt: new Date().toISOString(), readOnly: true, submitted: false, deploymentFingerprint: digest(json(state.identity)), identity: state.identity, sourceHashes, artifact: { path: relative(ROOT,wasmPath), bytes: wasm.length, sha256: wasmSha256 }, initialAccount: state.initialAccount, currentAccount: balance, uploadFeeXlm: upload ? decimal(upload.fee) : "0.0000000", constructorFeeXlm: constructor ? decimal(constructor.fee) : "0.0000000", constructorIsLocalEstimate: Boolean(constructor?.estimatedOnly), trustlineFeeXlm: decimal(trustlineFee), reserveAfterTrustlineXlm: decimal(reserveAfter), estimatedRemainingExpenditureXlm: decimal(estimatedFuture), maxSpendXlm: decimal(MAX_SPEND), committedMaximumFeesXlm: decimal(committedFees()), existingLedgerEntries: entries, deploymentAuthorized: true, settlementTrustDecisionPending: true, publicMainnetGamingEnabled: false };
+    const available = units(balance.xlmBalance) - reserveAfter - units(balance.nativeSellingLiabilities);
+    const shortfall = estimatedFuture > available ? estimatedFuture - available : 0n;
+    const exceedsCap = estimatedFuture + committedFees() > maxSpend;
+    const plan = { schemaVersion: 2, checkedAt: new Date().toISOString(), readOnly: true, submitted: false, deploymentFingerprint: digest(json(state.identity)), identity: state.identity, sourceHashes, artifact: { path: relative(ROOT,wasmPath), bytes: wasm.length, sha256: wasmSha256 }, initialAccount: state.initialAccount, currentAccount: balance, uploadFeeXlm: decimal(upload?.fee ?? 0n), uploadQuoteLedger: upload?.ledger ?? null, constructorFeeXlm: decimal(constructor?.fee ?? 0n), constructorEstimateTestnetReceipt: constructor?.estimatedOnly ? testnetConstructor.hash : null, trustlineFeeXlm: decimal(trustlineFee), reserveAfterTrustlineXlm: decimal(reserveAfter), estimatedRemainingExpenditureXlm: decimal(estimatedFuture), availableAfterReserveXlm: decimal(available), estimatedFundingShortfallXlm: decimal(shortfall), exceedsCap, maxSpendXlm: decimal(maxSpend), committedMaximumFeesXlm: decimal(committedFees()), existingLedgerEntries: entries, publicMainnetGamingEnabled: false };
     mkdirSync(dirname(planPath), { recursive: true }); writeFileSync(planPath, `${json(plan)}\n`);
-    console.log(json({ report: relative(ROOT,planPath), readOnly: true, contractId: state.identity.contractId, status: "PREPARED_ONLY", xlmBalance: balance.xlmBalance, estimatedRemainingExpenditureXlm: plan.estimatedRemainingExpenditureXlm, maxSpendXlm: plan.maxSpendXlm, settlementTrustDecisionPending: true }));
+    console.log(json({ report: relative(ROOT,planPath), readOnly: true, contractId: state.identity.contractId, status: shortfall > 0n || exceedsCap ? "BUDGET_BLOCKED" : "PREPARED_ONLY", xlmBalance: balance.xlmBalance, uploadFeeXlm: plan.uploadFeeXlm, constructorFeeXlm: plan.constructorFeeXlm, estimatedRemainingExpenditureXlm: plan.estimatedRemainingExpenditureXlm, estimatedFundingShortfallXlm: plan.estimatedFundingShortfallXlm, maxSpendXlm: plan.maxSpendXlm, exceedsCap }));
   } else {
     stage = "immutable contract deployment review";
     assert(existsSync(reviewPath), "Resolve and record the owner verifier decision and exact deployment review before --execute.");
-    requireDeploymentReview(JSON.parse(readFileSync(reviewPath,"utf8")),state.identity);
+    requireDeploymentReview(JSON.parse(readFileSync(reviewPath,"utf8")), state.identity, maxSpend);
     const uploadFee = entries.code ? 0n : (await feeQuote("upload",wasm)).fee;
-    const constructorFee = entries.instance ? 0n : entries.code ? (await feeQuote("deploy",wasm)).fee : CONSTRUCTOR_ESTIMATE;
+    const constructorFee = entries.instance ? 0n : entries.code ? (await feeQuote("deploy",wasm)).fee : constructorEstimate;
     const trustlineFee = balance.usdcTrustline ? 0n : BigInt(inclusionFee);
     const reserveAfter = units(balance.reserveXlm) + (balance.usdcTrustline ? 0n : units(balance.baseReserveXlm));
     // Count an unresolved envelope once: its fee is already committed and it
     // will be recovered byte-for-byte rather than prepared a second time.
     const pendingFee = kind => state.attempts.findLast(attempt => attempt.kind===kind && ["prepared","pending"].includes(attempt.status)) ? 0n : 1n;
-    assertBudget({ balance: units(balance.xlmBalance), reserve: reserveAfter, liabilities: units(balance.nativeSellingLiabilities), committedFees: committedFees(), nextFee: uploadFee*pendingFee("upload") + constructorFee*pendingFee("deploy") + trustlineFee*pendingFee("trustline") });
+    assertBudget({ balance: units(balance.xlmBalance), reserve: reserveAfter, liabilities: units(balance.nativeSellingLiabilities), committedFees: committedFees(), nextFee: uploadFee*pendingFee("upload") + constructorFee*pendingFee("deploy") + trustlineFee*pendingFee("trustline"), maxSpend });
     coordinator = await sharedCoordinator();
+    state.approvedMaxSpendXlm = decimal(maxSpend);
+    savePrivate();
     // Pending attempts are recovered in perform(), which resubmits only their
     // identical saved bytes. Definitive old failures are retired before retries.
     for (const attempt of state.attempts) if (["failed","expired"].includes(attempt.status)) await coordinator.finish(attempt);
@@ -342,8 +362,8 @@ try {
       const saved = state.attempts.findLast(attempt => attempt.kind===kind);
       if (saved && ["prepared","pending"].includes(saved.status)) { stage=`recover ${kind}`; await perform(kind,wasm,signer,{recoverOnly:true}); }
     }
-    if (!(await accountSnapshot()).usdcTrustline) { stage="official USDC trustline"; await perform("trustline",wasm,signer); assert((await accountSnapshot()).usdcTrustline, "The USDC trustline was not independently verified."); }
-    if (!(await ledgerEntries()).code) { stage="WASM upload"; await perform("upload",wasm,signer); }
+    if (!(await accountSnapshot()).usdcTrustline) { stage="official USDC trustline"; await perform("trustline",wasm,signer,{ futureFees: uploadFee + constructorFee }); assert((await accountSnapshot()).usdcTrustline, "The USDC trustline was not independently verified."); }
+    if (!(await ledgerEntries()).code) { stage="WASM upload"; await perform("upload",wasm,signer,{ futureFees: constructorFee }); }
     assert((await ledgerEntries()).code, "Uploaded code was not independently verified.");
     if (!(await ledgerEntries()).instance) { stage="atomic deployment and constructor"; await perform("deploy",wasm,signer); }
     stage="independent code, configuration and receipt verification";

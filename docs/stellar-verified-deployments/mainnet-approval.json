@@ -1,0 +1,11 @@
+{
+  "deploymentFingerprint": "56cb0fb5dc4150f2cf4b08307868007590c01d8e4bd308e5a818b78034d02432",
+  "approvedForDeployment": true,
+  "verifierImplementation": "independent-contract-game-replay",
+  "independentOutcomeVerification": true,
+  "testnetEndToEndVerified": true,
+  "mainnetDeploymentApproved": true,
+  "mainnetApprovalReference": "On 2026-11-27, the owner explicitly authorized Mainnet deployment, verification, and GitHub and Vercel updates for the reviewed Chain Duel candidate.",
+  "maxSpendXlm": "110.0000000",
+  "offlineChecksPassed": true
+}

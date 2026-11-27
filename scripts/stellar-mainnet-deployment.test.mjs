@@ -20,6 +20,10 @@ test("a funded plan preserves the USDC trustline reserve as well as the XLM fee 
   assert.throws(() => assertBudget({ balance: units("41"), reserve: units("1.5"), nextFee: MAX_SPEND }), /reserves/);
   assert.throws(() => assertBudget({ balance: units("100"), reserve: units("1.5"), committedFees: units("31"), nextFee: units("10") }), /40 XLM/);
   assert.throws(() => assertBudget({ balance: units("54"), reserve: units("1.5"), liabilities: units("20"), nextFee: units("34") }), /liabilities/);
+  const currentQuote = { balance: units("119.8267381"), reserve: units("1.5"), nextFee: units("52.6051212"), futureFees: units("44.0641465"), maxSpend: units("110") };
+  assertBudget(currentQuote);
+  assert.throws(() => assertBudget({ ...currentQuote, balance: units("54.8267381") }), /reserves/);
+  assert.throws(() => assertBudget({ ...currentQuote, committedFees: units("20") }), /110 XLM/);
   assert.throws(() => units("1.00000001"), /seven-decimal/);
   assert.equal(decimal(units("54.8267381")), "54.8267381");
 });
@@ -41,6 +45,8 @@ test("funding or the prior authorization cannot deploy a trusted oracle or bypas
   assert.throws(() => requireDeploymentReview(rejectedOracle,identity), /not authorized/);
   const accepted = { ...review, verifierImplementation:"independent-contract-game-replay", independentOutcomeVerification:true, testnetEndToEndVerified:true, mainnetDeploymentApproved:true, mainnetApprovalReference:"Explicit owner Mainnet approval after reviewing the verified Testnet evidence." };
   requireDeploymentReview(accepted,identity);
+  assert.throws(() => requireDeploymentReview(accepted, identity, units("110")), /different expenditure cap/);
+  requireDeploymentReview({ ...accepted, maxSpendXlm: "110.0000000" }, identity, units("110"));
   assert.throws(() => requireDeploymentReview({...accepted,testnetEndToEndVerified:false},identity),/complete Testnet/);
   assert.throws(() => requireDeploymentReview({...accepted,mainnetDeploymentApproved:false},identity),/explicit owner Mainnet/);
   assert.throws(() => requireDeploymentReview({ ...accepted, deploymentFingerprint: "different" },identity), /exact prepared deployment/);

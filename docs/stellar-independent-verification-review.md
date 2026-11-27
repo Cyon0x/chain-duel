@@ -3,9 +3,10 @@
 Review date: 2026-11-25. Branch: `feat/stellar-independent-verification`.
 
 **Verdict: NOT READY: SECURITY OR FUNCTIONALITY ISSUES REMAIN.**
-The controlled Testnet implementation and automated campaign pass. Production
-release still needs the provider/OAuth ceremonies, operational checks and
-explicit owner approval described below. No Mainnet deployment or irreversible
+The controlled Testnet implementation and automated campaign pass. The owner
+approved the Mainnet deployment on 2026-11-27. The [current Mainnet release
+record](stellar-verified-deployments/mainnet-release.md) documents the funding
+shortfall and pending operational checks. No Mainnet deployment or irreversible
 player-authority migration has occurred.
 
 ## Architecture and original attack
@@ -216,9 +217,9 @@ fields record the completed run. It is not presented as a current failure.
    obsolete; archived JSON is not an authorization or current quote.
 4. Validate production TTL/restoration, monitoring, transaction fee sponsorship,
    deadlines under congestion, funding and recovery operations.
-5. Obtain explicit owner approval for this Mainnet deployment and each irreversible
-   player-authority migration. Execute controlled Mainnet tests only within that
-   later authorization, then cross-check configuration, chain and application.
+5. Deploy within the recorded owner approval after funding. Each irreversible
+   player-authority migration still needs its own approval. Cross-check
+   configuration, chain results and the application in controlled Mainnet tests.
 
 A signature proves authorization of legal inputs, not a physical human tap.
 Players can automate legal play. The device and signing origin must be trusted;
